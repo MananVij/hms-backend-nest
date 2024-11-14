@@ -15,7 +15,7 @@ export class FirebaseService {
     const serviceAccountPath = path.resolve(serviceFilePAth);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccountPath),
-      storageBucket: process.env.STORAGE_BUCKET,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
     this.bucket = admin.storage();
   }
