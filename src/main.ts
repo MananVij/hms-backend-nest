@@ -17,6 +17,7 @@ async function bootstrap() {
     credentials: true, // Enable credentials (if needed)
   });
   app.useGlobalPipes(new ValidationPipe());
+  console.log(`Server Started at ${process.env.PORT}`)
   await app.listen(process.env.PORT || 8000);
 }
 bootstrap();
