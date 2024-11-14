@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
-import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { User } from 'src/user/entity/user.enitiy';
-import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
+import { Appointment } from '../appointment/entity/appointment.entity';
+import { DoctorPatient } from '../doctor_patient/entity/doctor_patient.entity';
 
 @Injectable()
 export class DashboardService {

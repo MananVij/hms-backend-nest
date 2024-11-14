@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { User, UserRole } from 'src/user/entity/user.enitiy';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
-import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { Prescription } from 'src/prescription/entity/prescription.entity';
+import { DoctorClinic } from '../doctor_clinic/entity/doctor_clinic.entity';
+import { User, UserRole } from '../user/entity/user.enitiy';
+import { DoctorPatient } from '../doctor_patient/entity/doctor_patient.entity';
+import { Appointment } from '../appointment/entity/appointment.entity';
+import { Prescription } from '../prescription/entity/prescription.entity';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 
 @Injectable()
 export class PatientService {

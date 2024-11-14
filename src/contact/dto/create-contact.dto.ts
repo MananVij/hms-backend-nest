@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsNumber, Length, IsOptional } from 'class-validator';
-import { User } from 'src/user/entity/user.enitiy';
 import { OneToOne } from 'typeorm';
+import { User } from '../../user/entity/user.enitiy';
 
 export class CreateContactDto {
   @IsNotEmpty()

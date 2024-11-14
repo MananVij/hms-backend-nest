@@ -1,7 +1,4 @@
-import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
-import { User } from 'src/user/entity/user.enitiy';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -10,6 +7,9 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
+import { User } from '../../user/entity/user.enitiy';
+import { DoctorClinic } from '../../doctor_clinic/entity/doctor_clinic.entity';
+import { Appointment } from '../../appointment/entity/appointment.entity';
 
 @Entity('clinic')
 export class Clinic {

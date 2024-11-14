@@ -3,9 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { User } from 'src/user/entity/user.enitiy';
-import { Vitals } from 'src/vitals/entity/vitals.entity';
-import { FirebaseService } from 'src/firebase/firebase.service';
+import { User } from '../user/entity/user.enitiy';
+import { Vitals } from '../vitals/entity/vitals.entity';
 
 @Injectable()
 export class PrescriptionService {

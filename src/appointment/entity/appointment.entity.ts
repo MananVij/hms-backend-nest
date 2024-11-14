@@ -1,6 +1,4 @@
-import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { Prescription } from 'src/prescription/entity/prescription.entity';
-import { User } from 'src/user/entity/user.enitiy';
+
 import {
   Entity,
   Column,
@@ -9,6 +7,9 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
+import { User } from '../../user/entity/user.enitiy';
+import { Prescription } from '../../prescription/entity/prescription.entity';
+import { Clinic } from '../../clininc/entity/clininc.entity';
 
 export enum PaymnetMode {
   ONLINE = 'online',

@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { SideBarService } from './sidebar.service';
 import { SideBar } from './entity/sidebar.entity';
 import { CreateSidebarDto } from './dto/create-sidebar.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('sidebar')
 export class SideBarController {
