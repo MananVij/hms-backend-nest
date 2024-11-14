@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { MetaData } from './entity/metadata.entity';
 import { CreateMetaDataDto } from './dto/create-meta-data.dto';
 import { UpdateMetaDataDto } from './dto/update-meta-data.dto';
-import { User } from '../user/entity/user.enitiy';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Injectable()
 export class MetaDataService {

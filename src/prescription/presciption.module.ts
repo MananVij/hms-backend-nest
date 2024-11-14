@@ -3,8 +3,8 @@ import { PrescriptionService } from './prescription.service';
 import { PrescriptionController } from './prescription.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Prescription } from './entity/prescription.entity';
-import { User } from '../user/entity/user.enitiy';
-import { Vitals } from '../vitals/entity/vitals.entity';
+import { User } from 'src/user/entity/user.enitiy';
+import { Vitals } from 'src/vitals/entity/vitals.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Prescription, User, Vitals])],

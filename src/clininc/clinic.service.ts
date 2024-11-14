@@ -4,9 +4,9 @@ import { In, Repository } from 'typeorm';
 import { Clinic } from './entity/clininc.entity';
 import { CreateClinicDto } from './dto/add-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
-import { Doctor } from '../doctor/entity/doctor.entity';
-import { User } from '../user/entity/user.enitiy';
-import { DoctorClinic } from '../doctor_clinic/entity/doctor_clinic.entity';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Injectable()
 export class ClinicService {

@@ -4,10 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Clinic } from './entity/clininc.entity';
 import { ClinicController } from './clininc.controller';
 import { ClinicService } from './clinic.service';
-import { User } from '../user/entity/user.enitiy';
-import { Doctor } from '../doctor/entity/doctor.entity';
-import { DoctorClinic } from '../doctor_clinic/entity/doctor_clinic.entity';
-import { Appointment } from '../appointment/entity/appointment.entity';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { Appointment } from 'src/appointment/entity/appointment.entity';
+import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Clinic, User, Doctor, DoctorClinic, Appointment]), Clinic],

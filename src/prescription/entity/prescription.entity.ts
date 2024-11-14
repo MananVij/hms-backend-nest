@@ -1,4 +1,5 @@
-
+import { User } from 'src/user/entity/user.enitiy';
+import { Vitals } from 'src/vitals/entity/vitals.entity';
 
 import {
   Entity,
@@ -10,8 +11,6 @@ import {
   JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { Vitals } from '../../vitals/entity/vitals.entity';
-import { User } from '../../user/entity/user.enitiy';
 
 @Entity('prescriptions')
 export class Prescription {

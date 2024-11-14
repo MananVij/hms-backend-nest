@@ -1,6 +1,8 @@
+// src/doctor-clinic/entity/doctor-clinic.entity.ts
+
+import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Entity, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
-import { Doctor } from '../../doctor/entity/doctor.entity';
-import { Clinic } from '../../clininc/entity/clininc.entity';
 
 @Entity('doctor_clinic')
 export class DoctorClinic {

@@ -1,9 +1,9 @@
+import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { Contact } from 'src/contact/entity/contact.entity';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
+import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, Unique, JoinColumn } from 'typeorm';
-import { MetaData } from '../../metadata/entity/metadata.entity';
-import { Contact } from '../../contact/entity/contact.entity';
-import { DoctorPatient } from '../../doctor_patient/entity/doctor_patient.entity';
-import { Clinic } from '../../clininc/entity/clininc.entity';
-import { Doctor } from '../../doctor/entity/doctor.entity';
 
 export enum UserRole {
   ADMIN = 'admin',

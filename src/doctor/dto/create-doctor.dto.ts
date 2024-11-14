@@ -1,4 +1,6 @@
 import { IsString, IsNotEmpty, IsDateString, IsArray, IsUUID } from 'class-validator';
+import { User } from 'src/user/entity/user.enitiy';
+import { OneToOne } from 'typeorm';
 
 export class CreateDoctorDto {
   @IsArray()

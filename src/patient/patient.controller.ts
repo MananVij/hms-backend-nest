@@ -8,9 +8,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PatientService } from './patient.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { User } from '../user/entity/user.enitiy';
-import { CreateUserDto } from '../user/dto/create-user.dto';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { User } from 'src/user/entity/user.enitiy';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'; // Import your JWT Auth guard if applicable
 
 @Controller('patients')
 export class PatientController {

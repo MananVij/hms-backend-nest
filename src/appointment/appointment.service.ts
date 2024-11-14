@@ -3,12 +3,12 @@ import { Between, DeepPartial, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
+import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { startOfDay, endOfDay } from 'date-fns';
-import { User, UserRole } from '../user/entity/user.enitiy';
-import { Doctor } from '../doctor/entity/doctor.entity';
-import { Clinic } from '../clininc/entity/clininc.entity';
-import { DoctorPatient } from '../doctor_patient/entity/doctor_patient.entity';
+import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
 
 @Injectable()
 export class AppointmentService {

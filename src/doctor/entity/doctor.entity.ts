@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn } from 'typeorm';
-import { User } from '../../user/entity/user.enitiy';
-import { DoctorClinic } from '../../doctor_clinic/entity/doctor_clinic.entity';
-import { DoctorPatient } from '../../doctor_patient/entity/doctor_patient.entity';
+import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
+import { User } from 'src/user/entity/user.enitiy';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
 
 @Entity('doctors')
 export class Doctor {

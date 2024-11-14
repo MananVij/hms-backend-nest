@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToOne, ManyToOne } from 'typeorm';
-import { Prescription } from '../../prescription/entity/prescription.entity';
-import { User } from '../../user/entity/user.enitiy';
+import { Prescription } from 'src/prescription/entity/prescription.entity';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Entity('vitals')
 export class Vitals {
