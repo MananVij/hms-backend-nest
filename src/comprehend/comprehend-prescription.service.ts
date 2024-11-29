@@ -13,14 +13,10 @@ export class ComprehendPrescriptionService {
     this.prompt = process.env.GEMINI_PROMPT;
   }
 
-  async comprehendPrescription(fileName: string): Promise<any> {
+  async comprehendPrescription(file: Express.Multer.File): Promise<any> {
     try {
-      // Read and encode audio file
-      const base64Buffer = fs.readFileSync(
-        `/Users/vijmanan/Downloads/${fileName}.mp4`,
-      );
-      const base64AudioFile = base64Buffer.toString('base64');
-
+      // Convert file buffer to base64
+      const base64AudioFile = file.buffer.toString('base64');
       // Set up model configuration
       const model = this.genAI.getGenerativeModel({
         model: process.env.GEMINI_MODEL,
@@ -31,7 +27,7 @@ export class ComprehendPrescriptionService {
       const result = await model.generateContent([
         {
           inlineData: {
-            mimeType: 'audio/mp3',
+            mimeType: file.mimetype, // Use the uploaded file's MIME type
             data: base64AudioFile,
           },
         },
@@ -39,22 +35,15 @@ export class ComprehendPrescriptionService {
           text: this.prompt,
         },
       ]);
-
+      console.log(result.response.text())
       const response = await result.response.text();
-      console.log(response);
-      const jsonString = response
-        .replace(/```/g, '')
-        .replace('json', '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const jsonString = response.replace(/```/g, '').replace('json', '').trim();
       const parsedJson = JSON.parse(jsonString);
 
       return parsedJson;
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException(
-        'Failed to comprehend prescription',
-      );
+      throw new InternalServerErrorException('Failed to comprehend prescription');
     }
   }
 }

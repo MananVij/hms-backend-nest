@@ -8,7 +8,7 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin:'*', // Replace with your frontend domain
+    origin:['https://pulsehealth.netlify.app', 'http://localhost:3000'], // Replace with your frontend domain
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // Enable credentials (if needed)
     allowedHeaders: 'Content-Type, Authorization',

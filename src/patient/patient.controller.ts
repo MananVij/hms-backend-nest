@@ -29,7 +29,7 @@ export class PatientController {
   }
 
   @Get('doctor/:id')
-  @UseGuards(JwtAuthGuard) // Protect this route if necessary
+  // @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async getAllPatientsOfDoctor(@Param('id') id: string): Promise<User[]> {
     const patients = await this.patientService.findAllPatientsOfDoctor(id);
     if (!patients.length) {

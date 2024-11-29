@@ -1,6 +1,12 @@
-import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  Controller,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ComprehendPrescriptionService } from './comprehend-prescription.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('prescription')
 export class ComprehendPrescriptionController {
@@ -9,16 +15,19 @@ export class ComprehendPrescriptionController {
   ) {}
 
   @Post('comprehend')
+  @UseInterceptors(FileInterceptor('file'))
   async comprehendPrescription(
-    @Body('fileName') fileName: string,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<any> {
     try {
       const result =
-        await this.googleGenerativeAiService.comprehendPrescription(fileName);
+        await this.googleGenerativeAiService.comprehendPrescription(file);
       return result;
     } catch (error) {
       console.error(error);
-      return error;
+      throw new InternalServerErrorException(
+        'Failed to comprehend prescription',
+      );
     }
   }
 }
