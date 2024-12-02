@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsArray, IsUUID, IsBoolean, IsNumber, ValidateNested } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsArray,
+  IsUUID,
+  IsBoolean,
+  IsNumber,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FoodDto {
@@ -85,6 +93,9 @@ export class CreatePrescriptionDto {
   @IsOptional()
   @IsUUID()
   vitalsId?: number;
+
+  @IsBoolean()
+  is_gemini_data: boolean;
 }
 
 export class MedicationDto {

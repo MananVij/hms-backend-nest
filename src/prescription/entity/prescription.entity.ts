@@ -70,6 +70,9 @@ export class Prescription {
   @JoinColumn({ name: 'vitals_id' })
   vitals?: Vitals;
 
+  @Column({ type: 'boolean', default: true })
+  is_gemini_data: boolean;
+
   @CreateDateColumn()
   created_at: Date; // Timestamp for when the object is created
 }

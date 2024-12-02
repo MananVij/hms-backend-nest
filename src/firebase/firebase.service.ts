@@ -7,16 +7,19 @@ export class FirebaseService {
   private bucket: admin.storage.Storage;
 
   constructor() {
-    const serviceFilePAth = path.join(
-      process.cwd(),
-      'src',
-      'serviceAccountKey.json',
-    );
-    const serviceAccountPath = path.resolve(serviceFilePAth);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountPath),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    });
+    if (!admin.apps.length) {
+      const serviceFilePath = path.join(
+        process.cwd(),
+        'src',
+        'serviceAccountKey.json',
+      );
+      const serviceAccountPath = path.resolve(serviceFilePath);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccountPath),
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      });
+    }
+
     this.bucket = admin.storage();
   }
 
@@ -41,24 +44,42 @@ export class FirebaseService {
     return { pdfUrl, audioUrl };
   }
 
-  private async uploadSingleFile(
+  async uploadSingleFile(
     file: Express.Multer.File,
-    folderPath: string,
+    filePath: string,
   ): Promise<string> {
-    const fileName = `${Date.now()}_${file.originalname}`;
-    const filePath = `${folderPath}/${fileName}`;
     const fileUpload = this.bucket.bucket().file(filePath);
 
     return new Promise<string>((resolve, reject) => {
       const stream = fileUpload.createWriteStream({
         metadata: { contentType: file.mimetype },
       });
-      stream.on('error', reject);
+      stream.on('error', (error) => {
+        console.error('Error uploading file:', error.message);
+        reject(new Error('Failed to upload file to Firebase Storage'));
+      });
+      
       stream.on('finish', async () => {
-        await fileUpload.makePublic();
-        resolve(
-          `https://storage.googleapis.com/${fileUpload.bucket.name}/${filePath}`,
-        );
+        try {
+          await fileUpload.makePublic();
+          const publicUrl = `https://storage.googleapis.com/${fileUpload.bucket.name}/${filePath}`;
+          resolve(publicUrl);
+        } catch (error) {
+          console.error('Error making file public:', error.message);
+  
+          // Generate a signed URL as a fallback
+          try {
+            const [signedUrl] = await fileUpload.getSignedUrl({
+              action: 'read',
+              expires: '03-01-2500', // Adjust as needed
+            });
+            console.log('File uploaded successfully. Signed URL:', signedUrl);
+            resolve(signedUrl);
+          } catch (signedError) {
+            console.error('Error generating signed URL:', signedError.message);
+            reject(new Error('Failed to make file public or generate signed URL'));
+          }
+        }
       });
       stream.end(file.buffer);
     });

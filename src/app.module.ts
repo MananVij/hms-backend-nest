@@ -56,6 +56,9 @@ import { PatientModule } from './patient/patient.module';
       database: 'postgres',
       synchronize: true,
       logging: true,
+      extra: {
+        options: '-c timezone=Asia/Kolkata', // Set your desired timezone
+      },
     }),
     UserModule,
     DoctorModule,

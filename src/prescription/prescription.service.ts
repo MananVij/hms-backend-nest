@@ -5,7 +5,6 @@ import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { User } from 'src/user/entity/user.enitiy';
 import { Vitals } from 'src/vitals/entity/vitals.entity';
-import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Injectable()
 export class PrescriptionService {

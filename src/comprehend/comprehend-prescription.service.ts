@@ -1,18 +1,27 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { FirebaseService } from 'src/firebase/firebase.service';
+import { PrescriptionService } from 'src/prescription/prescription.service';
 
 @Injectable()
 export class ComprehendPrescriptionService {
   private genAI: GoogleGenerativeAI;
   private prompt: string;
 
-  constructor() {
+  constructor(
+    private readonly firebaseService: FirebaseService,
+    private readonly prescriptionService: PrescriptionService,
+  ) {
     const apiKey = process.env.GEMINI_GEN_AI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
     this.prompt = process.env.GEMINI_PROMPT;
   }
 
-  async comprehendPrescription(file: Express.Multer.File): Promise<any> {
+  async comprehendPrescription(
+    file: Express.Multer.File,
+    doctor: string,
+    patient: string,
+  ): Promise<any> {
     try {
       // Convert file buffer to base64
       const base64AudioFile = file.buffer.toString('base64');
@@ -34,15 +43,26 @@ export class ComprehendPrescriptionService {
           text: this.prompt,
         },
       ]);
-      console.log(result.response.text())
+      console.log(result.response.text());
       const response = await result.response.text();
-      const jsonString = response.replace(/```/g, '').replace('json', '').trim();
+      const jsonString = response
+        .replace(/```/g, '')
+        .replace('json', '')
+        .trim();
       const parsedJson = JSON.parse(jsonString);
+
+      const fileName = `${Date.now()}_${file.originalname}`;
+      const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
+      const audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
+      const presDbData = { ...parsedJson, audio_url, doctor, patient };
+      await this.prescriptionService.create(presDbData);
 
       return parsedJson;
     } catch (error) {
       console.error(error);
-      throw new InternalServerErrorException('Failed to comprehend prescription');
+      throw new InternalServerErrorException(
+        'Failed to comprehend prescription',
+      );
     }
   }
 }
