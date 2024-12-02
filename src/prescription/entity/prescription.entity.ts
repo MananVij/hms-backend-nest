@@ -39,7 +39,10 @@ export class Prescription {
   test_results?: string[];
 
   @Column({ nullable: true })
-  notes?: string;
+  medical_notes?: string;
+
+  @Column({ nullable: true })
+  history?: string;
 
   @Column('jsonb', { nullable: true })
   medication?: {
@@ -63,7 +66,7 @@ export class Prescription {
     };
   }[];
 
-  @OneToOne(() => Vitals, (vitals) => vitals.prescription, { nullable: true })
+  @ManyToOne(() => Vitals, (vitals) => vitals.prescription, { nullable: true })
   @JoinColumn({ name: 'vitals_id' })
   vitals?: Vitals;
 

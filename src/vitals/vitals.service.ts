@@ -37,7 +37,10 @@ export class VitalsService {
     });
   }
 
-  async updateVitals(id: number, updateVitalsDto: Partial<CreateVitalsDto>): Promise<Vitals> {
+  async updateVitals(
+id: number,
+updateVitalsDto: Partial<CreateVitalsDto>,
+): Promise<Vitals> {
     await this.vitalsRepository.update(id, updateVitalsDto);
     return this.vitalsRepository.findOne({ where: { id } });
   }

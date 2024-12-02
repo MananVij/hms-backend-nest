@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
@@ -7,7 +7,7 @@ export class Vitals {
   @PrimaryGeneratedColumn('uuid')
   id: number;
 
-  @OneToOne(() => Prescription, (prescription) => prescription.vitals, { nullable: false })
+  @OneToMany(() => Prescription, (prescription) => prescription.vitals, { nullable: false })
   prescription: Prescription; // Reference to the Prescription
 
   @Column('jsonb', { nullable: true })

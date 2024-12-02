@@ -74,6 +74,10 @@ export class CreatePrescriptionDto {
   medical_notes?: string;
 
   @IsOptional()
+  @IsString()
+  history?: string;
+
+  @IsOptional()
   // @ValidateNested({ each: true })
   @Type(() => MedicationDto)
   medication?: MedicationDto[];

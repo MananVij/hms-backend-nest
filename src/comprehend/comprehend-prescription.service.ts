@@ -1,6 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import * as fs from 'fs';
 
 @Injectable()
 export class ComprehendPrescriptionService {

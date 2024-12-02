@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { User } from 'src/user/entity/user.enitiy';
@@ -37,11 +37,12 @@ export class PrescriptionService {
     }
 
     // Find the vitals if provided
-    let vitals = null;
-    if (vitalsId) {
-      vitals = await this.vitalsRepository.findOne({ where: { id: vitalsId } });
-      if (!vitals) throw new NotFoundException('Vitals not found');
-    }
+    const date = new Date(); // Current time
+    const oneHourAgo = new Date(date.getTime() - 1 * 60 * 60 * 1000); // One hour ago
+
+    const vitals = await this.vitalsRepository.findOne({
+      where: { createdAt: Between(oneHourAgo, date) },
+    });
 
     // Create a new prescription entity
     const prescription = this.prescriptionRepository.create({
@@ -50,9 +51,8 @@ export class PrescriptionService {
       patient,
       vitals,
     });
-
     await this.prescriptionRepository.save(prescription);
-    return prescriptionData;
+    return prescription;
   }
 
   // Find all prescriptions for a specific doctor
