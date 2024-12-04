@@ -24,24 +24,28 @@ export class FirebaseService {
   }
 
   async uploadFiles(
-    uid: string,
-    time: string,
     files: Express.Multer.File[],
-  ): Promise<{ pdfUrl: string; audioUrl: string }> {
-    const folderPath = `prescription_data/${uid}/${time}`;
+    doctor: string,
+    patient: string,
+  ): Promise<{ pres_url: string; audio_url: string }> {
+    const folderPath = `prescription_data/${doctor}/${patient}`;
     const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
     const audioFile = files.find(
       (file) =>
         file.mimetype.startsWith('audio/') || file.mimetype === 'video/mp4',
     );
-
-    if (!pdfFile || !audioFile)
+    if (!pdfFile && !audioFile)
       throw new Error('PDF and audio files are required');
 
-    const pdfUrl = await this.uploadSingleFile(pdfFile, folderPath);
-    const audioUrl = await this.uploadSingleFile(audioFile, folderPath);
-
-    return { pdfUrl, audioUrl };
+    let audio_url = ""
+    let pres_url = ""
+    if(audioFile) {
+      audio_url = await this.uploadSingleFile(audioFile, `${folderPath}/${audioFile.originalname}`);
+    }
+    if(pdfFile) {
+      pres_url = await this.uploadSingleFile(pdfFile, `${folderPath}/${pdfFile.originalname}`);
+    }
+    return { pres_url, audio_url};
   }
 
   async uploadSingleFile(

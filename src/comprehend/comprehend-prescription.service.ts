@@ -44,7 +44,7 @@ export class ComprehendPrescriptionService {
         },
       ]);
       console.log(result.response.text());
-      const response = await result.response.text();
+      const response = result.response.text();
       const jsonString = response
         .replace(/```/g, '')
         .replace('json', '')
@@ -54,7 +54,7 @@ export class ComprehendPrescriptionService {
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
       const audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
-      const presDbData = { ...parsedJson, audio_url, doctor, patient };
+      const presDbData = { ...parsedJson, audio_url, doctor, patient, is_gemini_data: true };
       await this.prescriptionService.create(presDbData);
 
       return parsedJson;

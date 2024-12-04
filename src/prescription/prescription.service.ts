@@ -20,7 +20,8 @@ export class PrescriptionService {
   ) {}
 
   async create(createPrescriptionDto: CreatePrescriptionDto): Promise<any> {
-    const { doctorId, patientId, vitalsId, ...prescriptionData } =
+    try {
+      const { doctorId, patientId, vitalsId, ...prescriptionData } =
       createPrescriptionDto;
 
     // Find and validate the doctor and patient
@@ -52,6 +53,10 @@ export class PrescriptionService {
     });
     await this.prescriptionRepository.save(prescription);
     return prescription;
+    } catch (error) {
+      console.log(error)
+    }
+    
   }
 
   // Find all prescriptions for a specific doctor

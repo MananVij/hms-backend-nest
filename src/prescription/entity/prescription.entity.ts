@@ -23,7 +23,7 @@ export class Prescription {
   @ManyToOne(() => User, { nullable: false })
   patient: User; // Reference to Patient's User ID
 
-  @Column()
+  @Column({nullable: true})
   diagnosis: string;
 
   @Column({ nullable: true })

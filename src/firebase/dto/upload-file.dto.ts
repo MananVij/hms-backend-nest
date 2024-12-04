@@ -4,11 +4,11 @@ import { Type } from 'class-transformer';
 export class UploadFileDto {
   @IsString()
   @IsNotEmpty()
-  uid: string;
+  doctor: string;
 
   @IsString()
   @IsNotEmpty()
-  time: string;
+  patient: string;
 
   @IsArray()
   @ArrayNotEmpty()
