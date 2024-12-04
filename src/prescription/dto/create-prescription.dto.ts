@@ -96,6 +96,12 @@ export class CreatePrescriptionDto {
 
   @IsBoolean()
   is_gemini_data: boolean;
+
+  @IsBoolean()
+  is_edited: boolean;
+
+  @IsBoolean()
+  is_final_prescription: boolean;
 }
 
 export class MedicationDto {

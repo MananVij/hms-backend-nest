@@ -23,7 +23,7 @@ export class Prescription {
   @ManyToOne(() => User, { nullable: false })
   patient: User; // Reference to Patient's User ID
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   diagnosis: string;
 
   @Column({ nullable: true })
@@ -72,6 +72,12 @@ export class Prescription {
 
   @Column({ type: 'boolean', default: true })
   is_gemini_data: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_edited: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_final_prescription: boolean;
 
   @CreateDateColumn()
   created_at: Date; // Timestamp for when the object is created
