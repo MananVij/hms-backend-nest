@@ -77,7 +77,7 @@ export class PrescriptionService {
   // Find all prescriptions for a specific patient
   async findPrescriptionsOfPatient(patientId: string): Promise<Prescription[]> {
     const prescriptions = await this.prescriptionRepository.find({
-      where: { patient: { uid: patientId } },
+      where: { patient: { uid: patientId }, is_gemini_data: false },
       relations: ['vitals'],
     });
 
