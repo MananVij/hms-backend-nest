@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrescriptionService } from 'src/prescription/prescription.service';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class ComprehendPrescriptionService {
@@ -11,6 +12,7 @@ export class ComprehendPrescriptionService {
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly prescriptionService: PrescriptionService,
+    private readonly errorLogService: ErrorLogService,
   ) {
     const apiKey = process.env.GEMINI_GEN_AI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -22,7 +24,13 @@ export class ComprehendPrescriptionService {
     doctor: string,
     patient: string,
   ): Promise<any> {
+    let audio_url: string | null = null;
     try {
+      // uploading the audio first
+      const fileName = `${Date.now()}_${file.originalname}`;
+      const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
+      const audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
+
       // Convert file buffer to base64
       const base64AudioFile = file.buffer.toString('base64');
       // Set up model configuration
@@ -43,7 +51,7 @@ export class ComprehendPrescriptionService {
           text: this.prompt,
         },
       ]);
-      console.log(result.response.text());
+      // console.log(result.response.text());
       const response = result.response.text();
       const jsonString = response
         .replace(/```/g, '')
@@ -51,15 +59,18 @@ export class ComprehendPrescriptionService {
         .trim();
       const parsedJson = JSON.parse(jsonString);
 
-      const fileName = `${Date.now()}_${file.originalname}`;
-      const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
-      const audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
       const presDbData = { ...parsedJson, audio_url, doctor, patient, is_gemini_data: true };
       await this.prescriptionService.create(presDbData);
 
       return parsedJson;
     } catch (error) {
-      console.error(error);
+      await this.errorLogService.logError(
+        error.message,
+        error.stack || '',
+        audio_url,
+        doctor,
+        patient,
+      );
       throw new InternalServerErrorException(
         'Failed to comprehend prescription',
       );

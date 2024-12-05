@@ -29,6 +29,8 @@ import { ComprehendPrescriptionModule } from './comprehend/comprehend-prescripti
 import { DoctorPatient } from './doctor_patient/entity/doctor_patient.entity';
 import { DoctorPatientModule } from './doctor_patient/doctor_patient.module';
 import { PatientModule } from './patient/patient.module';
+import { ErrorLog } from './errorlog/error-log.entity';
+import { ErrorLogModule } from './errorlog/error-log.module';
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { PatientModule } from './patient/patient.module';
         Contact,
         DoctorClinic,
         DoctorPatient,
+        ErrorLog
       ], // here we have added user enitity in entities array
       // entities: [__dirname + '/**/*.entity{.ts,.js}'],
       database: 'postgres',
@@ -76,6 +79,7 @@ import { PatientModule } from './patient/patient.module';
     FirebaseModule,
     DoctorPatientModule,
     PatientModule,
+    ErrorLogModule
   ],
   controllers: [AppController],
   providers: [AppService],
