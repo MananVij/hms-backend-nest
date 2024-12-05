@@ -47,13 +47,18 @@ export class UserService {
     return await bcrypt.hash(password, salt); // Hash the password
   }
 
-  async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.userRepository.findOne({where: {email}})
-    if(user && await bcrypt.compare(password, user.password)) {
-      const { password, ...result } = user;
-      return result as User;
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: ['contact', 'doctor'],
+    });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password, contact, doctor, ...result } = user;
+      const phone_number = user.contact?.phone_number;
+      const qualification = user.doctor?.qualification;
+      return { phone_number, qualification, ...result };
     }
-    return null
+    return null;
   }
 
   findAllUser(): Promise<User[]> {
@@ -61,7 +66,10 @@ export class UserService {
   }
 
   findOne(id: string): Promise<User> {
-    return this.userRepository.findOneBy({ uid: id });
+    return this.userRepository.findOne({
+      where: { uid: id },
+      relations: ['metaData', 'contact'],
+    });
   }
 
   async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<User> {

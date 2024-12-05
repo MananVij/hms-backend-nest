@@ -1,4 +1,3 @@
-import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { User } from 'src/user/entity/user.enitiy';
