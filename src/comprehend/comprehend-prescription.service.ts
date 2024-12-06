@@ -29,7 +29,7 @@ export class ComprehendPrescriptionService {
       // uploading the audio first
       const fileName = `${Date.now()}_${file.originalname}`;
       const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
-      const audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
+      audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
 
       // Convert file buffer to base64
       const base64AudioFile = file.buffer.toString('base64');
