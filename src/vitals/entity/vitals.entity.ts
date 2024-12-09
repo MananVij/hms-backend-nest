@@ -28,7 +28,7 @@ export class Vitals {
   @Column({ type: 'float', nullable: true })
   oxy?: number;
 
-  @ManyToOne(() => User, {nullable: false})
+  @ManyToOne(() => User, {nullable: false, onDelete: 'CASCADE'})
   user: User;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

@@ -7,6 +7,11 @@ import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
+import { ContactService } from 'src/contact/contact.service';
+import { CreateContactDto } from 'src/contact/dto/create-contact.dto';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
+import { MetaDataService } from 'src/metadata/meta-data.service';
 
 @Injectable()
 export class PatientService {
@@ -17,8 +22,15 @@ export class PatientService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
 
+    private readonly contactService: ContactService,
+
+    private readonly metaDataService: MetaDataService,
+
     @InjectRepository(DoctorPatient)
     private readonly doctorPatientRepository: Repository<DoctorPatient>,
+
+    @InjectRepository(Doctor)
+    private readonly doctorRepository: Repository<Doctor>,
 
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
@@ -29,20 +41,33 @@ export class PatientService {
 
   async addNewPatientByDoctor(
     createPatientDto: CreateUserDto,
+    createContactDto: CreateContactDto,
+    createMetaDataDto: CreateMetaDataDto,
     doctorId: string,
-  ): Promise<User> {
-    const newPatient = await this.userRepository.create({
+  ): Promise<any> {
+    const newPatient = this.userRepository.create({
       role: [UserRole.PATIENT],
       ...createPatientDto,
     });
-    this.userRepository.save(newPatient);
-    const doctorPatient = await this.doctorPatientRepository.create({
-      doctor: { user: { uid: doctorId } },
-      patient: { uid: newPatient.uid },
+    const patient = await this.userRepository.save(newPatient);
+    await this.metaDataService.create({
+      ...createMetaDataDto,
+      uid: patient.uid,
     });
-    this.doctorPatientRepository.save(doctorPatient);
 
-    return newPatient;
+    const doctor = await this.doctorRepository.findOne({
+      where: { user: { uid: doctorId } },
+    });
+    if (!doctor) {
+      throw new Error('Doctor not found');
+    }
+    const doctorPatient = this.doctorPatientRepository.create({
+      doctor,
+      patient,
+    });
+    await this.doctorPatientRepository.save(doctorPatient);
+    await this.contactService.create({ ...createContactDto, uid: patient.uid });
+    return { id: patient.uid };
   }
 
   async findAllPatientsOfDoctor(id: string): Promise<User[]> {

@@ -33,8 +33,7 @@ export class MetaDataService {
     });
 
     const savedMetaData = await this.metaDataRepository.save(metaData);
-    user.metaData = savedMetaData;
-    await this.userRepository.save(user);
+    await this.userRepository.update(user.uid, { metaData: savedMetaData });;
     return savedMetaData;
   }
 

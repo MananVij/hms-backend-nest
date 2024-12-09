@@ -8,13 +8,17 @@ import { User } from 'src/user/entity/user.enitiy';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
+import { ContactService } from 'src/contact/contact.service';
+import { Contact } from 'src/contact/entity/contact.entity';
+import { MetaData } from 'src/metadata/entity/metadata.entity';
+import { MetaDataService } from 'src/metadata/meta-data.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DoctorClinic, DoctorPatient, User, Doctor, Appointment, Prescription]),
+    TypeOrmModule.forFeature([DoctorClinic, DoctorPatient, User, Doctor, Appointment, Prescription, Contact, MetaData]),
   ],
   controllers: [PatientController],
-  providers: [PatientService],
+  providers: [PatientService, ContactService, MetaDataService],
   exports: [PatientService],
 })
 export class PatientModule {}

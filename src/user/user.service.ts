@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserRole } from './entity/user.enitiy';
+import { User } from './entity/user.enitiy';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -31,7 +31,7 @@ export class UserService {
       user.role = createUserDto.role;
       user.password = await this.hashPassword(createUserDto.password);
 
-      return this.userRepository.save(user);
+      return await this.userRepository.save(user);
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
@@ -78,9 +78,5 @@ export class UserService {
     user.is_verified = updateUserDto.is_verified;
     user.password = await this.hashPassword(updateUserDto.password);
     return this.userRepository.save(user);
-  }
-
-  removeUser(id: number): Promise<{ affected?: number }> {
-    return this.userRepository.delete(id);
   }
 }

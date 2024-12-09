@@ -28,11 +28,11 @@ export class  User {
   @Column({ length: 100 })
   name: string;
 
-  @Column({ unique: true, nullable: false })
-  email: string;
+  @Column({ unique: true, nullable: true })
+  email: string | null;
 
-  @Column()
-  password: string;
+  @Column({nullable: true})
+  password: string | null;
 
   @Column({ default: false })
   is_verified: boolean;
@@ -40,7 +40,7 @@ export class  User {
   @OneToMany(() => Contact, (contact) => contact.user) // One user can have many contacts
   contacts: Contact[];
 
-  @OneToOne(() => MetaData, (metaData) => metaData.user)
+  @OneToOne(() => MetaData, (metaData) => metaData.user, {cascade: true, onDelete: 'CASCADE'})
   @JoinColumn({name: "metaData"})
   metaData: MetaData; // Inverse side does not store the foreign key
 

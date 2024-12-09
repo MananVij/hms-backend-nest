@@ -11,19 +11,24 @@ import { PatientService } from './patient.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { User } from 'src/user/entity/user.enitiy';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'; // Import your JWT Auth guard if applicable
+import { CreateContactDto } from 'src/contact/dto/create-contact.dto';
+import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 
 @Controller('patients')
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
-  @Post(':doctorId')
+  @Post('/add/:doctorId')
   @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async addNewPatient(
     @Param('doctorId') doctorId: string,
-    @Body() createPatientDto: CreateUserDto,
-  ): Promise<User> {
-    return this.patientService.addNewPatientByDoctor(
-      createPatientDto,
+    @Body() patientData: { patient: CreateUserDto; contact: CreateContactDto, metaData: CreateMetaDataDto },
+  ): Promise<any> {
+    const { patient, contact, metaData } = patientData;
+    return await this.patientService.addNewPatientByDoctor(
+      patient,
+      contact,
+      metaData,
       doctorId,
     );
   }

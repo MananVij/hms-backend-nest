@@ -28,11 +28,8 @@ export class MetaData {
   @Column({ type: 'varchar', length: 10 })
   height: string;
 
-  @Column({ type: 'varchar', length: 10 })
-  weight: string;
-
   // Foreign key to the User table
-  @OneToOne(() => User, (user) => user.metaData)
+  @OneToOne(() => User, (user) => user.metaData, {onDelete: 'CASCADE'})
   @JoinColumn({ name: 'uid' }) // JoinColumn indicates the owning side
   user: User;
 }
