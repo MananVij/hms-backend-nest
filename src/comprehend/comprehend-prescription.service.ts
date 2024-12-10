@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrescriptionService } from 'src/prescription/prescription.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { PrescriptionValidator } from 'src/validation/validation-util';
 
 @Injectable()
 export class ComprehendPrescriptionService {
@@ -51,18 +52,18 @@ export class ComprehendPrescriptionService {
           text: this.prompt,
         },
       ]);
-      // console.log(result.response.text());
       const response = result.response.text();
       const jsonString = response
         .replace(/```/g, '')
         .replace('json', '')
         .trim();
       const parsedJson = JSON.parse(jsonString);
+      const validatedData = PrescriptionValidator.validatePrescriptionData(parsedJson);
 
       const presDbData = { ...parsedJson, audio_url, doctor, patient, is_gemini_data: true };
       await this.prescriptionService.create(presDbData);
 
-      return parsedJson;
+      return validatedData;
     } catch (error) {
       await this.errorLogService.logError(
         error.message,
