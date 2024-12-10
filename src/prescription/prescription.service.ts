@@ -76,17 +76,20 @@ export class PrescriptionService {
 
   // Find all prescriptions for a specific patient
   async findPrescriptionsOfPatient(patientId: string): Promise<Prescription[]> {
-    const prescriptions = await this.prescriptionRepository.find({
-      where: { patient: { uid: patientId }, is_gemini_data: false },
-      relations: ['vitals'],
-    });
-
-    if (!prescriptions.length) {
-      throw new NotFoundException(
-        `No prescriptions found for Patient with ID ${patientId}`,
-      );
+    try {
+      const prescriptions = await this.prescriptionRepository.find({
+        where: { patient: { uid: patientId }, is_gemini_data: false },
+        relations: ['vitals'],
+      });
+      if(!prescriptions.length) {
+        return []
+      }
+      return prescriptions;
+      
+    } catch (error) {
+      console.log(error)
+      throw new Error("Something Went Wrong")
     }
-    return prescriptions;
   }
 
   // Find perticular prescription with prescription id
