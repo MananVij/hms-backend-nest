@@ -122,7 +122,6 @@ export class AppointmentService {
   }
 
   async findOne(id: number): Promise<Appointment> {
-    console.log('object');
     const appointment = await this.appointmentRepository.findOne({
       where: { id },
       relations: ['doctorId', 'clinic', 'patientId', 'prescription'],

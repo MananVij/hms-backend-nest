@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as path from 'path';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class FirebaseService {
   private bucket: admin.storage.Storage;
 
-  constructor() {
+  constructor(private readonly errorLogService: ErrorLogService) {
     if (!admin.apps.length) {
       const serviceFilePath = path.join(
         process.cwd(),
@@ -37,15 +38,21 @@ export class FirebaseService {
     if (!pdfFile && !audioFile)
       throw new Error('PDF and audio files are required');
 
-    let audio_url = ""
-    let pres_url = ""
-    if(audioFile) {
-      audio_url = await this.uploadSingleFile(audioFile, `${folderPath}/${audioFile.originalname}`);
+    let audio_url = '';
+    let pres_url = '';
+    if (audioFile) {
+      audio_url = await this.uploadSingleFile(
+        audioFile,
+        `${folderPath}/${audioFile.originalname}`,
+      );
     }
-    if(pdfFile) {
-      pres_url = await this.uploadSingleFile(pdfFile, `${folderPath}/${pdfFile.originalname}`);
+    if (pdfFile) {
+      pres_url = await this.uploadSingleFile(
+        pdfFile,
+        `${folderPath}/${pdfFile.originalname}`,
+      );
     }
-    return { pres_url, audio_url};
+    return { pres_url, audio_url };
   }
 
   async uploadSingleFile(
@@ -58,30 +65,49 @@ export class FirebaseService {
       const stream = fileUpload.createWriteStream({
         metadata: { contentType: file.mimetype },
       });
-      stream.on('error', (error) => {
-        console.error('Error uploading file:', error.message);
+      stream.on('error', async (error) => {
+        await this.errorLogService.logError(
+          `Error in uploading file: ${error.message}`,
+          error.stack,
+          null,
+          null,
+          null,
+        );
         reject(new Error('Failed to upload file to Firebase Storage'));
       });
-      
+
       stream.on('finish', async () => {
         try {
           await fileUpload.makePublic();
           const publicUrl = `https://storage.googleapis.com/${fileUpload.bucket.name}/${filePath}`;
           resolve(publicUrl);
         } catch (error) {
-          console.error('Error making file public:', error.message);
-  
+          await this.errorLogService.logError(
+            `Error in making file public: ${error.message}`,
+            error.stack,
+            null,
+            null,
+            null,
+          );
+
           // Generate a signed URL as a fallback
           try {
             const [signedUrl] = await fileUpload.getSignedUrl({
               action: 'read',
               expires: '03-01-2500', // Adjust as needed
             });
-            console.log('File uploaded successfully. Signed URL:', signedUrl);
             resolve(signedUrl);
           } catch (signedError) {
-            console.error('Error generating signed URL:', signedError.message);
-            reject(new Error('Failed to make file public or generate signed URL'));
+            await this.errorLogService.logError(
+              `Error in generating signed URL: ${signedError.message}`,
+              signedError.stack,
+              null,
+              null,
+              null,
+            );
+            reject(
+              new Error('Failed to make file public or generate signed URL'),
+            );
           }
         }
       });

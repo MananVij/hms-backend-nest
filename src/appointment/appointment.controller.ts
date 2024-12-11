@@ -40,7 +40,6 @@ export class AppointmentController {
   async todayAppointmentDoctor(
     @Query(':id') id: string,
   ): Promise<Appointment[]> {
-    console.log("object")
     return this.appointmentService.getTodayAppointmentsForDoctor(id)
   }
 }

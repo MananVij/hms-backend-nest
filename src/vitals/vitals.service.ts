@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Vitals } from './entity/vitals.entity';
 import { CreateVitalsDto } from './dto/create-vitals.dto';
 import { User } from 'src/user/entity/user.enitiy';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class VitalsService {
@@ -13,22 +14,36 @@ export class VitalsService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly errorLogRepository: ErrorLogService,
   ) {}
 
   async createVitals(createVitalsDto: CreateVitalsDto): Promise<Vitals> {
-    const { userId, ...vitalsData } = createVitalsDto;
+    try {
+      const { userId, ...vitalsData } = createVitalsDto;
 
-    // Fetch associated User
-    const user = await this.userRepository.findOne({ where: { uid: userId } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+      // Fetch associated User
+      const user = await this.userRepository.findOne({
+        where: { uid: userId },
+      });
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+      const vitals = this.vitalsRepository.create({
+        ...vitalsData,
+        user,
+      });
+
+      return this.vitalsRepository.save(vitals);
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in creating vitals: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        createVitalsDto?.userId,
+      );
     }
-    const vitals = this.vitalsRepository.create({
-      ...vitalsData,
-      user,
-    });
-
-    return this.vitalsRepository.save(vitals);
   }
 
   async getVitalsByPrescription(prescriptionId: number): Promise<Vitals[]> {
@@ -38,17 +53,37 @@ export class VitalsService {
   }
 
   async updateVitals(
-id: number,
-updateVitalsDto: Partial<CreateVitalsDto>,
-): Promise<Vitals> {
-    await this.vitalsRepository.update(id, updateVitalsDto);
-    return this.vitalsRepository.findOne({ where: { id } });
+    id: number,
+    updateVitalsDto: Partial<CreateVitalsDto>,
+  ): Promise<Vitals> {
+    try {
+      await this.vitalsRepository.update(id, updateVitalsDto);
+      return this.vitalsRepository.findOne({ where: { id } });
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in updating vitals: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        null,
+      );
+    }
   }
 
   async getLatestVitalsByUser(userId: string): Promise<Vitals> {
-    return this.vitalsRepository.findOne({
-      where: { user: { uid: userId } },
-      order: { createdAt: 'DESC' }, // Fetch the most recent vitals entry
-    });
+    try {
+      return this.vitalsRepository.findOne({
+        where: { user: { uid: userId } },
+        order: { createdAt: 'DESC' }, // Fetch the most recent vitals entry
+      });
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in fetching latest vitals: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        null,
+      );
+    }
   }
 }

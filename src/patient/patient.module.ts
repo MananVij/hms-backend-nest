@@ -12,10 +12,21 @@ import { ContactService } from 'src/contact/contact.service';
 import { Contact } from 'src/contact/entity/contact.entity';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { MetaDataService } from 'src/metadata/meta-data.service';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DoctorClinic, DoctorPatient, User, Doctor, Appointment, Prescription, Contact, MetaData]),
+    TypeOrmModule.forFeature([
+      DoctorClinic,
+      DoctorPatient,
+      User,
+      Doctor,
+      Appointment,
+      Prescription,
+      Contact,
+      MetaData,
+    ]),
+    ErrorLogModule
   ],
   controllers: [PatientController],
   providers: [PatientService, ContactService, MetaDataService],

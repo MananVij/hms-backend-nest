@@ -6,9 +6,10 @@ import { UserModule } from 'src/user/user.module';
 import { MetaData } from './entity/metadata.entity';
 import { MetaDataController } from './meta-data.controller';
 import { MetaDataService } from './meta-data.service';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MetaData, User]), UserModule],
+  imports: [TypeOrmModule.forFeature([MetaData, User]), UserModule, ErrorLogModule],
   controllers: [MetaDataController],
   providers: [MetaDataService],
   exports: [MetaDataService],

@@ -5,6 +5,7 @@ import { MetaData } from './entity/metadata.entity';
 import { CreateMetaDataDto } from './dto/create-meta-data.dto';
 import { UpdateMetaDataDto } from './dto/update-meta-data.dto';
 import { User } from 'src/user/entity/user.enitiy';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class MetaDataService {
@@ -14,27 +15,40 @@ export class MetaDataService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
+
+    private readonly errorLogRepository: ErrorLogService,
   ) {}
 
   // Create new meta-data entry
   async create(createMetaDataDto: CreateMetaDataDto): Promise<MetaData> {
-    const { uid } = createMetaDataDto;
+    try {
+      const { uid } = createMetaDataDto;
 
-    // Find the user by uid to link with meta-data
-    const user = await this.userRepository.findOne({ where: { uid } });
+      // Find the user by uid to link with meta-data
+      const user = await this.userRepository.findOne({ where: { uid } });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const metaData = this.metaDataRepository.create({
+        ...createMetaDataDto,
+        user, // linking the meta-data to the user
+      });
+
+      const savedMetaData = await this.metaDataRepository.save(metaData);
+      await this.userRepository.update(user.uid, { metaData: savedMetaData });
+      return savedMetaData;
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in creating metadata: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        createMetaDataDto?.uid,
+      );
+      throw Error('Something Went Wrong');
     }
-
-    const metaData = this.metaDataRepository.create({
-      ...createMetaDataDto,
-      user, // linking the meta-data to the user
-    });
-
-    const savedMetaData = await this.metaDataRepository.save(metaData);
-    await this.userRepository.update(user.uid, { metaData: savedMetaData });;
-    return savedMetaData;
   }
 
   // Update an existing meta-data entry
@@ -42,29 +56,50 @@ export class MetaDataService {
     id: string,
     updateMetaDataDto: UpdateMetaDataDto,
   ): Promise<MetaData> {
-    const metaData = await this.metaDataRepository.findOne({
-      where: { user: { uid: id } },
-    });
-    if (!metaData) {
-      throw new NotFoundException('Meta-data not found');
+    try {
+      const metaData = await this.metaDataRepository.findOne({
+        where: { user: { uid: id } },
+      });
+      if (!metaData) {
+        return null;
+      }
+      Object.assign(metaData, updateMetaDataDto);
+
+      return this.metaDataRepository.save(metaData);
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in updating metadata: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        id,
+      );
+      throw Error('Something Went Wrong');
     }
-
-    Object.assign(metaData, updateMetaDataDto); // Merge update DTO fields into the meta-data entity
-
-    return this.metaDataRepository.save(metaData);
   }
 
   // Retrieve a specific meta-data entry by ID
   async find(id: string): Promise<any> {
-    const metaData = await this.metaDataRepository.findOne({
-      where: { user: { uid: id } },
-      relations: ['user'],
-    });
-    if (!metaData) {
-      throw new NotFoundException('Meta-data not found');
+    try {
+      const metaData = await this.metaDataRepository.findOne({
+        where: { user: { uid: id } },
+        relations: ['user'],
+      });
+      if (!metaData) {
+        return null;
+      }
+      const { user, ...metaDataWihoutUser } = metaData;
+      return { ...metaDataWihoutUser, name: metaData.user.name };
+    } catch (error) {
+      await this.errorLogRepository.logError(
+        `Error in updating metadata: ${error.message}`,
+        error.stack,
+        null,
+        null,
+        id,
+      );
+      throw Error('Something Went Wrong');
     }
-    const { user, ...metaDataWihoutUser } = metaData;
-    return { ...metaDataWihoutUser, name: metaData.user.name };
   }
 
   // Delete a meta-data entry by ID
