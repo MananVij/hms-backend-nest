@@ -1,9 +1,11 @@
-import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { VitalsService } from './vitals.service';
 import { CreateVitalsDto } from './dto/create-vitals.dto';
 import { Vitals } from './entity/vitals.entity';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('vitals')
+@UseGuards(JwtAuthGuard)
 export class VitalsController {
   constructor(private readonly vitalsService: VitalsService) {}
 

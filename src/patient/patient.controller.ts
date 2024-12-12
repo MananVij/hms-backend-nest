@@ -15,14 +15,19 @@ import { CreateContactDto } from 'src/contact/dto/create-contact.dto';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 
 @Controller('patients')
+@UseGuards(JwtAuthGuard)
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   @Post('/add/:doctorId')
-  @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async addNewPatient(
     @Param('doctorId') doctorId: string,
-    @Body() patientData: { patient: CreateUserDto; contact: CreateContactDto, metaData: CreateMetaDataDto },
+    @Body()
+    patientData: {
+      patient: CreateUserDto;
+      contact: CreateContactDto;
+      metaData: CreateMetaDataDto;
+    },
   ): Promise<any> {
     const { patient, contact, metaData } = patientData;
     return await this.patientService.addNewPatientByDoctor(
@@ -34,7 +39,6 @@ export class PatientController {
   }
 
   @Get('doctor/:id')
-  // @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async getAllPatientsOfDoctor(@Param('id') id: string): Promise<User[]> {
     const patients = await this.patientService.findAllPatientsOfDoctor(id);
     if (!patients.length) {
@@ -44,9 +48,9 @@ export class PatientController {
   }
 
   @Get('admin/:id')
-  // @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async getPatientsOfAdmin(@Param('id') id: string): Promise<User[]> {
     const patients = await this.patientService.findPatientsByClinic(2);
+    // change this
     // const patients = await this.patientService.findPatientsOfAdmin(id);
     if (!patients.length) {
       throw new NotFoundException('No patients found for this admin');
@@ -55,7 +59,6 @@ export class PatientController {
   }
 
   @Get('clinic/:clinicId')
-  @UseGuards(JwtAuthGuard) // Protect this route if necessary
   async getPatientsByClinic(
     @Param('clinicId') clinicId: number,
   ): Promise<User[]> {

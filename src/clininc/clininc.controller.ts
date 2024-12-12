@@ -6,13 +6,16 @@ import {
   Param,
   Put,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ClinicService } from './clinic.service';
 import { CreateClinicDto } from './dto/add-clinic.dto';
 import { Clinic } from './entity/clininc.entity';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-@Controller('clinics') // Changed to plural for RESTful design
+@Controller('clinics')
+@UseGuards(JwtAuthGuard)
 export class ClinicController {
   constructor(private readonly clinicService: ClinicService) {}
 

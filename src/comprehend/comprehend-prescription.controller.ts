@@ -5,11 +5,14 @@ import {
   UploadedFile,
   InternalServerErrorException,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { ComprehendPrescriptionService } from './comprehend-prescription.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('prescription')
+@UseGuards(JwtAuthGuard)
 export class ComprehendPrescriptionController {
   constructor(
     private readonly googleGenerativeAiService: ComprehendPrescriptionService,

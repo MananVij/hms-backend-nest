@@ -6,12 +6,15 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { MetaDataService } from './meta-data.service';
 import { CreateMetaDataDto } from './dto/create-meta-data.dto';
 import { UpdateMetaDataDto } from './dto/update-meta-data.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('meta-data')
+@UseGuards(JwtAuthGuard)
 export class MetaDataController {
   constructor(private readonly metaDataService: MetaDataService) {}
 

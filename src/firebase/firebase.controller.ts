@@ -5,13 +5,16 @@
   UploadedFiles,
   UseInterceptors,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { FirebaseService } from './firebase.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { validate } from 'class-validator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('media')
+@UseGuards(JwtAuthGuard)
 export class FirebaseController {
   constructor(private readonly firebaseService: FirebaseService) {}
 

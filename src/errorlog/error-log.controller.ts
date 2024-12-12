@@ -1,7 +1,9 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { ErrorLogService } from './error-log.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('error')
+@UseGuards(JwtAuthGuard)
 export class ErrorLogController {
   constructor(private readonly errorLogService: ErrorLogService) {}
 
