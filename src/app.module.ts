@@ -58,7 +58,7 @@ import { ErrorLogModule } from './errorlog/error-log.module';
       // entities: [__dirname + '/**/*.entity{.ts,.js}'],
       database: 'postgres',
       synchronize: true,
-      logging: true,
+      logging: ['error', 'query'],
       extra: {
         options: '-c timezone=Asia/Kolkata', // Set your desired timezone
       },

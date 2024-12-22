@@ -6,7 +6,7 @@ import { Appointment } from './entity/appointment.entity';
 import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { startOfDay, endOfDay } from 'date-fns';
+import { startOfDay, endOfDay, addDays, subDays } from 'date-fns';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 
@@ -78,19 +78,22 @@ export class AppointmentService {
     if (role === UserRole.DOCTOR) {
       return await this.appointmentRepository.find({
         where: { doctor: { uid: userId } },
+        relations: ['clinic', 'patient'],
+        order: {created_at: 'DESC'},
+        select: {
+          patient: {
+            uid: true,
+            name: true,
+          },
+        },
       });
     } else if (role === UserRole.PATIENT) {
-      const data = await this.appointmentRepository.find({
+      const appointments = await this.appointmentRepository.find({
         where: { patient: { uid: userId } },
         relations: ['doctor', 'clinic'],
+        order: {time: 'DESC'}
       });
-      const appointmentsWithDoctorName = data.map((appointment) => ({
-        ...appointment,
-        doctorName: appointment.doctor?.name, // Adding the doctor name to each appointment
-        doctorId: appointment.doctor?.uid,
-      }));
-
-      return appointmentsWithDoctorName;
+      return appointments;
     } else if (role === UserRole.ADMIN) {
       const clinics = await this.clinicRepository.find({
         where: { admin: { uid: userId } },
@@ -99,6 +102,23 @@ export class AppointmentService {
       const clinicIds = clinics.map((clinic) => clinic.id);
       const appointments = await this.appointmentRepository.find({
         where: { clinic: { id: In(clinicIds) } },
+        relations: ['clinic', 'patient', 'doctor'],
+        select: {
+          patient: {
+            uid: true,
+            name: true,
+            phoneNumber: true,
+            address: {
+              line1: true,
+              line2: true,
+              pincode: true,
+            },
+          },
+          doctor: {
+            name: true,
+            phoneNumber: true,
+          },
+        },
       });
       return appointments;
     }
@@ -113,11 +133,10 @@ export class AppointmentService {
     const appointments = await this.appointmentRepository.find({
       where: {
         doctor: { uid: doctorId }, // Replace 'uid' with your doctor's user ID field
-        startTime: Between(todayStart, todayEnd),
+        time: Between(todayStart, todayEnd),
       },
-      relations: ['clinic', 'patientId', 'prescription'], // Add relevant relations as needed
+      relations: ['clinic_id', 'patient', 'prescription'], // Add relevant relations as needed
     });
-
     return appointments;
   }
 

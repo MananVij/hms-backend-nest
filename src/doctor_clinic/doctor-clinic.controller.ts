@@ -9,7 +9,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class DoctorClinicController {
   constructor(private readonly doctorClinicService: DoctorClinicService) {}
 
-  @Post()
+  @Post('create')
   async create(@Body() createDoctorClinicDto: CreateDoctorClinicDto): Promise<DoctorClinic> {
     return this.doctorClinicService.create(createDoctorClinicDto);
   }

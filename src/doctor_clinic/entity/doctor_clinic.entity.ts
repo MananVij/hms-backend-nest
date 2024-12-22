@@ -1,5 +1,3 @@
-// src/doctor-clinic/entity/doctor-clinic.entity.ts
-
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Entity, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
@@ -14,4 +12,7 @@ export class DoctorClinic {
 
   @ManyToOne(() => Clinic, (clinic) => clinic.doctorClinics, { onDelete: 'CASCADE' })
   clinic: Clinic;
+
+  @CreateDateColumn()
+  created_at: Date;
 }

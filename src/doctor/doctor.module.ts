@@ -8,9 +8,11 @@ import { Doctor } from './entity/doctor.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
+import { DoctorClinicModule } from 'src/doctor_clinic/doctor_clinic.module';
+import { MetadataModule } from 'src/metadata/metadata.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Doctor, Clinic, User, DoctorPatient]), Doctor],
+  imports: [TypeOrmModule.forFeature([Doctor, Clinic, User, DoctorPatient]), Doctor, DoctorClinicModule, MetadataModule, UserModule],
   controllers: [DoctorController],
   providers: [DoctorService],
   exports: [DoctorService],

@@ -8,8 +8,6 @@ import { User } from 'src/user/entity/user.enitiy';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
-import { ContactService } from 'src/contact/contact.service';
-import { Contact } from 'src/contact/entity/contact.entity';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { MetaDataService } from 'src/metadata/meta-data.service';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
@@ -23,13 +21,12 @@ import { ErrorLogModule } from 'src/errorlog/error-log.module';
       Doctor,
       Appointment,
       Prescription,
-      Contact,
       MetaData,
     ]),
     ErrorLogModule
   ],
   controllers: [PatientController],
-  providers: [PatientService, ContactService, MetaDataService],
+  providers: [PatientService, MetaDataService],
   exports: [PatientService],
 })
 export class PatientModule {}

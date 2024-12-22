@@ -25,7 +25,7 @@ export class MetaData {
   @Column({ type: 'enum', enum: UserSex, nullable: false })
   sex: string;
 
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'varchar', length: 10, default: "" })
   height: string;
 
   // Foreign key to the User table

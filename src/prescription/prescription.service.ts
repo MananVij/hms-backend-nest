@@ -45,7 +45,7 @@ export class PrescriptionService {
 
       const vitals = await this.vitalsRepository.findOne({
         where: { createdAt: Between(oneHourAgo, date) },
-        order: {createdAt: 'DESC'}
+        order: { createdAt: 'DESC' },
       });
 
       // Create a new prescription entity
@@ -74,7 +74,7 @@ export class PrescriptionService {
       const prescriptions = await this.prescriptionRepository.find({
         where: { doctor: { uid: doctorId } },
         relations: ['vitals'],
-        order: {created_at: 'DESC'}
+        order: { created_at: 'DESC' },
       });
 
       if (!prescriptions.length) {
@@ -98,7 +98,7 @@ export class PrescriptionService {
       const prescriptions = await this.prescriptionRepository.find({
         where: { patient: { uid: patientId }, is_final_prescription: true },
         relations: ['vitals'],
-        order: {created_at: 'DESC'}
+        order: { created_at: 'DESC' },
       });
       if (!prescriptions.length) {
         return [];

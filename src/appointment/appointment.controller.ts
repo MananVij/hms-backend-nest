@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
@@ -10,7 +19,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
-  @Post()
+  @Post('/create')
   async create(
     @Body() createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
@@ -42,6 +51,6 @@ export class AppointmentController {
   async todayAppointmentDoctor(
     @Query(':id') id: string,
   ): Promise<Appointment[]> {
-    return this.appointmentService.getTodayAppointmentsForDoctor(id)
+    return this.appointmentService.getTodayAppointmentsForDoctor(id);
   }
 }

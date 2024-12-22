@@ -7,8 +7,6 @@ import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
-import { ContactService } from 'src/contact/contact.service';
-import { CreateContactDto } from 'src/contact/dto/create-contact.dto';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 import { MetaDataService } from 'src/metadata/meta-data.service';
@@ -22,8 +20,6 @@ export class PatientService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-
-    private readonly contactService: ContactService,
 
     private readonly metaDataService: MetaDataService,
 
@@ -44,7 +40,6 @@ export class PatientService {
 
   async addNewPatientByDoctor(
     createPatientDto: CreateUserDto,
-    createContactDto: CreateContactDto,
     createMetaDataDto: CreateMetaDataDto,
     doctorId: string,
   ): Promise<any> {
@@ -70,10 +65,6 @@ export class PatientService {
         patient,
       });
       await this.doctorPatientRepository.save(doctorPatient);
-      await this.contactService.create({
-        ...createContactDto,
-        uid: patient.uid,
-      });
       return { id: patient.uid };
     } catch (error) {
       await this.errorLogService.logError(
@@ -91,7 +82,7 @@ export class PatientService {
     try {
       const doctorPatients = await this.doctorPatientRepository.find({
         where: { doctor: { user: { uid: id } } },
-        relations: ['patient', 'patient.metaData', 'patient.contact'],
+        relations: ['patient', 'patient.metaData', 'patient.contact']
       });
 
       const patients = await Promise.all(

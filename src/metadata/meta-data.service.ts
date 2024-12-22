@@ -23,20 +23,17 @@ export class MetaDataService {
   async create(createMetaDataDto: CreateMetaDataDto): Promise<MetaData> {
     try {
       const { uid } = createMetaDataDto;
-
-      // Find the user by uid to link with meta-data
       const user = await this.userRepository.findOne({ where: { uid } });
-
       if (!user) {
         throw new NotFoundException('User not found');
       }
 
       const metaData = this.metaDataRepository.create({
         ...createMetaDataDto,
-        user, // linking the meta-data to the user
+        user,
       });
-
       const savedMetaData = await this.metaDataRepository.save(metaData);
+      
       await this.userRepository.update(user.uid, { metaData: savedMetaData });
       return savedMetaData;
     } catch (error) {

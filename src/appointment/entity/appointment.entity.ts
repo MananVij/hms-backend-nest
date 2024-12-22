@@ -8,11 +8,12 @@ import {
   ManyToOne,
   OneToOne,
   JoinColumn,
+  CreateDateColumn,
 } from 'typeorm';
 
 export enum PaymnetMode {
-  ONLINE = 'online',
-  OFFLINE = 'offline',
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE',
 }
 
 enum StatusType {
@@ -46,10 +47,10 @@ export class Appointment {
   patient: User; // Reference to the Patient's User ID
 
   @Column()
-  startTime: Date; // Appointment date and time
+  time: Date; // Appointment date and time
 
-  @Column()
-  endTime: Date; // Appointment date and time
+  @Column({ nullable: true })
+  startTime: Date; // Appointment date and time
 
   @Column({
     type: 'enum',
@@ -70,7 +71,7 @@ export class Appointment {
   @Column({ default: false })
   hasVisited: boolean; // Indicates if the patient has visited the clinic
 
-  @Column({nullable: true})
+  @Column({ nullable: true })
   notes: string;
 
   @OneToOne(() => Prescription, { nullable: true })
@@ -81,4 +82,7 @@ export class Appointment {
   @ManyToOne(() => Clinic, { nullable: false }) // Relationship to Clinic
   @JoinColumn({ name: 'clinic_id' }) // Foreign key reference
   clinic: Clinic; // Reference to the Clinic entity
+
+  @CreateDateColumn()
+  created_at: Date;
 }

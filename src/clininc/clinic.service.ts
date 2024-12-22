@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Clinic } from './entity/clininc.entity';
 import { CreateClinicDto } from './dto/add-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
 @Injectable()
@@ -18,18 +17,9 @@ export class ClinicService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
-
-    @InjectRepository(DoctorClinic)
-    private doctorClinicRepository: Repository<DoctorClinic>,
   ) {}
 
   async create(createClinicDto: CreateClinicDto): Promise<Clinic> {
-    const doctor = await this.doctorRepository.findOne({
-      where: { id: createClinicDto.doctor_id },
-    });
-    if (!doctor) {
-      throw new Error('Doctor not found');
-    }
     const admin = await this.userRepository.findOne({
       where: { uid: createClinicDto.admin_id },
     });
@@ -39,11 +29,9 @@ export class ClinicService {
 
     const clinic = this.clinicRepository.create({ ...createClinicDto, admin });
     const savedClinic = await this.clinicRepository.save(clinic);
-    const doctorClinic = this.doctorClinicRepository.create({
-      doctor,
-      clinic: savedClinic,
-    });
-    await this.doctorClinicRepository.save(doctorClinic);
+    admin.hasOnboardedClinic = true;
+    await this.userRepository.save(admin);
+
     return savedClinic;
   }
 

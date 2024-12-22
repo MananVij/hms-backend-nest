@@ -6,11 +6,10 @@ import { ClinicController } from './clininc.controller';
 import { ClinicService } from './clinic.service';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Clinic, User, Doctor, DoctorClinic, Appointment]), Clinic],
+  imports: [TypeOrmModule.forFeature([Clinic, User, Doctor, Appointment]), Clinic],
   controllers: [ClinicController],
   providers: [ClinicService],
   exports: [ClinicService],

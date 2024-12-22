@@ -1,4 +1,4 @@
-import { IsDate, IsString, IsNotEmpty, IsEnum } from 'class-validator';
+import { IsDate, IsString, IsNotEmpty, IsEnum, IsOptional } from 'class-validator';
 import { UserSex } from '../entity/metadata.entity';
 import { Type } from 'class-transformer';
 
@@ -12,9 +12,9 @@ export class CreateMetaDataDto {
   @IsEnum(UserSex)
   sex: UserSex;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  height: string;
+  height?: string;
 
   @IsNotEmpty()
   @IsString()

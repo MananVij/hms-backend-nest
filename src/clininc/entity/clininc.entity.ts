@@ -9,6 +9,7 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  CreateDateColumn,
 } from 'typeorm';
 
 @Entity('clinic')
@@ -16,26 +17,23 @@ export class Clinic {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  address: string;
+  @Column({ nullable: false })
+  name: string;
 
-  @Column()
-  timings: string;
+  @Column({ nullable: false })
+  line1: string;
 
-  @Column()
-  fee: number;
+  @Column({ nullable: true })
+  line2: string;
 
-  @Column({ default: false })
-  is_online: boolean;
+  @Column({ nullable: false })
+  pincode: string;
 
   @Column({ default: false })
   is_verified: boolean;
 
-  @Column('json')
-  contact_number: {
-    phone_no: string;
-    is_verified: boolean;
-  }[];
+  @Column({ nullable: false })
+  contactNumber: string;
 
   @ManyToOne(() => User, (user) => user.clinics, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'admin_id' })
@@ -44,6 +42,9 @@ export class Clinic {
   @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.clinic)
   doctorClinics: DoctorClinic[];
 
-  @OneToMany(() => Appointment, appointment => appointment.clinic)
+  @OneToMany(() => Appointment, (appointment) => appointment.clinic)
   appointments: Appointment[]; // One clinic can have many appointments
+
+  @CreateDateColumn()
+  created_at: Date;
 }

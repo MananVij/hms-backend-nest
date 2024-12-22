@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Param, Delete, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Delete,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { Doctor } from './entity/doctor.entity';
@@ -9,8 +17,10 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
 
-  @Post()
-  async create(@Body() createDoctorDto: CreateDoctorDto): Promise<Doctor> {
+  @Post('create')
+  async create(
+    @Body() createDoctorDto: CreateDoctorDto,
+  ): Promise<Doctor> {
     return this.doctorService.create(createDoctorDto);
   }
 
@@ -21,12 +31,12 @@ export class DoctorController {
 
   @Get('admin/:id')
   async findDoctorOfAdmin(@Param('id') id: string): Promise<Doctor[]> {
-    return this.doctorService.findByAdminId(id)
+    return this.doctorService.findByAdminId(id);
   }
 
   @Get('clinic/:id')
   async findDoctorsInClinic(@Param('id') id: number): Promise<Doctor[]> {
-    return this.doctorService.findDoctorsByClinicId(id)
+    return this.doctorService.findDoctorsByClinicId(id);
   }
 
   @Get(':id')

@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Doctor } from './entity/doctor.entity';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { User } from 'src/user/entity/user.enitiy';
+import { DoctorClinicService } from 'src/doctor_clinic/doctor-clinic.service';
+import { UserService } from 'src/user/user.service';
+import { MetaDataService } from 'src/metadata/meta-data.service';
 
 @Injectable()
 export class DoctorService {
@@ -13,26 +20,37 @@ export class DoctorService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+
+    private readonly userService: UserService,
+    private readonly metaDataService: MetaDataService,
+    private readonly doctorClinicService: DoctorClinicService,
   ) {}
 
   async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
-    const { user, ...doctorData } = createDoctorDto;
+    const { userData, clinicId, staffData, metaData } = createDoctorDto;
 
     const foundUser = await this.userRepository.findOne({
-      where: { uid: user },
+      where: [{ email: userData.email }, { phoneNumber: userData.phoneNumber }],
     });
-
-    if (!foundUser) {
-      throw new NotFoundException('User not found');
+    if (foundUser) {
+      throw new ConflictException('Credentials already in use.');
     }
 
-    // Create a doctor instance
-    const doctor = this.doctorRepository.create({
-      ...doctorData,
-      user: foundUser, // Link the user entity to the doctor
+    const user = await this.userService.createUser(userData);
+    await this.metaDataService.create({
+      ...metaData,
+      uid: user.uid,
     });
-
-    return this.doctorRepository.save(doctor);
+    const doctor = this.doctorRepository.create({
+      ...staffData,
+      user, // Link the user entity to the doctor
+    });
+    const createdDoctor = await this.doctorRepository.save(doctor);
+    await this.doctorClinicService.create({
+      doctor_id: createdDoctor.id,
+      clinic_id: clinicId,
+    });
+    return createdDoctor;
   }
 
   // Gets List of All Doctors
@@ -61,6 +79,30 @@ export class DoctorService {
   async findByAdminId(id: string): Promise<Doctor[]> {
     const doctors = await this.doctorRepository.find({
       where: { doctorClinics: { clinic: { admin: { uid: id } } } },
+      relations: ['doctorClinics.clinic', 'user'],
+      select: {
+        user: {
+          name: true,
+          email: true,
+          phoneNumber: true,
+          role: true,
+          address: {
+            line1: true,
+            line2: true,
+            pincode: true,
+          },
+        },
+        doctorClinics: {
+          id: true,
+          clinic: {
+            name: true,
+            line1: true,
+            line2: true,
+            pincode: true,
+            contactNumber: true
+          }
+        }
+      },
     });
     return doctors;
   }
@@ -69,7 +111,22 @@ export class DoctorService {
   async findDoctorsByClinicId(id: number): Promise<Doctor[]> {
     const doctors = await this.doctorRepository.find({
       where: { doctorClinics: { clinic: { id } } },
+      relations: ['user'],
+      select: {
+        id: true,
+        timings: true,
+        user: {
+          name: true,
+          uid: true,
+        },
+      },
     });
-    return doctors;
+    const formattedDoctors = doctors.map((doctor) => ({
+      ...doctor,
+      name: doctor.user?.name,
+      uid: doctor.user?.uid,
+      user: undefined,
+    }));
+    return formattedDoctors;
   }
 }

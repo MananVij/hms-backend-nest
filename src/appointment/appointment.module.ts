@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Appointment } from './entity/appointment.entity';
 import { AppointmentController } from './appointment.controller';
@@ -9,9 +8,10 @@ import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, User, Prescription, Clinic, DoctorPatient, Doctor]), Appointment],
+  imports: [TypeOrmModule.forFeature([Appointment, User, Prescription, Clinic, DoctorPatient, Doctor]), Appointment, ErrorLogModule],
   controllers: [AppointmentController],
   providers: [AppointmentService],
   exports: [AppointmentService],

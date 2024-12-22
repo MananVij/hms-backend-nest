@@ -34,9 +34,8 @@ export class ComprehendPrescriptionController {
         );
       return result;
     } catch (error) {
-      console.error(error);
       throw new InternalServerErrorException(
-        'Failed to comprehend prescription',
+        'There was an issue processing the prescription. Please try submitting the prescription voice again. If the issue persists, contact support.',
       );
     }
   }

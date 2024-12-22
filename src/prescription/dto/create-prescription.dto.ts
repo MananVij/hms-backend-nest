@@ -65,19 +65,16 @@ export class CreatePrescriptionDto {
   @IsString()
   pres_url?: string;
 
-  // change
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   test_suggested?: string[];
 
-  // change
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   test_results?: string[];
 
-  // change
   @IsOptional()
   @IsString()
   medical_notes?: string;

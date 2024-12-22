@@ -14,12 +14,12 @@ import { Clinic } from './entity/clininc.entity';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-@Controller('clinics')
+@Controller('clinic')
 @UseGuards(JwtAuthGuard)
 export class ClinicController {
   constructor(private readonly clinicService: ClinicService) {}
 
-  @Post()
+  @Post('create')
   create(@Body() createClinicDto: CreateClinicDto) {
     return this.clinicService.create(createClinicDto);
   }

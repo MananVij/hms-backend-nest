@@ -13,7 +13,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET_KEY, // Secret used to sign the JWT
-      signOptions: { expiresIn: '60m' }, // Expiration time of the JWT
+      signOptions: { expiresIn: '24h' }, // Expiration time of the JWT
     }),
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard], // The services and guards used by the module

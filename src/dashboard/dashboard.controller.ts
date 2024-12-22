@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
@@ -7,8 +7,11 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  @Get(':id')
-  async getDashboardData(@Param('id') id: string): Promise<any> {
-    return await this.dashboardService.getDashboard(id);
+  @Get('')
+  async getDashboardData(
+    @Query('userId') userId: string,
+    @Query('role') role: string,
+  ): Promise<any> {
+    return await this.dashboardService.getDashboard(userId, role);
   }
 }

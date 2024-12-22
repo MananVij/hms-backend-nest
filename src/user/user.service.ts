@@ -26,8 +26,10 @@ export class UserService {
       }
       const user: User = new User();
       user.name = createUserDto.name;
+      user.phoneNumber = createUserDto.phoneNumber
+      user.address = createUserDto.address
       user.email = createUserDto.email;
-      user.is_verified = createUserDto.is_verified;
+      user.is_verified = createUserDto.is_verified || false;
       user.role = createUserDto.role;
       user.password = await this.hashPassword(createUserDto.password);
 

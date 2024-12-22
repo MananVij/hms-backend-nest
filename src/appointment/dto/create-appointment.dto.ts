@@ -20,11 +20,7 @@ export class CreateAppointmentDto {
 
   @IsNotEmpty()
   @IsDateString()
-  startTime: Date; // Appointment date and time
-
-  @IsNotEmpty()
-  @IsDateString()
-  endTime: Date; // Appointment date and time
+  time: Date; // Appointment date and time
 
   @IsString()
   visitType: string; // Patient's User ID (UUID)

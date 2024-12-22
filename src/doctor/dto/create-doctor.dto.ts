@@ -1,19 +1,28 @@
-import { IsString, IsNotEmpty, IsDateString, IsArray, IsUUID } from 'class-validator';
-import { User } from 'src/user/entity/user.enitiy';
-import { OneToOne } from 'typeorm';
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsArray,
+  IsNumber,
+  IsBoolean,
+} from 'class-validator';
+import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
-export class CreateDoctorDto {
-  @IsArray()
+class CreateStaffDto {
+  @IsString()
+  qualification?: string;
+
   @IsNotEmpty()
-  qualification: {
-    qualification: string;
-    college: string;
-    notes?: string;
-  }[];
+  @IsNumber()
+  fee: number;
+
+  @IsBoolean()
+  isOnline: boolean;
 
   @IsString()
   @IsNotEmpty()
-  license_number: string;
+  licenseNumber: string;
 
   @IsString()
   @IsNotEmpty()
@@ -21,21 +30,26 @@ export class CreateDoctorDto {
 
   @IsDateString()
   @IsNotEmpty()
-  start_date_of_practice: string;
-
-  @IsArray()
-  @IsNotEmpty()
-  languages_spoken: string[];
+  startYearOfPractice: string;
 
   @IsArray()
   @IsNotEmpty()
   timings: {
     day: string;
-    start_time: string;
-    end_time: string;
+    startTime: Date;
+    endTime: Date;
   }[];
-
-  @IsString()
+}
+export class CreateDoctorDto {
   @IsNotEmpty()
-  user: string;  // Maps to the user's UID (UUID) in the User entity
+  staffData: CreateStaffDto;
+
+  @IsNotEmpty()
+  userData: CreateUserDto;
+
+  @IsNotEmpty()
+  metaData: CreateMetaDataDto;
+
+  @IsNotEmpty()
+  clinicId: number;
 }

@@ -11,7 +11,6 @@ import { PatientService } from './patient.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { User } from 'src/user/entity/user.enitiy';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'; // Import your JWT Auth guard if applicable
-import { CreateContactDto } from 'src/contact/dto/create-contact.dto';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 
 @Controller('patients')
@@ -25,14 +24,12 @@ export class PatientController {
     @Body()
     patientData: {
       patient: CreateUserDto;
-      contact: CreateContactDto;
       metaData: CreateMetaDataDto;
     },
   ): Promise<any> {
-    const { patient, contact, metaData } = patientData;
+    const { patient, metaData } = patientData;
     return await this.patientService.addNewPatientByDoctor(
       patient,
-      contact,
       metaData,
       doctorId,
     );
@@ -47,16 +44,16 @@ export class PatientController {
     return patients;
   }
 
-  @Get('admin/:id')
-  async getPatientsOfAdmin(@Param('id') id: string): Promise<User[]> {
-    const patients = await this.patientService.findPatientsByClinic(2);
-    // change this
-    // const patients = await this.patientService.findPatientsOfAdmin(id);
-    if (!patients.length) {
-      throw new NotFoundException('No patients found for this admin');
-    }
-    return patients;
-  }
+
+  // Not being Used
+  // @Get('admin/:id')
+  // async getPatientsOfAdmin(@Param('id') id: string): Promise<User[]> {
+  //   const patients = await this.patientService.findPatientsOfAdmin(id);
+  //   if (!patients.length) {
+  //     throw new NotFoundException('No patients found for this admin');
+  //   }
+  //   return patients;
+  // }
 
   @Get('clinic/:clinicId')
   async getPatientsByClinic(
@@ -64,7 +61,7 @@ export class PatientController {
   ): Promise<User[]> {
     const patients = await this.patientService.findPatientsByClinic(clinicId);
     if (!patients.length) {
-      throw new NotFoundException('No patients found for this clinic');
+      return []
     }
     return patients;
   }
