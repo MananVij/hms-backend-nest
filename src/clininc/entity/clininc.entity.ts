@@ -1,6 +1,6 @@
 import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import {
   Entity,
@@ -44,6 +44,9 @@ export class Clinic {
 
   @OneToMany(() => Appointment, (appointment) => appointment.clinic)
   appointments: Appointment[]; // One clinic can have many appointments
+
+  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.clinic)
+  patientClinics: PatientClinic[];
 
   @CreateDateColumn()
   created_at: Date;

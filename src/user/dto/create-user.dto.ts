@@ -30,7 +30,7 @@ class AddressDto {
 export class CreateUserDto {
   @IsNotEmpty()
   @IsEnum(UserRole, { each: true })
-  role: UserRole[];
+  role: UserRole;
 
   @IsNotEmpty()
   @IsString()

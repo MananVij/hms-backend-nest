@@ -50,7 +50,8 @@ export class AuthService {
       phone_number: user?.phone_number,
       qualification: user?.qualification,
       name: user?.name,
-      hasOnboardedClinic: user?.hasOnboardedClinic
+      hasOnboardedClinic: user?.hasOnboardedClinic,
+      clinics: user?.clinicIds,
     };
     return {
       access_token: this.jwtService.sign(payload),

@@ -3,6 +3,8 @@ import { Contact } from 'src/contact/entity/contact.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
+import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -33,7 +35,7 @@ export class User {
     default: UserRole.PATIENT,
     nullable: false,
   })
-  role: UserRole[];
+  role: UserRole;
 
   @Column({ length: 100 })
   name: string;
@@ -82,6 +84,9 @@ export class User {
 
   @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.patient)
   doctors: DoctorPatient[];
+
+  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.patient)
+  patientClinics: PatientClinic[];
 
   @CreateDateColumn()
   created_at: Date;

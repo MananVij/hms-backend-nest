@@ -1,6 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
@@ -11,6 +14,7 @@ import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 import { MetaDataService } from 'src/metadata/meta-data.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { PatientClinicService } from 'src/patient_clinic/patient_clinic.service';
 
 @Injectable()
 export class PatientService {
@@ -36,14 +40,30 @@ export class PatientService {
     private readonly prescriptionRepository: Repository<Prescription>,
 
     private readonly errorLogService: ErrorLogService,
+    private readonly patientClinicService: PatientClinicService,
   ) {}
 
   async addNewPatientByDoctor(
     createPatientDto: CreateUserDto,
     createMetaDataDto: CreateMetaDataDto,
     doctorId: string,
+    clinicId: number,
   ): Promise<any> {
     try {
+      const checkPatient = await this.userRepository.findOne({
+        where: { phoneNumber: createPatientDto.phoneNumber },
+      });
+      if (checkPatient) {
+        throw new Error('Patient with phone number exists.');
+      }
+
+      const doctor = await this.doctorRepository.findOne({
+        where: { user: { uid: doctorId } },
+      });
+      if (!doctor) {
+        throw new Error('Doctor not found');
+      }
+
       const newPatient = this.userRepository.create({
         role: [UserRole.PATIENT],
         ...createPatientDto,
@@ -54,17 +74,16 @@ export class PatientService {
         uid: patient.uid,
       });
 
-      const doctor = await this.doctorRepository.findOne({
-        where: { user: { uid: doctorId } },
-      });
-      if (!doctor) {
-        throw new Error('Doctor not found');
-      }
       const doctorPatient = this.doctorPatientRepository.create({
         doctor,
         patient,
       });
       await this.doctorPatientRepository.save(doctorPatient);
+
+      await this.patientClinicService.createPatientClinicRelationship({
+        clinicId,
+        patientId: patient.uid,
+      });
       return { id: patient.uid };
     } catch (error) {
       await this.errorLogService.logError(
@@ -82,7 +101,7 @@ export class PatientService {
     try {
       const doctorPatients = await this.doctorPatientRepository.find({
         where: { doctor: { user: { uid: id } } },
-        relations: ['patient', 'patient.metaData', 'patient.contact']
+        relations: ['patient', 'patient.metaData', 'patient.contact'],
       });
 
       const patients = await Promise.all(
@@ -135,106 +154,32 @@ export class PatientService {
     }
   }
 
-  async findPatientsOfAdmin(id: string): Promise<User[]> {
-    try {
-      const adminWithClinics = await this.userRepository.findOne({
-        where: { uid: id, role: UserRole.ADMIN },
-        relations: ['clinics', 'clinics.doctorClinics.doctor'],
-      });
+  async addDoctorPatientRelationship(doctorId: string, patientId: string) {
+    const [doctor, patient] = await Promise.all([
+      this.doctorRepository.findOne({ where: { user: { uid: doctorId } } }),
+      this.userRepository.findOne({ where: { uid: patientId } }),
+    ]);
 
-      const doctorIds = adminWithClinics.clinics.flatMap((clinic) =>
-        clinic.doctorClinics.map((doctorClinic) => {
-          doctorClinic.doctor.id;
-        }),
-      );
-      const doctorPatients = await this.doctorPatientRepository.find({
-        where: { doctor: { id: In(doctorIds) } },
-        relations: ['patient'],
-      });
-
-      // Extract unique patient records
-      const patients = Array.from(
-        new Set(doctorPatients.map((dp) => dp.patient)),
-      );
-      return patients;
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error in finding patients of admin: ${error.message}`,
-        error.stack,
-        null,
-        id,
-        null,
-      );
-      throw new Error('Something Went Wrong!');
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
     }
-  }
-
-  async findPatientsByClinic(clinincId: number): Promise<User[]> {
-    try {
-      const doctorClinics = await this.doctorClinicRepository.find({
-        where: { clinic: { id: clinincId } },
-        relations: ['doctor'],
-      });
-
-      const doctorIds = doctorClinics.map(
-        (doctorClinic) => doctorClinic.doctor.id,
-      );
-
-      if (doctorIds.length === 0) {
-        return [];
-      }
-
-      const doctorPatients = await this.doctorPatientRepository.find({
-        where: { doctor: { id: In(doctorIds) } },
-        relations: ['patient', 'patient.metaData', 'patient.contact'],
-      });
-
-      const patients = Array.from(
-        new Set(
-          await Promise.all(
-            doctorPatients.map(async (dp) => {
-              const latestAppointment = await this.appointmentRepository
-                .createQueryBuilder('appointment')
-                .where('appointment.patient = :patientId', {
-                  patientId: dp.patient.uid,
-                })
-                .orderBy('appointment.startTime', 'DESC')
-                .select(['appointment.startTime']) // Only fetch the timing field
-                .getOne();
-
-              dp.patient['latestAppointmentTiming'] = latestAppointment
-                ? latestAppointment.startTime
-                : null;
-
-              const latestPrescription = await this.prescriptionRepository
-                .createQueryBuilder('prescription')
-                .where('prescription.patient = :patientId', {
-                  patientId: dp.patient.uid,
-                })
-                .orderBy('prescription.id', 'DESC') // Order by ID to get the latest entry
-                .select(['prescription.diagnosis'])
-                .getOne();
-
-              // Add the latest diagnosis to the patient object or set it to 'NaN' if no diagnosis is found
-              dp.patient['latestDiagnosis'] = latestPrescription
-                ? latestPrescription.diagnosis
-                : 'NaN';
-
-              return dp.patient;
-            }),
-          ),
-        ),
-      );
-      return patients;
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error in finding patients of clinic: ${error.message}`,
-        error.stack,
-        null,
-        null,
-        null,
-      );
-      throw new Error('Something Went Wrong!');
+    if (!patient) {
+      throw new NotFoundException('Patient not found');
     }
+
+    const existingRelationship = await this.doctorPatientRepository.findOne({
+      where: {
+        doctor: { id: doctor.id },
+        patient: { uid: patientId },
+      },
+    });
+    if (!existingRelationship) {
+      const relationship = this.doctorPatientRepository.create({
+        doctor,
+        patient,
+      });
+      return await this.doctorPatientRepository.save(relationship);
+    }
+    return existingRelationship;
   }
 }

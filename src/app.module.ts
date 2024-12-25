@@ -31,6 +31,8 @@ import { DoctorPatientModule } from './doctor_patient/doctor_patient.module';
 import { PatientModule } from './patient/patient.module';
 import { ErrorLog } from './errorlog/error-log.entity';
 import { ErrorLogModule } from './errorlog/error-log.module';
+import { PatientClinicModule } from './patient_clinic/patient_clinic.module';
+import { PatientClinic } from './patient_clinic/entity/patient_clinic.entity';
 
 @Module({
   imports: [
@@ -49,6 +51,7 @@ import { ErrorLogModule } from './errorlog/error-log.module';
         SideBar,
         Clinic,
         DoctorClinic,
+        PatientClinic,
         Vitals,
         Contact,
         DoctorClinic,
@@ -73,6 +76,7 @@ import { ErrorLogModule } from './errorlog/error-log.module';
     ClinicModule,
     AuthModule,
     DoctorClinicModule,
+    PatientClinicModule,
     VitalsModule,
     DashboardModule,
     ComprehendPrescriptionModule,

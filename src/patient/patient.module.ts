@@ -11,6 +11,8 @@ import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { MetaDataService } from 'src/metadata/meta-data.service';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
+import { PatientClinicModule } from 'src/patient_clinic/patient_clinic.module';
+import { DoctorPatientService } from 'src/doctor_patient/doctor_patient.service';
 
 @Module({
   imports: [
@@ -23,10 +25,11 @@ import { ErrorLogModule } from 'src/errorlog/error-log.module';
       Prescription,
       MetaData,
     ]),
-    ErrorLogModule
+    ErrorLogModule,
+    PatientClinicModule,
   ],
   controllers: [PatientController],
-  providers: [PatientService, MetaDataService],
+  providers: [PatientService, MetaDataService, DoctorPatientService],
   exports: [PatientService],
 })
 export class PatientModule {}

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Clinic } from './entity/clininc.entity';
 import { CreateClinicDto } from './dto/add-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
@@ -35,17 +35,26 @@ export class ClinicService {
     return savedClinic;
   }
 
-  async findAll(): Promise<Clinic[]> {
-    return await this.clinicRepository.find({ relations: ['doctorClinics'] });
+  async findAllByClinicIds(clinicIdArr: number[]): Promise<Clinic[]> {
+    return await this.clinicRepository.find({
+      where: { id: In(clinicIdArr) },
+    });
   }
 
   async findOne(id: number): Promise<Clinic> {
     const clinic = await this.clinicRepository.findOne({
       where: { id },
-      relations: ['doctorClinics', 'doctorClinics.doctor'],
+      select: {
+        id: true,
+        name: true,
+        line1: true,
+        line2: true,
+        pincode: true,
+        contactNumber: true,
+      },
     });
     if (!clinic) {
-      throw new NotFoundException(`Clinic with ID ${id} not found`);
+      return null;
     }
     return clinic;
   }
@@ -61,28 +70,5 @@ export class ClinicService {
     if (result.affected === 0) {
       throw new NotFoundException(`Clinic with ID ${id} not found`);
     }
-  }
-
-  async findAllClinicsOfAdmin(adminId: string): Promise<Clinic[]> {
-    const clinics = await this.clinicRepository.find({
-      where: { admin: { uid: adminId } },
-    });
-    if (!clinics.length) {
-      throw new NotFoundException(`Clinic with ID ${adminId} not found`);
-    }
-    return clinics;
-  }
-
-  async findAllClinicsOfDoctor(doctorId: string): Promise<Clinic[]> {
-    // return await this.clinicRepository.find({where: {doctorClinics: {doctor: {user: {uid: doctorId}}}}})
-    const clinics = await this.clinicRepository
-      .createQueryBuilder('clinic')
-      .innerJoin('clinic.doctorClinics', 'doctorClinic')
-      .innerJoin('doctorClinic.doctor', 'doctor')
-      .innerJoin('doctor.user', 'user')
-      .where('user.uid = :doctorId', { doctorId })
-      .getMany();
-
-    return clinics;
   }
 }

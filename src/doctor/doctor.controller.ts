@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
@@ -29,13 +30,8 @@ export class DoctorController {
     return this.doctorService.findAll();
   }
 
-  @Get('admin/:id')
-  async findDoctorOfAdmin(@Param('id') id: string): Promise<Doctor[]> {
-    return this.doctorService.findByAdminId(id);
-  }
-
-  @Get('clinic/:id')
-  async findDoctorsInClinic(@Param('id') id: number): Promise<Doctor[]> {
+  @Get('clinic')
+  async findDoctorsInClinic(@Query('id') id: number): Promise<Doctor[]> {
     return this.doctorService.findDoctorsByClinicId(id);
   }
 

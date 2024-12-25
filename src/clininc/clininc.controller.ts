@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ClinicService } from './clinic.service';
 import { CreateClinicDto } from './dto/add-clinic.dto';
@@ -24,23 +25,15 @@ export class ClinicController {
     return this.clinicService.create(createClinicDto);
   }
 
-  @Get()
-  findAll() {
-    return this.clinicService.findAll();
+  @Get('get')
+  findClinicDetails(
+    @Query('clinicIds') clinicIdArray: number[],
+  ): Promise<Clinic[]> {
+    return this.clinicService.findAllByClinicIds(clinicIdArray);
   }
 
-  @Get('admin/:id') // Gets clinics associated with a specific admin
-  async getClinicsByAdmin(@Param('id') adminId: string): Promise<Clinic[]> {
-    return this.clinicService.findAllClinicsOfAdmin(adminId);
-  }
-
-  @Get('doctor/:id') // Gets clinics associated with a specific doctor
-  async getClinicsByDoctor(@Param('id') doctorId: string): Promise<Clinic[]> {
-    return this.clinicService.findAllClinicsOfDoctor(doctorId);
-  }
-
-  @Get(':id') // Gets a specific clinic by ID
-  findOne(@Param('id') id: number) {
+  @Get('')
+  findOne(@Query('id') id: number) {
     return this.clinicService.findOne(id);
   }
 

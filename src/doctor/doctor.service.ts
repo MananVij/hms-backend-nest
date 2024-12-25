@@ -11,6 +11,7 @@ import { User } from 'src/user/entity/user.enitiy';
 import { DoctorClinicService } from 'src/doctor_clinic/doctor-clinic.service';
 import { UserService } from 'src/user/user.service';
 import { MetaDataService } from 'src/metadata/meta-data.service';
+import { ClinicService } from 'src/clininc/clinic.service';
 
 @Injectable()
 export class DoctorService {
@@ -24,6 +25,7 @@ export class DoctorService {
     private readonly userService: UserService,
     private readonly metaDataService: MetaDataService,
     private readonly doctorClinicService: DoctorClinicService,
+    private readonly clinicService: ClinicService,
   ) {}
 
   async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
@@ -53,12 +55,10 @@ export class DoctorService {
     return createdDoctor;
   }
 
-  // Gets List of All Doctors
   async findAll(): Promise<Doctor[]> {
     return this.doctorRepository.find();
   }
 
-  // Deletes the Dcotor Account
   async delete(id: number): Promise<void> {
     const result = await this.doctorRepository.delete(id);
     if (result.affected === 0) {
@@ -75,13 +75,14 @@ export class DoctorService {
     }
     return doctor;
   }
-  // Returns doctors associated with admin
-  async findByAdminId(id: string): Promise<Doctor[]> {
-    const doctors = await this.doctorRepository.find({
-      where: { doctorClinics: { clinic: { admin: { uid: id } } } },
-      relations: ['doctorClinics.clinic', 'user'],
+
+  async findDoctorsByClinicId(id: number): Promise<any> {
+    const doctorData = await this.doctorRepository.find({
+      where: { doctorClinics: { clinic: { id } } },
+      relations: ['user'],
       select: {
         user: {
+          uid: true,
           name: true,
           email: true,
           phoneNumber: true,
@@ -92,41 +93,9 @@ export class DoctorService {
             pincode: true,
           },
         },
-        doctorClinics: {
-          id: true,
-          clinic: {
-            name: true,
-            line1: true,
-            line2: true,
-            pincode: true,
-            contactNumber: true
-          }
-        }
       },
     });
-    return doctors;
-  }
-
-  // Returns doctors associated in clinic
-  async findDoctorsByClinicId(id: number): Promise<Doctor[]> {
-    const doctors = await this.doctorRepository.find({
-      where: { doctorClinics: { clinic: { id } } },
-      relations: ['user'],
-      select: {
-        id: true,
-        timings: true,
-        user: {
-          name: true,
-          uid: true,
-        },
-      },
-    });
-    const formattedDoctors = doctors.map((doctor) => ({
-      ...doctor,
-      name: doctor.user?.name,
-      uid: doctor.user?.uid,
-      user: undefined,
-    }));
-    return formattedDoctors;
+    const clinicData = await this.clinicService.findOne(id);
+    return { doctorData, clinicData };
   }
 }
