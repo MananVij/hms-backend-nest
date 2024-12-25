@@ -47,7 +47,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       id: user.uid,
-      phone_number: user?.phone_number,
+      phoneNumber: user?.phoneNumber,
       qualification: user?.qualification,
       name: user?.name,
       hasOnboardedClinic: user?.hasOnboardedClinic,
