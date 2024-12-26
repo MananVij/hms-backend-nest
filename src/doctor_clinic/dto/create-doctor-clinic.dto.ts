@@ -1,11 +1,11 @@
-import { IsInt, IsNotEmpty } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateDoctorClinicDto {
-  @IsInt()
+  @IsString()
   @IsNotEmpty()
-  doctor_id: number;
+  doctorId: string;
 
   @IsInt()
   @IsNotEmpty()
-  clinic_id: number;
+  clinicId: number;
 }

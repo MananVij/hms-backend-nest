@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DoctorClinic } from './entity/doctor_clinic.entity';
@@ -17,29 +22,48 @@ export class DoctorClinicService {
     private readonly clinicRepository: Repository<Clinic>,
   ) {}
 
-  async create(
-    createDoctorClinicDto: CreateDoctorClinicDto,
-  ): Promise<DoctorClinic> {
-    const doctor = await this.doctorRepository.findOne({
-      where: { id: createDoctorClinicDto.doctor_id },
-    });
-    if (!doctor) {
-      throw new NotFoundException('Doctor not found');
-    }
+  async create(doctorId: string, clinicId: number): Promise<DoctorClinic> {
+    try {
+      const [doctor, clinic] = await Promise.all([
+        this.doctorRepository.findOne({
+          where: { user: { uid: doctorId } },
+        }),
+        this.clinicRepository.findOne({
+          where: { id: clinicId },
+        }),
+      ]);
+      if (!doctor) {
+        throw new NotFoundException('Doctor not found');
+      }
 
-    const clinic = await this.clinicRepository.findOne({
-      where: { id: createDoctorClinicDto.clinic_id },
-    });
-    if (!clinic) {
-      throw new NotFoundException('Clinic not found');
-    }
+      if (!clinic) {
+        throw new NotFoundException('Clinic not found');
+      }
 
-    // Create a new DoctorClinic instance
-    const doctorClinic = this.doctorClinicRepository.create({
-      doctor,
-      clinic,
-    });
-    return this.doctorClinicRepository.save(doctorClinic);
+      const existingDoctorClinic = await this.doctorClinicRepository.findOne({
+        where: {
+          doctor: { user: { uid: doctorId } },
+          clinic: { id: clinicId },
+        },
+      });
+
+      if (existingDoctorClinic) {
+        throw new ConflictException(
+          'Doctor is already onboarded to this clinic',
+        );
+      }
+
+      const doctorClinic = this.doctorClinicRepository.create({
+        doctor,
+        clinic,
+      });
+
+      return await this.doctorClinicRepository.save(doctorClinic);
+    } catch (error) {
+      throw error instanceof Error
+        ? error
+        : new InternalServerErrorException('An unexpected error occurred');
+    }
   }
 
   async findAll(): Promise<DoctorClinic[]> {

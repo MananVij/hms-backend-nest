@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserRole } from './entity/user.enitiy';
 import * as bcrypt from 'bcrypt';
@@ -107,6 +107,20 @@ export class UserService {
     });
     if (!patient) {
       throw new NotFoundException('No Patient Found');
+    }
+    return patient;
+  }
+
+  async findStaffByPhoneNumber(phoneNumber: string): Promise<User> {
+    const patient = await this.userRepository.findOne({
+      where: { phoneNumber, role: In([UserRole.DOCTOR, UserRole.NURSE]) },
+      select: {
+        name: true,
+        uid: true,
+      },
+    });
+    if (!patient) {
+      throw new NotFoundException('No User Found');
     }
     return patient;
   }

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './entity/user.enitiy';
+import { User, UserRole } from './entity/user.enitiy';
 
 @Controller('user')
 export class UserController {
@@ -25,8 +25,15 @@ export class UserController {
   }
 
   @Get('')
-  async findByPhoneNo(@Query('phoneNo') phoneNo: string): Promise<User> {
-    return this.userService.findPatientByPhoneNumber(phoneNo);
+  async findPatientByPhoneNo(
+    @Query('phoneNo') phoneNo: string,
+    @Query('role') role: string,
+  ): Promise<User> {
+    if (role === UserRole.PATIENT) {
+      return this.userService.findPatientByPhoneNumber(phoneNo);
+    } else {
+      return this.userService.findStaffByPhoneNumber(phoneNo);
+    }
   }
 
   @Patch()

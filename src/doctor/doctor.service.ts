@@ -48,10 +48,7 @@ export class DoctorService {
       user, // Link the user entity to the doctor
     });
     const createdDoctor = await this.doctorRepository.save(doctor);
-    await this.doctorClinicService.create({
-      doctor_id: createdDoctor.id,
-      clinic_id: clinicId,
-    });
+    await this.doctorClinicService.create(createdDoctor.user.uid, clinicId);
     return createdDoctor;
   }
 
