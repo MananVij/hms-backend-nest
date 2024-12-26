@@ -33,6 +33,7 @@ import { ErrorLog } from './errorlog/error-log.entity';
 import { ErrorLogModule } from './errorlog/error-log.module';
 import { PatientClinicModule } from './patient_clinic/patient_clinic.module';
 import { PatientClinic } from './patient_clinic/entity/patient_clinic.entity';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -83,7 +84,8 @@ import { PatientClinic } from './patient_clinic/entity/patient_clinic.entity';
     FirebaseModule,
     DoctorPatientModule,
     PatientModule,
-    ErrorLogModule
+    ErrorLogModule,
+    OtpModule
   ],
   controllers: [AppController],
   providers: [AppService],
