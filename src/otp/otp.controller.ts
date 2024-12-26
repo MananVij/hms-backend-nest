@@ -7,6 +7,11 @@ export class OtpController {
 
   @Post('send')
   async sendOtp(@Body('phoneNumber') phoneNumber: string): Promise<object> {
+    // TODO: - Hardcoded for testing
+    return {
+      status: 'succeess',
+      message: 'Otp sent successfully.',
+    };
     return this.otpService.sendOtp(phoneNumber);
   }
 
@@ -15,6 +20,11 @@ export class OtpController {
     @Body('phoneNumber') phoneNumber: string,
     @Body('otp') otp: string,
   ): Promise<object> {
+    // TODO: - Hardcoded for testing
+    return {
+      status: 'success',
+      message: 'OTP verified successfully',
+    };
     return this.otpService.verifyOtp(phoneNumber, otp);
   }
 }
