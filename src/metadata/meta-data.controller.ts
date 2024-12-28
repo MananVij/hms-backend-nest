@@ -8,7 +8,6 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  Query,
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
