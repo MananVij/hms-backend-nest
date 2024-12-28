@@ -4,6 +4,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrescriptionService } from 'src/prescription/prescription.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { PrescriptionValidator } from 'src/validation/validation-util';
+import { QueryRunner } from 'typeorm';
 
 @Injectable()
 export class ComprehendPrescriptionService {
@@ -24,6 +25,7 @@ export class ComprehendPrescriptionService {
     file: Express.Multer.File,
     doctor: string,
     patient: string,
+    queryRunner: QueryRunner,
   ): Promise<any> {
     let audio_url: string | null = null;
     try {
@@ -58,10 +60,17 @@ export class ComprehendPrescriptionService {
         .replace('json', '')
         .trim();
       const parsedJson = JSON.parse(jsonString);
-      const validatedData = PrescriptionValidator.validatePrescriptionData(parsedJson);
+      const validatedData =
+        PrescriptionValidator.validatePrescriptionData(parsedJson);
 
-      const presDbData = { ...parsedJson, audio_url, doctor, patient, is_gemini_data: true };
-      await this.prescriptionService.create(presDbData);
+      const presDbData = {
+        ...parsedJson,
+        audio_url,
+        doctor,
+        patient,
+        is_gemini_data: true,
+      };
+      await this.prescriptionService.create(presDbData, queryRunner);
 
       return validatedData;
     } catch (error) {

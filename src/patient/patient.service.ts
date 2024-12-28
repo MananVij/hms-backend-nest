@@ -1,13 +1,13 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
@@ -19,19 +19,8 @@ import { PatientClinicService } from 'src/patient_clinic/patient_clinic.service'
 @Injectable()
 export class PatientService {
   constructor(
-    @InjectRepository(DoctorClinic)
-    private readonly doctorClinicRepository: Repository<DoctorClinic>,
-
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
-    private readonly metaDataService: MetaDataService,
-
     @InjectRepository(DoctorPatient)
     private readonly doctorPatientRepository: Repository<DoctorPatient>,
-
-    @InjectRepository(Doctor)
-    private readonly doctorRepository: Repository<Doctor>,
 
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
@@ -39,6 +28,7 @@ export class PatientService {
     @InjectRepository(Prescription)
     private readonly prescriptionRepository: Repository<Prescription>,
 
+    private readonly metaDataService: MetaDataService,
     private readonly errorLogService: ErrorLogService,
     private readonly patientClinicService: PatientClinicService,
   ) {}
@@ -48,44 +38,54 @@ export class PatientService {
     createMetaDataDto: CreateMetaDataDto,
     doctorId: string,
     clinicId: number,
+    queryRunner: QueryRunner,
   ): Promise<any> {
     try {
-      const checkPatient = await this.userRepository.findOne({
+      const checkPatient = await queryRunner.manager.findOne(User, {
         where: { phoneNumber: createPatientDto.phoneNumber },
       });
       if (checkPatient) {
-        throw new Error('Patient with phone number exists.');
+        throw new NotFoundException('Patient with phone number exists.');
       }
 
-      const doctor = await this.doctorRepository.findOne({
+      const doctor = await queryRunner.manager.findOne(Doctor, {
         where: { user: { uid: doctorId } },
       });
       if (!doctor) {
-        throw new Error('Doctor not found');
+        throw new NotFoundException('Doctor not found');
       }
 
-      const newPatient = this.userRepository.create({
+      const newPatient = queryRunner.manager.create(User, {
         role: [UserRole.PATIENT],
         ...createPatientDto,
       });
-      const patient = await this.userRepository.save(newPatient);
-      await this.metaDataService.create({
-        ...createMetaDataDto,
-        uid: patient.uid,
-      });
+      const patient = await queryRunner.manager.save(newPatient);
+      await this.metaDataService.create(
+        {
+          ...createMetaDataDto,
+          uid: patient.uid,
+        },
+        queryRunner,
+      );
 
-      const doctorPatient = this.doctorPatientRepository.create({
+      const doctorPatient = queryRunner.manager.create(DoctorPatient, {
         doctor,
         patient,
       });
-      await this.doctorPatientRepository.save(doctorPatient);
+      await queryRunner.manager.save(doctorPatient);
 
-      await this.patientClinicService.createPatientClinicRelationship({
-        clinicId,
-        patientId: patient.uid,
-      });
+      await this.patientClinicService.createPatientClinicRelationship(
+        {
+          clinicId,
+          patientId: patient.uid,
+        },
+        queryRunner,
+      );
       return { id: patient.uid };
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       await this.errorLogService.logError(
         `Error in adding new patient by doctor: ${error.message}`,
         error.stack,
@@ -93,7 +93,7 @@ export class PatientService {
         null,
         null,
       );
-      throw new Error('Something Went Wrong!');
+      throw new InternalServerErrorException('Something Went Wrong!');
     }
   }
 
@@ -154,32 +154,65 @@ export class PatientService {
     }
   }
 
-  async addDoctorPatientRelationship(doctorId: string, patientId: string) {
-    const [doctor, patient] = await Promise.all([
-      this.doctorRepository.findOne({ where: { user: { uid: doctorId } } }),
-      this.userRepository.findOne({ where: { uid: patientId } }),
-    ]);
-
-    if (!doctor) {
-      throw new NotFoundException('Doctor not found');
-    }
-    if (!patient) {
-      throw new NotFoundException('Patient not found');
-    }
-
-    const existingRelationship = await this.doctorPatientRepository.findOne({
-      where: {
-        doctor: { id: doctor.id },
-        patient: { uid: patientId },
-      },
-    });
-    if (!existingRelationship) {
-      const relationship = this.doctorPatientRepository.create({
+  async addDoctorPatientRelationship(
+    doctorId: string,
+    patientId: string,
+    queryRunner: QueryRunner,
+  ) {
+    try {
+      const [doctor, patient] = await Promise.all([
+        queryRunner.manager.findOne(Doctor, {
+          where: { user: { uid: doctorId } },
+        }),
+        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+      ]);
+      
+      const relationship = queryRunner.manager.create(DoctorPatient, {
         doctor,
         patient,
       });
-      return await this.doctorPatientRepository.save(relationship);
+      return await queryRunner.manager.save(relationship);
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('Something Went Wrong.');
     }
-    return existingRelationship;
+  }
+
+  async checkDoctorPatientRelationship(
+    doctorId: string,
+    patientId: string,
+    queryRunner: QueryRunner,
+  ) {
+    try {
+      const [doctor, patient] = await Promise.all([
+        queryRunner.manager.findOne(Doctor, {
+          where: { user: { uid: doctorId } },
+        }),
+        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+      ]);
+
+      if (!doctor) {
+        throw new NotFoundException('Doctor not found');
+      }
+      if (!patient) {
+        throw new NotFoundException('Patient not found');
+      }
+
+      const existingRelationship = await queryRunner.manager.findOne(
+        DoctorPatient,
+        {
+          where: {
+            doctor: { id: doctor.id },
+            patient: { uid: patientId },
+          },
+        },
+      );
+      return existingRelationship;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong');
+    }
   }
 }

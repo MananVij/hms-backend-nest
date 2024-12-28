@@ -1,11 +1,12 @@
 import {
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { PatientClinic } from './entity/patient_clinic.entity';
 import { CreatePatientClinicDto } from './dto/patinet_clinic.dto';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
@@ -16,45 +17,65 @@ export class PatientClinicService {
     @InjectRepository(PatientClinic)
     private readonly patientClinicRepository: Repository<PatientClinic>,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
-    @InjectRepository(Clinic)
-    private readonly clinicRepository: Repository<Clinic>,
-
     private readonly errorLogService: ErrorLogService,
   ) {}
 
   // Create a new user-clinic association
   async createPatientClinicRelationship(
     createUserClinicDto: CreatePatientClinicDto,
+    queryRunner: QueryRunner,
   ): Promise<PatientClinic> {
     const { patientId, clinicId } = createUserClinicDto;
-
-    const [patient, clinic] = await Promise.all([
-      this.userRepository.findOne({ where: { uid: patientId } }),
-      this.clinicRepository.findOne({ where: { id: clinicId } }),
-    ]);
-
-    if (!patient) {
-      throw new NotFoundException('Patient not found');
-    }
-
-    if (!clinic) {
-      throw new NotFoundException('Clinic not found');
-    }
-
-    const existingRelation = await this.patientClinicRepository.findOne({
-      where: { patient: { uid: patientId }, clinic: { id: clinicId } },
-    });
-    if (!existingRelation) {
+    try {
+      const [patient, clinic] = await Promise.all([
+        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
+      ]);
       const userClinic = this.patientClinicRepository.create({
         patient,
         clinic,
       });
-      return await this.patientClinicRepository.save(userClinic);
+      return await queryRunner.manager.save(userClinic);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong.');
     }
-    return existingRelation;
+  }
+
+  async checkPatientClinicRelationship(
+    patientId: string,
+    clinicId: number,
+    queryRunner: QueryRunner,
+  ) {
+    try {
+      const [patient, clinic] = await Promise.all([
+        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
+      ]);
+
+      if (!patient) {
+        throw new NotFoundException('Patient not found');
+      }
+
+      if (!clinic) {
+        throw new NotFoundException('Clinic not found');
+      }
+
+      const existingRelation = await queryRunner.manager.findOne(
+        PatientClinic,
+        {
+          where: { patient: { uid: patientId }, clinic: { id: clinicId } },
+        },
+      );
+      return existingRelation;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something went wrong.');
+    }
   }
 
   async findAllPatientsByClinicIdOfAdmin(clinicId: number): Promise<User[]> {

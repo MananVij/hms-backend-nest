@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Between, QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { User } from 'src/user/entity/user.enitiy';
@@ -12,28 +16,21 @@ export class PrescriptionService {
   constructor(
     @InjectRepository(Prescription)
     private readonly prescriptionRepository: Repository<Prescription>,
-
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
-    @InjectRepository(Vitals)
-    private readonly vitalsRepository: Repository<Vitals>,
-
     private readonly errorLogService: ErrorLogService,
   ) {}
 
-  async create(createPrescriptionDto: CreatePrescriptionDto): Promise<any> {
+  async create(
+    createPrescriptionDto: CreatePrescriptionDto,
+    queryRunner: QueryRunner,
+  ): Promise<Prescription> {
     try {
       const { doctorId, patientId, vitalsId, ...prescriptionData } =
         createPrescriptionDto;
 
-      // Find and validate the doctor and patient
-      const doctor = await this.userRepository.findOne({
-        where: { uid: doctorId },
-      });
-      const patient = await this.userRepository.findOne({
-        where: { uid: patientId },
-      });
+      const [doctor, patient] = await Promise.all([
+        queryRunner.manager.findOne(User, { where: { uid: doctorId } }),
+        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+      ]);
 
       if (!doctor || !patient) {
         throw new NotFoundException('Doctor or Patient not found');
@@ -43,21 +40,23 @@ export class PrescriptionService {
       const date = new Date(); // Current time
       const oneHourAgo = new Date(date.getTime() - 1 * 60 * 60 * 1000); // One hour ago
 
-      const vitals = await this.vitalsRepository.findOne({
+      const vitals = await queryRunner.manager.findOne(Vitals, {
         where: { createdAt: Between(oneHourAgo, date) },
         order: { createdAt: 'DESC' },
       });
 
-      // Create a new prescription entity
-      const prescription = this.prescriptionRepository.create({
+      const prescription = queryRunner.manager.create(Prescription, {
         ...prescriptionData,
         doctor,
         patient,
         vitals,
       });
-      await this.prescriptionRepository.save(prescription);
+      await queryRunner.manager.save(prescription);
       return prescription;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       await this.errorLogService.logError(
         `Error in creating prescription: ${error.message}`,
         error.stack,
@@ -65,6 +64,7 @@ export class PrescriptionService {
         createPrescriptionDto?.doctorId,
         createPrescriptionDto?.patientId,
       );
+      throw new InternalServerErrorException('Unable to save prescription.');
     }
   }
 
@@ -135,10 +135,5 @@ export class PrescriptionService {
         null,
       );
     }
-  }
-
-  async remove(id: number): Promise<void> {
-    const prescription = await this.findOne(id);
-    await this.prescriptionRepository.remove(prescription);
   }
 }

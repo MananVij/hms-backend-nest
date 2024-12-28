@@ -7,6 +7,7 @@ import {
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { QueryRunner } from 'typeorm';
 
 @Injectable()
 export class AuthService {
@@ -15,9 +16,15 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(createUserDto: CreateUserDto) {
+  async signup(
+    createUserDto: CreateUserDto,
+    queryRunner: QueryRunner,
+  ) {
     try {
-      const user = await this.userService.createUser(createUserDto);
+      const user = await this.userService.createUser(
+        createUserDto,
+        queryRunner,
+      );
       const payload = {
         email: user.email,
         role: user.role,

@@ -5,9 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { DoctorClinic } from './entity/doctor_clinic.entity';
-import { CreateDoctorClinicDto } from './dto/create-doctor-clinic.dto';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 
@@ -16,19 +15,19 @@ export class DoctorClinicService {
   constructor(
     @InjectRepository(DoctorClinic)
     private readonly doctorClinicRepository: Repository<DoctorClinic>,
-    @InjectRepository(Doctor)
-    private readonly doctorRepository: Repository<Doctor>,
-    @InjectRepository(Clinic)
-    private readonly clinicRepository: Repository<Clinic>,
   ) {}
 
-  async create(doctorId: string, clinicId: number): Promise<DoctorClinic> {
+  async create(
+    doctorId: string,
+    clinicId: number,
+    queryRunner: QueryRunner,
+  ): Promise<DoctorClinic> {
     try {
       const [doctor, clinic] = await Promise.all([
-        this.doctorRepository.findOne({
+        queryRunner.manager.findOne(Doctor, {
           where: { user: { uid: doctorId } },
         }),
-        this.clinicRepository.findOne({
+        queryRunner.manager.findOne(Clinic, {
           where: { id: clinicId },
         }),
       ]);
@@ -40,12 +39,15 @@ export class DoctorClinicService {
         throw new NotFoundException('Clinic not found');
       }
 
-      const existingDoctorClinic = await this.doctorClinicRepository.findOne({
-        where: {
-          doctor: { user: { uid: doctorId } },
-          clinic: { id: clinicId },
+      const existingDoctorClinic = await queryRunner.manager.findOne(
+        DoctorClinic,
+        {
+          where: {
+            doctor: { user: { uid: doctorId } },
+            clinic: { id: clinicId },
+          },
         },
-      });
+      );
 
       if (existingDoctorClinic) {
         throw new ConflictException(
@@ -53,16 +55,20 @@ export class DoctorClinicService {
         );
       }
 
-      const doctorClinic = this.doctorClinicRepository.create({
+      const doctorClinic = queryRunner.manager.create(DoctorClinic, {
         doctor,
         clinic,
       });
 
-      return await this.doctorClinicRepository.save(doctorClinic);
+      return await queryRunner.manager.save(doctorClinic);
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : new InternalServerErrorException('An unexpected error occurred');
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something went wrong');
     }
   }
 

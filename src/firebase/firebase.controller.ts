@@ -44,8 +44,7 @@ export class FirebaseController {
       );
     }
 
-    // Call the service to handle file uploads
-    return this.firebaseService.uploadFiles(
+    return await this.firebaseService.uploadFiles(
       uploadFileDto.files,
       uploadFileDto.doctor,
       uploadFileDto.patient

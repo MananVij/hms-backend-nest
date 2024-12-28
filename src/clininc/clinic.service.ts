@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, QueryRunner, Repository } from 'typeorm';
 import { Clinic } from './entity/clininc.entity';
 import { CreateClinicDto } from './dto/add-clinic.dto';
 import { UpdateClinicDto } from './dto/update-clininc.dto';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
 @Injectable()
@@ -12,27 +15,35 @@ export class ClinicService {
   constructor(
     @InjectRepository(Clinic)
     private clinicRepository: Repository<Clinic>,
-    @InjectRepository(Doctor)
-    private doctorRepository: Repository<Doctor>,
-
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
   ) {}
 
-  async create(createClinicDto: CreateClinicDto): Promise<Clinic> {
-    const admin = await this.userRepository.findOne({
-      where: { uid: createClinicDto.admin_id },
-    });
-    if (!admin) {
-      throw new Error('Admin not found');
+  async create(
+    createClinicDto: CreateClinicDto,
+    queryRunner: QueryRunner,
+  ): Promise<Clinic> {
+    try {
+      const admin = await queryRunner.manager.findOne(User, {
+        where: { uid: createClinicDto.admin_id },
+      });
+      if (!admin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      const clinic = queryRunner.manager.create(Clinic, {
+        ...createClinicDto,
+        admin,
+      });
+      const savedClinic = await queryRunner.manager.save(clinic);
+      admin.hasOnboardedClinic = true;
+      await queryRunner.manager.save(admin);
+
+      return savedClinic;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong.');
     }
-
-    const clinic = this.clinicRepository.create({ ...createClinicDto, admin });
-    const savedClinic = await this.clinicRepository.save(clinic);
-    admin.hasOnboardedClinic = true;
-    await this.userRepository.save(admin);
-
-    return savedClinic;
   }
 
   async findAllByClinicIds(clinicIdArr: number[]): Promise<Clinic[]> {
@@ -59,10 +70,26 @@ export class ClinicService {
     return clinic;
   }
 
-  async update(id: number, updateClinicDto: UpdateClinicDto): Promise<Clinic> {
-    const clinic = await this.findOne(id);
-    Object.assign(clinic, updateClinicDto);
-    return await this.clinicRepository.save(clinic);
+  async update(
+    id: number,
+    updateClinicDto: UpdateClinicDto,
+    queryRunner: QueryRunner,
+  ): Promise<Clinic> {
+    try {
+      const clinic = await queryRunner.manager.findOne(Clinic, {
+        where: { id },
+      });
+      if (!clinic) {
+        throw new NotFoundException('Clinic not found');
+      }
+      Object.assign(clinic, updateClinicDto);
+      return await queryRunner.manager.save(clinic);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong.');
+    }
   }
 
   async remove(id: number): Promise<void> {

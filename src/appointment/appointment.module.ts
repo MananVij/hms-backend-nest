@@ -11,7 +11,11 @@ import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, User, Prescription, Clinic, DoctorPatient, Doctor]), Appointment, ErrorLogModule],
+  imports: [
+    TypeOrmModule.forFeature([Appointment, Prescription, Clinic]),
+    Appointment,
+    ErrorLogModule,
+  ],
   controllers: [AppointmentController],
   providers: [AppointmentService],
   exports: [AppointmentService],

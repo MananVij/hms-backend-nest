@@ -6,9 +6,7 @@ import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { DoctorClinicService } from './doctor-clinic.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([DoctorClinic, Doctor, Clinic]),
-  ],
+  imports: [TypeOrmModule.forFeature([DoctorClinic])],
   providers: [DoctorClinicService],
   exports: [DoctorClinicService],
 })

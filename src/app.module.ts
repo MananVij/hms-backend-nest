@@ -5,8 +5,6 @@ import { UserModule } from './user/user.module';
 import { PrescriptionModule } from './prescription/presciption.module';
 import { User } from './user/entity/user.enitiy';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ContactModule } from './contact/contact.module';
-import { Contact } from './contact/entity/contact.entity';
 import { Prescription } from './prescription/entity/prescription.entity';
 import { MetaData } from './metadata/entity/metadata.entity';
 import { MetadataModule } from './metadata/metadata.module';
@@ -34,6 +32,8 @@ import { ErrorLogModule } from './errorlog/error-log.module';
 import { PatientClinicModule } from './patient_clinic/patient_clinic.module';
 import { PatientClinic } from './patient_clinic/entity/patient_clinic.entity';
 import { OtpModule } from './otp/otp.module';
+import { APP_INTERCEPTOR } from '@nestjs/core'; // Import APP_INTERCEPTOR from NestJS core
+import { TransactionInterceptor } from './transactions/transaction.interceptor';
 
 @Module({
   imports: [
@@ -41,8 +41,9 @@ import { OtpModule } from './otp/otp.module';
       type: 'postgres',
       host: process.env.DB_HOST_URL,
       port: Number(process.env.DB_PORT),
-      password: process.env.DB_PASSWORD,
+      database: 'postgres',
       username: process.env.DB_USER_NAME,
+      password: process.env.DB_PASSWORD,
       entities: [
         User,
         Doctor,
@@ -54,23 +55,21 @@ import { OtpModule } from './otp/otp.module';
         DoctorClinic,
         PatientClinic,
         Vitals,
-        Contact,
         DoctorClinic,
         DoctorPatient,
-        ErrorLog
-      ], // here we have added user enitity in entities array
-      // entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      database: 'postgres',
-      synchronize: true,
-      logging: ['error', 'query'],
+        ErrorLog,
+      ],
+      migrations: [__dirname + '/migrations/*{.ts,.js}'], // Explicit migrations
+      migrationsRun: true, // Run pending migrations on startup
+      synchronize: false,
+      logging: ['error', 'query', 'schema'], // Log schema operations for monitoring
       extra: {
-        options: '-c timezone=Asia/Kolkata', // Set your desired timezone
+        options: '-c timezone=Asia/Kolkata',
       },
     }),
     UserModule,
     DoctorModule,
     PrescriptionModule,
-    ContactModule,
     MetadataModule,
     AppointmentModule,
     SidebarModule,
@@ -85,9 +84,15 @@ import { OtpModule } from './otp/otp.module';
     DoctorPatientModule,
     PatientModule,
     ErrorLogModule,
-    OtpModule
+    OtpModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransactionInterceptor,
+    },
+  ],
 })
 export class AppModule {}

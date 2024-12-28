@@ -1,12 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Between, DeepPartial, In, Repository } from 'typeorm';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { Between, DeepPartial, In, QueryRunner, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
 import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { startOfDay, endOfDay, addDays, subDays } from 'date-fns';
+import { startOfDay, endOfDay } from 'date-fns';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 
@@ -15,63 +19,71 @@ export class AppointmentService {
   constructor(
     @InjectRepository(Appointment)
     private appointmentRepository: Repository<Appointment>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-
-    @InjectRepository(Doctor)
-    private doctorRepository: Repository<Doctor>,
 
     @InjectRepository(Clinic)
     private clinicRepository: Repository<Clinic>,
-
-    @InjectRepository(DoctorPatient)
-    private doctorPatientRepository: Repository<DoctorPatient>,
   ) {}
 
   async create(
     createAppointmentDto: CreateAppointmentDto,
+    queryRunner: QueryRunner,
   ): Promise<Appointment> {
     const { doctor, patient, clinic_id, ...otherEntites } =
       createAppointmentDto;
 
-    const patientFound = await this.userRepository.findOne({
-      where: { uid: patient, role: UserRole.PATIENT },
-    });
-    const doctorFound = await this.userRepository.findOne({
-      where: { uid: doctor, role: UserRole.DOCTOR },
-    });
-    const clinic = await this.clinicRepository.findOne({
-      where: { id: clinic_id },
-    });
+    try {
+      const [patientFound, doctorFound, clinic] = await Promise.all([
+        queryRunner.manager.findOne(User, {
+          where: { uid: patient, role: UserRole.PATIENT },
+        }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: doctor, role: UserRole.DOCTOR },
+        }),
+        queryRunner.manager.findOne(Clinic, {
+          where: { id: clinic_id },
+        }),
+      ]);
 
-    if (!doctorFound || !patientFound || !clinic) {
-      throw new NotFoundException('Doctor, patient, or clinic not found');
-    }
+      if (!doctorFound || !patientFound || !clinic) {
+        throw new NotFoundException('Doctor, patient, or clinic not found');
+      }
 
-    const appointment = this.appointmentRepository.create({
-      doctor: doctorFound,
-      patient: patientFound,
-      clinic,
-      ...otherEntites,
-    } as DeepPartial<Appointment>);
-
-    const doctorEntity = await this.doctorRepository.findOne({
-      where: { user: { uid: doctor } },
-    });
-
-    const doctorPatientExists = await this.doctorPatientRepository.findOne({
-      where: { doctor: { user: { uid: doctor } }, patient: { uid: patient } },
-    });
-
-    if (!doctorPatientExists) {
-      const doctorPatient = this.doctorPatientRepository.create({
-        doctor: doctorEntity,
+      const appointment = queryRunner.manager.create(Appointment, {
+        doctor: doctorFound,
         patient: patientFound,
-      });
-      await this.doctorPatientRepository.save(doctorPatient);
-    }
+        clinic,
+        ...otherEntites,
+      } as DeepPartial<Appointment>);
 
-    return this.appointmentRepository.save(appointment);
+      const doctorEntity = await queryRunner.manager.findOne(Doctor, {
+        where: { user: { uid: doctor } },
+      });
+
+      const doctorPatientExists = await queryRunner.manager.findOne(
+        DoctorPatient,
+        {
+          where: {
+            doctor: { user: { uid: doctor } },
+            patient: { uid: patient },
+          },
+        },
+      );
+
+      if (!doctorPatientExists) {
+        const doctorPatient = queryRunner.manager.create(DoctorPatient, {
+          doctor: doctorEntity,
+          patient: patientFound,
+        });
+        await queryRunner.manager.save(doctorPatient);
+      }
+
+      return queryRunner.manager.save(appointment);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong');
+    }
   }
 
   async findAllAppointments(userId: string, role: string): Promise<any> {
@@ -79,7 +91,7 @@ export class AppointmentService {
       return await this.appointmentRepository.find({
         where: { doctor: { uid: userId } },
         relations: ['clinic', 'patient'],
-        order: {created_at: 'DESC'},
+        order: { created_at: 'DESC' },
         select: {
           patient: {
             uid: true,
@@ -91,7 +103,7 @@ export class AppointmentService {
       const appointments = await this.appointmentRepository.find({
         where: { patient: { uid: userId } },
         relations: ['doctor', 'clinic'],
-        order: {time: 'DESC'}
+        order: { time: 'DESC' },
       });
       return appointments;
     } else if (role === UserRole.ADMIN) {
@@ -155,17 +167,24 @@ export class AppointmentService {
   async updateAppointment(
     id: number,
     updateAppointmentDto: UpdateAppointmentDto,
+    queryRunner: QueryRunner,
   ): Promise<Appointment> {
-    const appointment = await this.appointmentRepository.findOne({
-      where: { id },
-    });
+    try {
+      const appointment = await queryRunner.manager.findOne(Appointment, {
+        where: { id },
+      });
 
-    if (!appointment) {
-      throw new NotFoundException(`Appointment with ID ${id} not found`);
+      if (!appointment) {
+        throw new NotFoundException(`Appointment not found`);
+      }
+
+      Object.assign(appointment, updateAppointmentDto);
+      return queryRunner.manager.save(appointment);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something went wrong.');
     }
-
-    Object.assign(appointment, updateAppointmentDto);
-
-    return this.appointmentRepository.save(appointment);
   }
 }

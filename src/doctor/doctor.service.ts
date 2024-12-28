@@ -1,10 +1,11 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { Doctor } from './entity/doctor.entity';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { User } from 'src/user/entity/user.enitiy';
@@ -19,47 +20,52 @@ export class DoctorService {
     @InjectRepository(Doctor)
     private readonly doctorRepository: Repository<Doctor>,
 
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-
     private readonly userService: UserService,
     private readonly metaDataService: MetaDataService,
     private readonly doctorClinicService: DoctorClinicService,
     private readonly clinicService: ClinicService,
   ) {}
 
-  async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
+  async create(
+    createDoctorDto: CreateDoctorDto,
+    queryRunner: QueryRunner,
+  ): Promise<Doctor> {
     const { userData, clinicId, staffData, metaData } = createDoctorDto;
+    try {
+      const foundUser = await queryRunner.manager.findOne(User, {
+        where: [
+          { email: userData.email },
+          { phoneNumber: userData.phoneNumber },
+        ],
+      });
+      if (foundUser) {
+        throw new ConflictException('Credentials already in use.');
+      }
 
-    const foundUser = await this.userRepository.findOne({
-      where: [{ email: userData.email }, { phoneNumber: userData.phoneNumber }],
-    });
-    if (foundUser) {
-      throw new ConflictException('Credentials already in use.');
-    }
-
-    const user = await this.userService.createUser(userData);
-    await this.metaDataService.create({
-      ...metaData,
-      uid: user.uid,
-    });
-    const doctor = this.doctorRepository.create({
-      ...staffData,
-      user, // Link the user entity to the doctor
-    });
-    const createdDoctor = await this.doctorRepository.save(doctor);
-    await this.doctorClinicService.create(createdDoctor.user.uid, clinicId);
-    return createdDoctor;
-  }
-
-  async findAll(): Promise<Doctor[]> {
-    return this.doctorRepository.find();
-  }
-
-  async delete(id: number): Promise<void> {
-    const result = await this.doctorRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Doctor with ID ${id} not found`);
+      const user = await this.userService.createUser(userData, queryRunner);
+      await this.metaDataService.create(
+        {
+          ...metaData,
+          uid: user.uid,
+        },
+        queryRunner,
+      );
+      const doctor = queryRunner.manager.create(Doctor, {
+        ...staffData,
+        user,
+      });
+      const createdDoctor = await queryRunner.manager.save(doctor);
+      await this.doctorClinicService.create(
+        createdDoctor.user.uid,
+        clinicId,
+        queryRunner,
+      );
+      return createdDoctor;
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something Went Wrong.');
     }
   }
 

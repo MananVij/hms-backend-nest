@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, QueryRunner, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserRole } from './entity/user.enitiy';
 import * as bcrypt from 'bcrypt';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { MetaData } from 'src/metadata/entity/metadata.entity';
 
 @Injectable()
 export class UserService {
@@ -17,7 +17,11 @@ export class UserService {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto): Promise<User> {
+  async createUser(
+    createUserDto: CreateUserDto,
+    queryRunner: QueryRunner,
+  ): Promise<User> {
+    const userRepo = queryRunner.manager.getRepository(User);
     try {
       const existingUser = await this.userRepository.findOne({
         where: { email: createUserDto.email },
@@ -33,8 +37,7 @@ export class UserService {
       user.is_verified = createUserDto.is_verified || false;
       user.role = createUserDto.role;
       user.password = await this.hashPassword(createUserDto.password);
-
-      return await this.userRepository.save(user);
+      return await userRepo.save(user);
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
@@ -54,7 +57,6 @@ export class UserService {
     const user = await this.userRepository.findOne({
       where: { email },
       relations: [
-        'contact',
         'doctor',
         'doctor.doctorClinics',
         'doctor.doctorClinics.clinic',
@@ -62,8 +64,7 @@ export class UserService {
       ],
     });
     if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, contact, doctor, ...result } = user;
-      const phone_number = user.contact?.phone_number;
+      const { password, doctor, ...result } = user;
       const qualification = user.doctor?.qualification;
       var clinicIds = [];
       if (user.role === UserRole.ADMIN) {
@@ -73,13 +74,33 @@ export class UserService {
           (clinics) => clinics.clinic.id,
         );
       }
-      return { phone_number, qualification, clinicIds, ...result };
+      return { qualification, clinicIds, ...result };
     }
     return null;
   }
 
-  findAllUser(): Promise<User[]> {
-    return this.userRepository.find();
+  async updateMetaData(
+    userId: string,
+    metaData: MetaData,
+    queryRunner: QueryRunner,
+  ): Promise<User> {
+    try {
+      const user = await queryRunner.manager.findOne(User, {
+        where: { uid: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      user.metaData = metaData;
+      return queryRunner.manager.save(user);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Please try again later.',
+      );
+    }
   }
 
   findOne(id: string): Promise<User> {
@@ -87,14 +108,6 @@ export class UserService {
       where: { uid: id },
       relations: ['metaData', 'contact'],
     });
-  }
-
-  async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user: User = new User();
-    user.name = updateUserDto.name;
-    user.is_verified = updateUserDto.is_verified;
-    user.password = await this.hashPassword(updateUserDto.password);
-    return this.userRepository.save(user);
   }
 
   async findPatientByPhoneNumber(phoneNumber: string): Promise<User> {
@@ -112,16 +125,16 @@ export class UserService {
   }
 
   async findStaffByPhoneNumber(phoneNumber: string): Promise<User> {
-    const patient = await this.userRepository.findOne({
+    const staff = await this.userRepository.findOne({
       where: { phoneNumber, role: In([UserRole.DOCTOR, UserRole.NURSE]) },
       select: {
         name: true,
         uid: true,
       },
     });
-    if (!patient) {
+    if (!staff) {
       throw new NotFoundException('No User Found');
     }
-    return patient;
+    return staff;
   }
 }

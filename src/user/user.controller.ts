@@ -1,24 +1,45 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
+  InternalServerErrorException,
   Param,
-  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserRole } from './entity/user.enitiy';
+import { QueryRunner } from 'typeorm';
+import { UseInterceptors } from '@nestjs/common';
+import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
+import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.createUser(createUserDto);
+  @UseInterceptors(TransactionInterceptor)
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+  ) {
+    try {
+      const user = await this.userService.createUser(
+        createUserDto,
+        queryRunner,
+      );
+      return user;
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create user');
+    }
   }
+
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<User> {
     return this.userService.findOne(id);
@@ -34,10 +55,5 @@ export class UserController {
     } else {
       return this.userService.findStaffByPhoneNumber(phoneNo);
     }
-  }
-
-  @Patch()
-  updateUser() {
-    // return this.userService.updateUser();
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { Vitals } from './entity/vitals.entity';
 import { CreateVitalsDto } from './dto/create-vitals.dto';
 import { User } from 'src/user/entity/user.enitiy';
@@ -18,24 +18,30 @@ export class VitalsService {
     private readonly errorLogRepository: ErrorLogService,
   ) {}
 
-  async createVitals(createVitalsDto: CreateVitalsDto): Promise<Vitals> {
+  async createVitals(
+    createVitalsDto: CreateVitalsDto,
+    queryRunner: QueryRunner,
+  ): Promise<Vitals> {
     try {
       const { userId, ...vitalsData } = createVitalsDto;
 
       // Fetch associated User
-      const user = await this.userRepository.findOne({
+      const user = await queryRunner.manager.findOne(User, {
         where: { uid: userId },
       });
       if (!user) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
+        throw new NotFoundException(`User not found`);
       }
-      const vitals = this.vitalsRepository.create({
+      const vitals = queryRunner.manager.create(Vitals, {
         ...vitalsData,
         user,
       });
 
-      return this.vitalsRepository.save(vitals);
+      return queryRunner.manager.save(vitals);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       await this.errorLogRepository.logError(
         `Error in creating vitals: ${error.message}`,
         error.stack,
@@ -43,6 +49,7 @@ export class VitalsService {
         null,
         createVitalsDto?.userId,
       );
+      throw error;
     }
   }
 
@@ -50,24 +57,6 @@ export class VitalsService {
     return this.vitalsRepository.find({
       where: { prescription: { id: prescriptionId } },
     });
-  }
-
-  async updateVitals(
-    id: number,
-    updateVitalsDto: Partial<CreateVitalsDto>,
-  ): Promise<Vitals> {
-    try {
-      await this.vitalsRepository.update(id, updateVitalsDto);
-      return this.vitalsRepository.findOne({ where: { id } });
-    } catch (error) {
-      await this.errorLogRepository.logError(
-        `Error in updating vitals: ${error.message}`,
-        error.stack,
-        null,
-        null,
-        null,
-      );
-    }
   }
 
   async getLatestVitalsByUser(userId: string): Promise<Vitals> {

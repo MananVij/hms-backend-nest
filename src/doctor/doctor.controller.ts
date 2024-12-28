@@ -3,10 +3,13 @@ import {
   Get,
   Post,
   Param,
-  Delete,
   Body,
   UseGuards,
   Query,
+  UseInterceptors,
+  ConflictException,
+  InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
@@ -15,6 +18,9 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { DoctorClinicService } from 'src/doctor_clinic/doctor-clinic.service';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { CreateDoctorClinicDto } from 'src/doctor_clinic/dto/create-doctor-clinic.dto';
+import { QueryRunner } from 'typeorm';
+import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
+import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 
 @Controller('doctors')
 @UseGuards(JwtAuthGuard)
@@ -25,35 +31,52 @@ export class DoctorController {
   ) {}
 
   @Post('create')
-  async create(@Body() createDoctorDto: CreateDoctorDto): Promise<Doctor> {
-    return this.doctorService.create(createDoctorDto);
+  @UseInterceptors(TransactionInterceptor)
+  async create(
+    @Body() createDoctorDto: CreateDoctorDto,
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+  ): Promise<Doctor> {
+    try {
+      return await this.doctorService.create(createDoctorDto, queryRunner);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Unable to Create Doctor. Something Went Wront.',
+      );
+    }
   }
 
   @Post('onboard')
+  @UseInterceptors(TransactionInterceptor)
   async onboardExistingDoctor(
     @Body() createDoctorClinicDto: CreateDoctorClinicDto,
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
   ): Promise<DoctorClinic> {
-    const { doctorId, clinicId } = createDoctorClinicDto;
-    return this.doctorClinicService.create(doctorId, clinicId);
-  }
-
-  @Get()
-  async findAll(): Promise<Doctor[]> {
-    return this.doctorService.findAll();
+    try {
+      const { doctorId, clinicId } = createDoctorClinicDto;
+      return await this.doctorClinicService.create(doctorId, clinicId, queryRunner);
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Unable to Create Doctor. Something Went Wront.',
+      );
+    }
   }
 
   @Get('clinic')
   async findDoctorsInClinic(@Query('id') id: number): Promise<Doctor[]> {
-    return this.doctorService.findDoctorsByClinicId(id);
+    return await this.doctorService.findDoctorsByClinicId(id);
   }
 
   @Get(':id')
   async find(@Param('id') id: string): Promise<Doctor> {
-    return this.doctorService.findDoctor(id);
-  }
-
-  @Delete(':id')
-  async delete(@Param('id') id: number): Promise<void> {
-    return this.doctorService.delete(id);
+    return await this.doctorService.findDoctor(id);
   }
 }
