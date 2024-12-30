@@ -30,7 +30,7 @@ export class BackupService {
 
     process.env.PGPASSWORD = process.env.DB_PASSWORD;
 
-    const pgDumpCommand = `pg_dump --host=${process.env.DB_HOST_URL} --port=${process.env.DB_PORT} --username=${process.env.DB_USER_NAME} --no-password --format=c --file=${backupFilePath} --no-owner --no-comments --no-publications --no-subscriptions`;
+    const pgDumpCommand = `pg_dump --host=${process.env.DB_HOST_URL} --port=${process.env.DB_PORT} --username=${process.env.DB_USER_NAME} --dbname=${process.env.DB_NAME} --no-password --format=c --file=${backupFilePath} --no-owner --no-comments --no-publications --no-subscriptions`;
 
     exec(pgDumpCommand, (error, stdout, stderr) => {
       if (error) {
