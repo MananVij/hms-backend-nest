@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { TransactionInterceptor } from './transactions/transaction.interceptor';
+import { GeoLocationMiddleware } from './geolocation/geolocation.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,7 @@ async function bootstrap() {
   });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new TransactionInterceptor(dataSource));
+  app.use(new GeoLocationMiddleware().use);
 
   const port = process.env.PORT || 3000;
   console.log(`Server Started at ${port}`);
