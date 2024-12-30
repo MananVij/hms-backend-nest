@@ -34,9 +34,12 @@ import { PatientClinic } from './patient_clinic/entity/patient_clinic.entity';
 import { OtpModule } from './otp/otp.module';
 import { APP_INTERCEPTOR } from '@nestjs/core'; // Import APP_INTERCEPTOR from NestJS core
 import { TransactionInterceptor } from './transactions/transaction.interceptor';
+import { BackupService } from './backup/backup.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST_URL,
@@ -89,6 +92,7 @@ import { TransactionInterceptor } from './transactions/transaction.interceptor';
   controllers: [AppController],
   providers: [
     AppService,
+    BackupService,
     {
       provide: APP_INTERCEPTOR,
       useClass: TransactionInterceptor,

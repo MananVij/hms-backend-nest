@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as path from 'path';
+import * as fs from 'fs';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
@@ -112,6 +113,72 @@ export class FirebaseService {
         }
       });
       stream.end(file.buffer);
+    });
+  }
+
+  async uploadBackupToFirebase(filePath: string) {
+    const backupFileName = 'backup-latest.sql';
+
+    const fileUpload = this.bucket.bucket().file(`backups/${backupFileName}`);
+
+    console.log(`Uploading backup to Firebase: ${filePath}`);
+
+    return new Promise<void>((resolve, reject) => {
+      const stream = fileUpload.createWriteStream({
+        metadata: { contentType: 'application/sql' },
+      });
+
+      stream.on('error', async (error) => {
+        await this.errorLogService.logError(
+          `Error in uploading backup: ${error.message}`,
+          error.stack,
+          null,
+          null,
+          null,
+        );
+        reject(new Error('Failed to upload backup to Firebase Storage'));
+      });
+
+      stream.on('finish', async () => {
+        try {
+          await fileUpload.makePublic();
+          console.log(
+            `Backup uploaded and made public at: ${fileUpload.publicUrl()}`,
+          );
+          resolve();
+        } catch (error) {
+          await this.errorLogService.logError(
+            `Error in making backup public: ${error.message}`,
+            error.stack,
+            null,
+            null,
+            null,
+          );
+
+          try {
+            const [signedUrl] = await fileUpload.getSignedUrl({
+              action: 'read',
+              expires: '03-01-2500',
+            });
+            console.log(`Backup URL: ${signedUrl}`);
+            resolve();
+          } catch (signedError) {
+            await this.errorLogService.logError(
+              `Error in generating signed URL: ${signedError.message}`,
+              signedError.stack,
+              null,
+              null,
+              null,
+            );
+            reject(
+              new Error('Failed to make backup public or generate signed URL'),
+            );
+          }
+        }
+      });
+
+      const readStream = fs.createReadStream(filePath);
+      readStream.pipe(stream);
     });
   }
 }
