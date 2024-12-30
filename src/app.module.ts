@@ -41,7 +41,7 @@ import { TransactionInterceptor } from './transactions/transaction.interceptor';
       type: 'postgres',
       host: process.env.DB_HOST_URL,
       port: Number(process.env.DB_PORT),
-      database: 'postgres',
+      database: process.env.DB_NAME,
       username: process.env.DB_USER_NAME,
       password: process.env.DB_PASSWORD,
       entities: [

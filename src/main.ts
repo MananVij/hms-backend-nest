@@ -12,7 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const dataSource = app.get(DataSource);
   app.enableCors({
-    origin: ['https://pulsehealth.netlify.app', 'http://localhost:3000'], // Replace with your frontend domain
+    origin: [process.env.FRONT_END_DOMAIN], // Replace with your frontend domain
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // Enable credentials (if needed)
     allowedHeaders: 'Content-Type, Authorization',
