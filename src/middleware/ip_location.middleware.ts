@@ -17,11 +17,19 @@ export class IpLocationMiddleware implements NestMiddleware {
 
   async use(req: any, res: any, next: Function) {
     if (!this.reader) {
-       const mmdbPath=  path.join(__dirname, '..', 'resources', 'GeoLite2-Country.mmdb')
+      const mmdbPath = path.join(
+        __dirname,
+        '..',
+        'resources',
+        'GeoLite2-Country.mmdb',
+      );
       this.reader = await maxmind.open(mmdbPath);
     }
 
-    const clientIp = requestIp.getClientIp(req);
+    let clientIp = req.headers['x-forwarded-for'] || req.ip;
+    if (Array.isArray(clientIp)) {
+      clientIp = clientIp[0];
+    }
     const location = this.reader.get(clientIp);
     if (location && location.country && location.country.iso_code) {
       const country = location.country.iso_code;
