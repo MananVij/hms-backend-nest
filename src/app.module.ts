@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common'; // Import necessary parts for middleware
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -36,6 +36,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core'; // Import APP_INTERCEPTOR from N
 import { TransactionInterceptor } from './transactions/transaction.interceptor';
 import { BackupService } from './backup/backup.service';
 import { ScheduleModule } from '@nestjs/schedule';
+import { IpLocationMiddleware } from './middleware/ip_location.middleware'; // Import the IpLocationMiddleware
 
 @Module({
   imports: [
@@ -58,7 +59,6 @@ import { ScheduleModule } from '@nestjs/schedule';
         DoctorClinic,
         PatientClinic,
         Vitals,
-        DoctorClinic,
         DoctorPatient,
         ErrorLog,
       ],
@@ -99,4 +99,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(IpLocationMiddleware).forRoutes('*');
+  }
+}
