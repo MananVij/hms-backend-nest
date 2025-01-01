@@ -100,12 +100,17 @@ export class AppointmentService {
         },
       });
     } else if (role === UserRole.PATIENT) {
-      const appointments = await this.appointmentRepository.find({
-        where: { patient: { uid: userId } },
-        relations: ['doctor', 'clinic'],
-        order: { time: 'DESC' },
-      });
-      return appointments;
+      try {
+        const appointments = await this.appointmentRepository.find({
+          where: { patient: { uid: userId, role: UserRole.PATIENT } },
+          relations: ['doctor', 'clinic'],
+          order: { time: 'DESC' },
+        });
+        console.log(appointments)
+        return appointments;
+      } catch (error) {
+        console.log(error.code, "Error Code")
+      }
     } else if (role === UserRole.ADMIN) {
       const clinics = await this.clinicRepository.find({
         where: { admin: { uid: userId } },

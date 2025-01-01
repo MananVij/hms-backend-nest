@@ -2,6 +2,7 @@ import {
   IsNotEmpty,
   IsString,
   IsBoolean,
+  Matches,
 } from 'class-validator';
 
 export class CreateClinicDto {
@@ -18,6 +19,9 @@ export class CreateClinicDto {
 
   @IsNotEmpty()
   @IsString()
+  @Matches(/^\d{6}$/, {
+    message: 'Pincode must be exactly 6 digits and only contain numbers',
+  })
   pincode: string;
 
   @IsNotEmpty()
@@ -26,6 +30,9 @@ export class CreateClinicDto {
 
   @IsNotEmpty()
   @IsString()
+  @Matches(/^\d{10}$/, {
+    message: 'Phone number must be exactly 10 digits and only contain numbers',
+  })
   contactNumber: string;
 
   @IsNotEmpty()

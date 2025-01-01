@@ -45,7 +45,7 @@ export class User {
   @Column({ nullable: true })
   password: string | null;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: false, unique: true, length: 10 })
   phoneNumber: string;
 
   @Column({ default: false, nullable: false })

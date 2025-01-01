@@ -103,11 +103,23 @@ export class UserService {
     }
   }
 
-  findOne(id: string): Promise<User> {
-    return this.userRepository.findOne({
+  async findOne(id: string): Promise<User> {
+    const isValidUUID =
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+        id,
+      );
+
+    if (!isValidUUID) {
+      throw new NotFoundException('User Not Found');
+    }
+    const user = await this.userRepository.findOne({
       where: { uid: id },
-      relations: ['metaData', 'contact'],
+      select: { uid: true },
     });
+    if (!user) {
+      throw new NotFoundException('User Not Found');
+    }
+    return user;
   }
 
   async findPatientByPhoneNumber(phoneNumber: string): Promise<User> {

@@ -32,7 +32,7 @@ export class Clinic {
   @Column({ default: false })
   is_verified: boolean;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, length: 10 })
   contactNumber: string;
 
   @ManyToOne(() => User, (user) => user.clinics, { onDelete: 'CASCADE' })
