@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
@@ -31,6 +31,6 @@ export class Vitals {
   @ManyToOne(() => User, {nullable: false, onDelete: 'CASCADE'})
   user: User;
 
-  @CreateDateColumn()
+  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 }
