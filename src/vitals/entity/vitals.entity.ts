@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, CreateDateColumn } from 'typeorm';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
@@ -8,7 +8,7 @@ export class Vitals {
   id: number;
 
   @OneToMany(() => Prescription, (prescription) => prescription.vitals, { nullable: false })
-  prescription: Prescription; // Reference to the Prescription
+  prescription: Prescription;
 
   @Column('jsonb', { nullable: true })
   bp?: {
@@ -31,6 +31,6 @@ export class Vitals {
   @ManyToOne(() => User, {nullable: false, onDelete: 'CASCADE'})
   user: User;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  createdAt: Date; // Track when the vitals were recorded
+  @CreateDateColumn()
+  createdAt: Date;
 }

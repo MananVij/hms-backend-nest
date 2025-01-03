@@ -106,10 +106,9 @@ export class AppointmentService {
           relations: ['doctor', 'clinic'],
           order: { time: 'DESC' },
         });
-        console.log(appointments)
         return appointments;
       } catch (error) {
-        console.log(error.code, "Error Code")
+        console.log(error.code, 'Error Code');
       }
     } else if (role === UserRole.ADMIN) {
       const clinics = await this.clinicRepository.find({
