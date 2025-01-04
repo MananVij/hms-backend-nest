@@ -35,12 +35,27 @@ export class AppointmentService {
       const [patientFound, doctorFound, clinic] = await Promise.all([
         queryRunner.manager.findOne(User, {
           where: { uid: patient, role: UserRole.PATIENT },
+          select: {
+            uid: true,
+            name: true,
+          },
         }),
         queryRunner.manager.findOne(User, {
           where: { uid: doctor, role: UserRole.DOCTOR },
+          select: {
+            uid: true,
+            name: true,
+          },
         }),
         queryRunner.manager.findOne(Clinic, {
           where: { id: clinic_id },
+          select: {
+            id: true,
+            name: true,
+            line1: true,
+            line2: true,
+            pincode: true,
+          },
         }),
       ]);
 
@@ -91,7 +106,7 @@ export class AppointmentService {
       return await this.appointmentRepository.find({
         where: { doctor: { uid: userId } },
         relations: ['clinic', 'patient'],
-        order: { created_at: 'DESC' },
+        order: { time: 'DESC' },
         select: {
           patient: {
             uid: true,
@@ -104,6 +119,19 @@ export class AppointmentService {
         const appointments = await this.appointmentRepository.find({
           where: { patient: { uid: userId, role: UserRole.PATIENT } },
           relations: ['doctor', 'clinic'],
+          select: {
+            doctor: {
+              uid: true,
+              name: true,
+            },
+            clinic: {
+              id: true,
+              name: true,
+              line1: true,
+              line2: true,
+              pincode: true,
+            },
+          },
           order: { time: 'DESC' },
         });
         return appointments;
@@ -133,6 +161,13 @@ export class AppointmentService {
           doctor: {
             name: true,
             phoneNumber: true,
+          },
+          clinic: {
+            id: true,
+            name: true,
+            line1: true,
+            line2: true,
+            pincode: true,
           },
         },
       });
