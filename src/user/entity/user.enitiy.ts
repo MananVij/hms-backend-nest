@@ -61,7 +61,6 @@ export class User {
   @Column({ default: false })
   is_verified: boolean;
 
-
   @OneToOne(() => MetaData, (metaData) => metaData.user, {
     cascade: true,
     onDelete: 'CASCADE',
@@ -81,6 +80,6 @@ export class User {
   @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.patient)
   patientClinics: PatientClinic[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

@@ -25,6 +25,6 @@ export class ErrorLog {
   @Column({ type: 'text', nullable: true })
   patient: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

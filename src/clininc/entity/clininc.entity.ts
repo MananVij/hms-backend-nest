@@ -48,6 +48,6 @@ export class Clinic {
   @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.clinic)
   patientClinics: PatientClinic[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

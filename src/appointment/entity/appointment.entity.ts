@@ -83,6 +83,6 @@ export class Appointment {
   @JoinColumn({ name: 'clinic_id' }) // Foreign key reference
   clinic: Clinic; // Reference to the Clinic entity
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

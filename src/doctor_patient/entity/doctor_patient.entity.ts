@@ -21,6 +21,6 @@ export class DoctorPatient {
   @JoinColumn({ name: 'patient_id' })
   patient: User;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

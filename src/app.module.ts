@@ -67,7 +67,7 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware'; // I
       synchronize: false,
       logging: ['error', 'query', 'schema'], // Log schema operations for monitoring
       extra: {
-        options: '-c timezone=Asia/Kolkata',
+        options: '-c timezone=UTC',
       },
     }),
     UserModule,

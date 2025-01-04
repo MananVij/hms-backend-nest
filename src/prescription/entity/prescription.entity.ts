@@ -66,7 +66,10 @@ export class Prescription {
     };
   }[];
 
-  @ManyToOne(() => Vitals, (vitals) => vitals.prescription, { nullable: true })
+  @ManyToOne(() => Vitals, (vitals) => vitals.prescription, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'vitals_id' })
   vitals?: Vitals;
 
@@ -79,6 +82,6 @@ export class Prescription {
   @Column({ type: 'boolean', default: false })
   is_final_prescription: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date; // Timestamp for when the object is created
 }

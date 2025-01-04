@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { User } from 'src/user/entity/user.enitiy';
+import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { Vitals } from 'src/vitals/entity/vitals.entity';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 
@@ -28,10 +28,13 @@ export class PrescriptionService {
         createPrescriptionDto;
 
       const [doctor, patient] = await Promise.all([
-        queryRunner.manager.findOne(User, { where: { uid: doctorId } }),
-        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: doctorId, role: UserRole.DOCTOR },
+        }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: patientId, role: UserRole.PATIENT },
+        }),
       ]);
-
       if (!doctor || !patient) {
         throw new NotFoundException('Doctor or Patient not found');
       }
@@ -39,9 +42,11 @@ export class PrescriptionService {
       // Find the vitals if provided
       const date = new Date(); // Current time
       const oneHourAgo = new Date(date.getTime() - 1 * 60 * 60 * 1000); // One hour ago
-
       const vitals = await queryRunner.manager.findOne(Vitals, {
-        where: { createdAt: Between(oneHourAgo, date) },
+        where: {
+          user: { uid: patientId, role: UserRole.PATIENT },
+          createdAt: Between(oneHourAgo, date),
+        },
         order: { createdAt: 'DESC' },
       });
 

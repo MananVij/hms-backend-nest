@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+} from 'typeorm';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 
@@ -7,7 +14,10 @@ export class Vitals {
   @PrimaryGeneratedColumn('uuid')
   id: number;
 
-  @OneToMany(() => Prescription, (prescription) => prescription.vitals, { nullable: false })
+  @OneToMany(() => Prescription, (prescription) => prescription.vitals, {
+    nullable: false,
+    onDelete: 'CASCADE'
+  })
   prescription: Prescription;
 
   @Column('jsonb', { nullable: true })
@@ -28,9 +38,9 @@ export class Vitals {
   @Column({ type: 'float', nullable: true })
   oxy?: number;
 
-  @ManyToOne(() => User, {nullable: false, onDelete: 'CASCADE'})
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   user: User;
 
-  @Column({ type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({type: 'timestamptz'})
   createdAt: Date;
 }
