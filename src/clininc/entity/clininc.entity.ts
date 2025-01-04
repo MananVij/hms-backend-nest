@@ -35,17 +35,23 @@ export class Clinic {
   @Column({ nullable: false, length: 10 })
   contactNumber: string;
 
-  @ManyToOne(() => User, (user) => user.clinics, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.clinics)
   @JoinColumn({ name: 'admin_id' })
   admin: User; // Admin associated with the clinic
 
-  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.clinic)
+  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.clinic, {
+    onDelete: 'CASCADE',
+  })
   doctorClinics: DoctorClinic[];
 
-  @OneToMany(() => Appointment, (appointment) => appointment.clinic)
+  @OneToMany(() => Appointment, (appointment) => appointment.clinic, {
+    onDelete: 'CASCADE',
+  })
   appointments: Appointment[]; // One clinic can have many appointments
 
-  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.clinic)
+  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.clinic, {
+    onDelete: 'CASCADE',
+  })
   patientClinics: PatientClinic[];
 
   @CreateDateColumn({ type: 'timestamptz' })

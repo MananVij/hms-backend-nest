@@ -12,14 +12,10 @@ export class DoctorClinic {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Doctor, (doctor) => doctor.doctorClinics, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Doctor, (doctor) => doctor.doctorClinics)
   doctor: Doctor;
 
-  @ManyToOne(() => Clinic, (clinic) => clinic.doctorClinics, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => Clinic, (clinic) => clinic.doctorClinics)
   clinic: Clinic;
 
   @CreateDateColumn({ type: 'timestamptz' })

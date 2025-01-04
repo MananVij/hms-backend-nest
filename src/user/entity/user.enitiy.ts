@@ -68,16 +68,20 @@ export class User {
   @JoinColumn()
   metaData: MetaData;
 
-  @OneToOne(() => Doctor, (doctor) => doctor.user)
+  @OneToOne(() => Doctor, (doctor) => doctor.user, { onDelete: 'CASCADE' })
   doctor: Doctor;
 
-  @OneToMany(() => Clinic, (clinic) => clinic.admin)
+  @OneToMany(() => Clinic, (clinic) => clinic.admin, { onDelete: 'CASCADE' })
   clinics: Clinic[];
 
-  @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.patient)
+  @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.patient, {
+    onDelete: 'CASCADE',
+  })
   doctors: DoctorPatient[];
 
-  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.patient)
+  @OneToMany(() => PatientClinic, (patientClinic) => patientClinic.patient, {
+    onDelete: 'CASCADE',
+  })
   patientClinics: PatientClinic[];
 
   @CreateDateColumn({ type: 'timestamptz' })

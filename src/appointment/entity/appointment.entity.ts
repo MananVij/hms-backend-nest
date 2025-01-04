@@ -46,7 +46,7 @@ export class Appointment {
   @JoinColumn({ name: 'patient' })
   patient: User; // Reference to the Patient's User ID
 
-  @Column()
+  @Column({ type: 'timestamptz' })
   time: Date; // Appointment date and time
 
   @Column({ nullable: true })
@@ -74,7 +74,7 @@ export class Appointment {
   @Column({ nullable: true })
   notes: string;
 
-  @OneToOne(() => Prescription, { nullable: true })
+  @OneToOne(() => Prescription, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'prescription' })
   prescription: Prescription; // Reference to the associated prescription (optional)
 

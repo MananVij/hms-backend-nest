@@ -42,14 +42,17 @@ export class Doctor {
 
   @OneToOne(() => User, (user) => user.doctor, {
     nullable: false,
-    onDelete: 'CASCADE',
   }) // Link to the User entity
   @JoinColumn({ name: 'user_id' }) // Creates the foreign key to User
   user: User;
 
-  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.doctor)
+  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.doctor, {
+    onDelete: 'CASCADE',
+  })
   doctorClinics: DoctorClinic[];
 
-  @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.doctor)
+  @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.doctor, {
+    onDelete: 'CASCADE',
+  })
   patients: DoctorPatient[];
 }

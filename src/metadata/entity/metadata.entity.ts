@@ -2,7 +2,6 @@ import {
   Column,
   Entity,
   PrimaryGeneratedColumn,
-  ManyToOne,
   OneToOne,
   JoinColumn,
 } from 'typeorm';
@@ -25,11 +24,11 @@ export class MetaData {
   @Column({ type: 'enum', enum: UserSex, nullable: false })
   sex: string;
 
-  @Column({ type: 'varchar', length: 10, default: "" })
+  @Column({ type: 'varchar', length: 10, default: '' })
   height: string;
 
   // Foreign key to the User table
-  @OneToOne(() => User, (user) => user.metaData, {onDelete: 'CASCADE'})
+  @OneToOne(() => User, (user) => user.metaData)
   @JoinColumn({ name: 'uid' }) // JoinColumn indicates the owning side
   user: User;
 }

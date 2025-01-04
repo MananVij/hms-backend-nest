@@ -16,7 +16,6 @@ export class Vitals {
 
   @OneToMany(() => Prescription, (prescription) => prescription.vitals, {
     nullable: false,
-    onDelete: 'CASCADE'
   })
   prescription: Prescription;
 
@@ -38,9 +37,9 @@ export class Vitals {
   @Column({ type: 'float', nullable: true })
   oxy?: number;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: false })
   user: User;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }
