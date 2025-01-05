@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { User } from 'src/user/entity/user.enitiy';
+import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { QueryRunner, Repository } from 'typeorm';
 import { PatientClinic } from './entity/patient_clinic.entity';
 import { CreatePatientClinicDto } from './dto/patinet_clinic.dto';
@@ -28,7 +28,23 @@ export class PatientClinicService {
     const { patientId, clinicId } = createUserClinicDto;
     try {
       const [patient, clinic] = await Promise.all([
-        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: patientId, role: UserRole.PATIENT },
+          relations: ['metaData'],
+          select: {
+            uid: true,
+            name: true,
+            phoneNumber: true,
+            metaData: {
+              dob: true,
+              sex: true,
+            },
+            address: {
+              line1: true,
+              line2: true,
+            },
+          },
+        }),
         queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
       ]);
       const userClinic = this.patientClinicRepository.create({

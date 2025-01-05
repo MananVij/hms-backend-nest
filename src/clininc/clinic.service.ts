@@ -24,6 +24,9 @@ export class ClinicService {
     try {
       const admin = await queryRunner.manager.findOne(User, {
         where: { uid: createClinicDto.admin_id },
+        select: {
+          uid: true,
+        },
       });
       if (!admin) {
         throw new NotFoundException('Admin not found');

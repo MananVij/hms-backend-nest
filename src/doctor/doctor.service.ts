@@ -29,7 +29,7 @@ export class DoctorService {
   async create(
     createDoctorDto: CreateDoctorDto,
     queryRunner: QueryRunner,
-  ): Promise<Doctor> {
+  ): Promise<any> {
     const { userData, clinicId, staffData, metaData } = createDoctorDto;
     try {
       const foundUser = await queryRunner.manager.findOne(User, {
@@ -60,7 +60,22 @@ export class DoctorService {
         clinicId,
         queryRunner,
       );
-      return createdDoctor;
+      const returnData = {
+        ...createdDoctor,
+        user: {
+          uid: user.uid,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          address: {
+            line1: user.address.line1,
+            line2: user.address.line2,
+            pincode: user.address.pincode,
+          },
+        },
+      };
+      return returnData;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;

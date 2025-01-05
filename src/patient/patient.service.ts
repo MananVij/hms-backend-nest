@@ -60,7 +60,7 @@ export class PatientService {
         ...createPatientDto,
       });
       const patient = await queryRunner.manager.save(newPatient);
-      await this.metaDataService.create(
+      const metaData = await this.metaDataService.create(
         {
           ...createMetaDataDto,
           uid: patient.uid,
@@ -81,7 +81,17 @@ export class PatientService {
         },
         queryRunner,
       );
-      return { id: patient.uid };
+      return {
+        id: patient.uid,
+        name: patient.name,
+        phoneNumber: patient.phoneNumber,
+        address: patient.address,
+        metaData: {
+          dob: metaData.dob,
+          sex: metaData.sex,
+          height: metaData.height,
+        },
+      };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -164,7 +174,23 @@ export class PatientService {
         queryRunner.manager.findOne(Doctor, {
           where: { user: { uid: doctorId } },
         }),
-        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: patientId, role: UserRole.PATIENT },
+          relations: ['metaData'],
+          select: {
+            uid: true,
+            name: true,
+            phoneNumber: true,
+            metaData: {
+              dob: true,
+              sex: true,
+            },
+            address: {
+              line1: true,
+              line2: true,
+            },
+          },
+        }),
       ]);
       
       const relationship = queryRunner.manager.create(DoctorPatient, {

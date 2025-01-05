@@ -9,6 +9,7 @@ import { QueryRunner, Repository } from 'typeorm';
 import { DoctorClinic } from './entity/doctor_clinic.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { UserRole } from 'src/user/entity/user.enitiy';
 
 @Injectable()
 export class DoctorClinicService {
@@ -21,11 +22,26 @@ export class DoctorClinicService {
     doctorId: string,
     clinicId: number,
     queryRunner: QueryRunner,
-  ): Promise<DoctorClinic> {
+  ): Promise<Doctor> {
     try {
       const [doctor, clinic] = await Promise.all([
         queryRunner.manager.findOne(Doctor, {
-          where: { user: { uid: doctorId } },
+          where: { user: { uid: doctorId, role: UserRole.DOCTOR } },
+          relations: ['user'],
+          select: {
+            user: {
+              uid: true,
+              name: true,
+              email: true,
+              phoneNumber: true,
+              role: true,
+              address: {
+                line1: true,
+                line2: true,
+                pincode: true,
+              },
+            },
+          },
         }),
         queryRunner.manager.findOne(Clinic, {
           where: { id: clinicId },
@@ -60,7 +76,8 @@ export class DoctorClinicService {
         clinic,
       });
 
-      return await queryRunner.manager.save(doctorClinic);
+      const savedDoctorClinic = await queryRunner.manager.save(doctorClinic);
+      return savedDoctorClinic.doctor;
     } catch (error) {
       if (
         error instanceof NotFoundException ||

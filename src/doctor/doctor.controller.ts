@@ -16,7 +16,6 @@ import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { Doctor } from './entity/doctor.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { DoctorClinicService } from 'src/doctor_clinic/doctor-clinic.service';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { CreateDoctorClinicDto } from 'src/doctor_clinic/dto/create-doctor-clinic.dto';
 import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
@@ -43,7 +42,7 @@ export class DoctorController {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Unable to Create Doctor. Something Went Wront.',
+        'Unable to Create Doctor. Something Went Wrong.',
       );
     }
   }
@@ -53,7 +52,7 @@ export class DoctorController {
   async onboardExistingDoctor(
     @Body() createDoctorClinicDto: CreateDoctorClinicDto,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
-  ): Promise<DoctorClinic> {
+  ): Promise<Doctor> {
     try {
       const { doctorId, clinicId } = createDoctorClinicDto;
       return await this.doctorClinicService.create(doctorId, clinicId, queryRunner);
@@ -65,7 +64,7 @@ export class DoctorController {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Unable to Create Doctor. Something Went Wront.',
+        'Unable to Create Doctor. Something Went Wrong.',
       );
     }
   }

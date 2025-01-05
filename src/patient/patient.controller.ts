@@ -111,8 +111,9 @@ export class PatientController {
 
       return {
         message: 'Patient successfully onboarded.',
-        doctorPatientRelationship: createdDoctorPatientRelationship,
-        patientClinicRelationship: createdPatientClinicRelationship,
+        patient:
+          createdDoctorPatientRelationship.patient ||
+          createdPatientClinicRelationship.patient,
       };
     } catch (error) {
       if (

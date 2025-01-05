@@ -16,10 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(
-    createUserDto: CreateUserDto,
-    queryRunner: QueryRunner,
-  ) {
+  async signup(createUserDto: CreateUserDto, queryRunner: QueryRunner) {
     try {
       const user = await this.userService.createUser(
         createUserDto,
@@ -58,10 +55,10 @@ export class AuthService {
       qualification: user?.qualification,
       name: user?.name,
       hasOnboardedClinic: user?.hasOnboardedClinic,
-      clinics: user?.clinicIds,
     };
     return {
       access_token: this.jwtService.sign(payload),
+      clinics: user?.clinicIds,
     };
   }
 }

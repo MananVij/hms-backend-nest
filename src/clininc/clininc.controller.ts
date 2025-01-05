@@ -31,7 +31,7 @@ export class ClinicController {
   async create(
     @Body() createClinicDto: CreateClinicDto,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
-  ) {
+  ): Promise<Clinic> {
     try {
       return await this.clinicService.create(createClinicDto, queryRunner);
     } catch (error) {
