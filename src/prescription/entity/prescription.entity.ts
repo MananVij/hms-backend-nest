@@ -1,3 +1,4 @@
+import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import { Vitals } from 'src/vitals/entity/vitals.entity';
 
@@ -8,6 +9,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  OneToOne,
 } from 'typeorm';
 
 @Entity('prescriptions')
@@ -15,10 +17,10 @@ export class Prescription {
   @PrimaryGeneratedColumn('uuid')
   id: number;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   doctor: User; // Reference to Doctor's User ID
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   patient: User; // Reference to Patient's User ID
 
   @Column({ nullable: true })
@@ -70,6 +72,11 @@ export class Prescription {
   })
   @JoinColumn({ name: 'vitals_id' })
   vitals?: Vitals;
+
+  @OneToOne(() => Appointment, (appointment) => appointment.prescription, {
+    nullable: true,
+  })
+  appointment: Appointment;
 
   @Column({ type: 'boolean', default: true })
   is_gemini_data: boolean;

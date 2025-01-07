@@ -63,7 +63,7 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware'; // I
         ErrorLog,
       ],
       migrations: [__dirname + '/migrations/*{.ts,.js}'], // Explicit migrations
-      migrationsRun: true, // Run pending migrations on startup
+      migrationsRun: false,
       synchronize: false,
       logging: ['error', 'query', 'schema'], // Log schema operations for monitoring
       extra: {

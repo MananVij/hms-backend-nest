@@ -1,6 +1,7 @@
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
+import { Vitals } from 'src/vitals/entity/vitals.entity';
 import {
   Entity,
   Column,
@@ -46,7 +47,7 @@ export class Appointment {
   @JoinColumn({ name: 'patient' })
   patient: User; // Reference to the Patient's User ID
 
-  @Column({ type: 'timestamptz' })
+  @Column({ type: 'timestamptz', nullable: false })
   time: Date; // Appointment date and time
 
   @Column({ nullable: true })
@@ -74,9 +75,13 @@ export class Appointment {
   @Column({ nullable: true })
   notes: string;
 
-  @OneToOne(() => Prescription, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => Prescription, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'prescription' })
   prescription: Prescription; // Reference to the associated prescription (optional)
+
+  @OneToOne(() => Vitals, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'vitals' })
+  vitals: Vitals; // Reference to the associated prescription (optional)
 
   // Added one-to-one relationship with Clinic
   @ManyToOne(() => Clinic, { nullable: false }) // Relationship to Clinic

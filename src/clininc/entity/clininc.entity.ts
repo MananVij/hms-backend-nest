@@ -35,7 +35,10 @@ export class Clinic {
   @Column({ nullable: false, length: 10 })
   contactNumber: string;
 
-  @ManyToOne(() => User, (user) => user.clinics)
+  @ManyToOne(() => User, (user) => user.clinics, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
   @JoinColumn({ name: 'admin_id' })
   admin: User; // Admin associated with the clinic
 

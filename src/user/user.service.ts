@@ -103,7 +103,7 @@ export class UserService {
     }
   }
 
-  async findOne(id: string): Promise<User> {
+  async getUserDetails(id: string): Promise<User> {
     const isValidUUID =
       /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
         id,
@@ -114,7 +114,13 @@ export class UserService {
     }
     const user = await this.userRepository.findOne({
       where: { uid: id },
-      select: { uid: true },
+      relations: ['metaData'],
+      select: {
+        uid: true,
+        name: true,
+        phoneNumber: true,
+        metaData: { dob: true, height: true, sex: true },
+      },
     });
     if (!user) {
       throw new NotFoundException('User Not Found');

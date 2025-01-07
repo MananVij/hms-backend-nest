@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
-  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -38,11 +37,6 @@ export class UserController {
       }
       throw new InternalServerErrorException('Failed to create user');
     }
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<User> {
-    return this.userService.findOne(id);
   }
 
   @Get('')

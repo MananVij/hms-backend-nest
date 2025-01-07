@@ -3,8 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { QueryRunner, Repository } from 'typeorm';
 import { Vitals } from './entity/vitals.entity';
 import { CreateVitalsDto } from './dto/create-vitals.dto';
-import { User } from 'src/user/entity/user.enitiy';
+import { User, UserRole } from 'src/user/entity/user.enitiy';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { Appointment } from 'src/appointment/entity/appointment.entity';
 
 @Injectable()
 export class VitalsService {
@@ -23,22 +24,35 @@ export class VitalsService {
     queryRunner: QueryRunner,
   ): Promise<Vitals> {
     try {
-      const { userId, ...vitalsData } = createVitalsDto;
+      const { userId, appointmentId, ...vitalsData } = createVitalsDto;
 
-      // Fetch associated User
-      const user = await queryRunner.manager.findOne(User, {
-        where: { uid: userId },
-      });
+      const [user, appointment] = await Promise.all([
+        queryRunner.manager.findOne(User, {
+          where: { uid: userId, role: UserRole.PATIENT },
+        }),
+        queryRunner.manager.findOne(Appointment, {
+          where: { id: appointmentId },
+        }),
+      ]);
       if (!user) {
         throw new NotFoundException(`User not found`);
       }
+
+      if (!appointment) {
+        throw new NotFoundException(`Appointment not found`);
+      }
+
       const vitals = queryRunner.manager.create(Vitals, {
         ...vitalsData,
+        appointment,
         user,
       });
 
-      return queryRunner.manager.save(vitals);
+      appointment.vitals = vitals;
+      await queryRunner.manager.save([vitals, appointment]);
+      return vitals;
     } catch (error) {
+      console.log(error)
       if (error instanceof NotFoundException) {
         throw error;
       }

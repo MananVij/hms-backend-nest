@@ -41,8 +41,9 @@ export class Doctor {
   }[];
 
   @OneToOne(() => User, (user) => user.doctor, {
-    nullable: false,
-  }) // Link to the User entity
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'user_id' }) // Creates the foreign key to User
   user: User;
 

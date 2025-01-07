@@ -13,11 +13,11 @@ export class DoctorPatient {
   @PrimaryGeneratedColumn()
   id: string;
 
-  @ManyToOne(() => Doctor, (doctor) => doctor.patients)
+  @ManyToOne(() => Doctor, (doctor) => doctor.patients, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'doctor_id' })
   doctor: Doctor;
 
-  @ManyToOne(() => User, (user) => user.doctors)
+  @ManyToOne(() => User, (user) => user.doctors, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'patient_id' })
   patient: User;
 

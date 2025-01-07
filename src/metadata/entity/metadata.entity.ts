@@ -28,7 +28,10 @@ export class MetaData {
   height: string;
 
   // Foreign key to the User table
-  @OneToOne(() => User, (user) => user.metaData)
+  @OneToOne(() => User, (user) => user.metaData, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'uid' }) // JoinColumn indicates the owning side
   user: User;
 }

@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, Repository } from 'typeorm';
+import { Between, In, IsNull, Repository } from 'typeorm';
 import { UserRole } from 'src/user/entity/user.enitiy';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { addDays, endOfDay, startOfDay, subDays } from 'date-fns';
@@ -143,6 +143,7 @@ export class DashboardService {
               endOfDay(today),
             ),
             doctor: { uid: userId },
+            prescription: IsNull()
           },
           relations: ['doctor', 'patient'],
           select: {
@@ -250,8 +251,8 @@ export class DashboardService {
       seenAppointments = await this.appointmentRepository.count({
         where: {
           doctor: { uid: userId },
+          prescription: (IsNull()),
           time: Between(startOfDay(today), endOfDay(today)),
-          startTime: Between(startOfDay(today), endOfDay(today)),
         },
       });
     } else if (role === UserRole.ADMIN) {
@@ -277,8 +278,8 @@ export class DashboardService {
       seenAppointments = await this.appointmentRepository.count({
         where: {
           doctor: { uid: In(doctorIds) },
+          prescription: IsNull(),
           time: Between(startOfDay(today), endOfDay(today)),
-          startTime: Between(startOfDay(today), endOfDay(today)),
         },
       });
     }

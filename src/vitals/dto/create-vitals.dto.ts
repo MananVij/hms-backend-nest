@@ -18,6 +18,9 @@ export class CreateVitalsDto {
   @IsUUID()
   userId: string;
 
+  @IsUUID()
+  appointmentId: number;
+
   // Optional blood pressure object containing systolic and diastolic values
   @IsOptional()
   @ValidateNested()

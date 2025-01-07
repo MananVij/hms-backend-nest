@@ -6,18 +6,17 @@ import { AppointmentService } from './appointment.service';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
+import { UserService } from 'src/user/user.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Appointment, Prescription, Clinic]),
+    TypeOrmModule.forFeature([Appointment, Prescription, Clinic, User]),
     Appointment,
     ErrorLogModule,
   ],
   controllers: [AppointmentController],
-  providers: [AppointmentService],
+  providers: [AppointmentService, UserService],
   exports: [AppointmentService],
 })
 export class AppointmentModule {}

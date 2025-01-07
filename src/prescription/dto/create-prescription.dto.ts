@@ -53,6 +53,9 @@ export class CreatePrescriptionDto {
   @IsUUID()
   patientId: string;
 
+  @IsUUID()
+  appointmentId: number;
+
   @IsOptional()
   @IsString()
   diagnosis?: string;

@@ -47,12 +47,13 @@ export class AppointmentController {
   async findAll(
     @Query('userId') userId: string,
     @Query('role') role: string,
+    @Query('upcoming') upcoming: boolean
   ): Promise<Appointment[]> {
-    return this.appointmentService.findAllAppointments(userId, role);
+    return this.appointmentService.findAllAppointments(userId, role, upcoming);
   }
 
   @Get('')
-  async findOne(@Param('id') id: number): Promise<Appointment> {
+  async findOne(@Query('id') id: number): Promise<Appointment> {
     return this.appointmentService.findOne(id);
   }
 

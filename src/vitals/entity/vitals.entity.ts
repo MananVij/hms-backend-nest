@@ -5,9 +5,11 @@ import {
   ManyToOne,
   OneToMany,
   CreateDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
+import { Appointment } from 'src/appointment/entity/appointment.entity';
 
 @Entity('vitals')
 export class Vitals {
@@ -18,6 +20,11 @@ export class Vitals {
     nullable: false,
   })
   prescription: Prescription;
+
+  @OneToOne(() => Appointment, (appointment) => appointment.vitals, {
+    nullable: true,
+  })
+  appointment: Appointment;
 
   @Column('jsonb', { nullable: true })
   bp?: {
@@ -37,7 +44,7 @@ export class Vitals {
   @Column({ type: 'float', nullable: true })
   oxy?: number;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   user: User;
 
   @CreateDateColumn({ type: 'timestamptz' })

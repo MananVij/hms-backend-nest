@@ -4,12 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, QueryRunner, Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { User, UserRole } from 'src/user/entity/user.enitiy';
-import { Vitals } from 'src/vitals/entity/vitals.entity';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { Appointment } from 'src/appointment/entity/appointment.entity';
 
 @Injectable()
 export class PrescriptionService {
@@ -24,37 +24,35 @@ export class PrescriptionService {
     queryRunner: QueryRunner,
   ): Promise<Prescription> {
     try {
-      const { doctorId, patientId, vitalsId, ...prescriptionData } =
-        createPrescriptionDto;
+      const {
+        doctorId,
+        patientId,
+        vitalsId,
+        appointmentId,
+        ...prescriptionData
+      } = createPrescriptionDto;
 
-      const [doctor, patient] = await Promise.all([
+      const [doctor, patient, appointment] = await Promise.all([
         queryRunner.manager.findOne(User, {
           where: { uid: doctorId, role: UserRole.DOCTOR },
         }),
         queryRunner.manager.findOne(User, {
           where: { uid: patientId, role: UserRole.PATIENT },
         }),
+
+        queryRunner.manager.findOne(Appointment, {
+          where: { id: appointmentId },
+        }),
       ]);
       if (!doctor || !patient) {
         throw new NotFoundException('Doctor or Patient not found');
       }
 
-      // Find the vitals if provided
-      const date = new Date(); // Current time
-      const oneHourAgo = new Date(date.getTime() - 1 * 60 * 60 * 1000); // One hour ago
-      const vitals = await queryRunner.manager.findOne(Vitals, {
-        where: {
-          user: { uid: patientId, role: UserRole.PATIENT },
-          createdAt: Between(oneHourAgo, date),
-        },
-        order: { createdAt: 'DESC' },
-      });
-
       const prescription = queryRunner.manager.create(Prescription, {
         ...prescriptionData,
+        appointment,
         doctor,
         patient,
-        vitals,
       });
       await queryRunner.manager.save(prescription);
       return prescription;
