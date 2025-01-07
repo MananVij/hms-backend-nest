@@ -118,7 +118,7 @@ export class AppointmentService {
     upcoming: boolean,
   ): Promise<any> {
     const prescriptionCondition = upcoming
-      ? { prescription: IsNull() }
+      ? { }
       : { prescription: Not(IsNull()) };
     if (role === UserRole.DOCTOR) {
       return await this.appointmentRepository.find({
