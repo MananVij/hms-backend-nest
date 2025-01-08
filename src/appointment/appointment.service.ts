@@ -111,18 +111,20 @@ export class AppointmentService {
       throw new InternalServerErrorException('Something Went Wrong');
     }
   }
-
   async findAllAppointments(
     userId: string,
     role: string,
     upcoming: boolean,
+    timeCondition: object = {},
   ): Promise<any> {
-    const prescriptionCondition = upcoming
-      ? { }
-      : { prescription: Not(IsNull()) };
+    const prescriptionCondition = upcoming ? { prescription: IsNull() } : {prescription: Not(IsNull())};
     if (role === UserRole.DOCTOR) {
       return await this.appointmentRepository.find({
-        where: { doctor: { uid: userId }, ...prescriptionCondition },
+        where: {
+          doctor: { uid: userId },
+          ...prescriptionCondition,
+          ...timeCondition,
+        },
         relations: ['clinic', 'patient', 'vitals'],
         order: { time: 'DESC' },
         select: {
@@ -177,7 +179,11 @@ export class AppointmentService {
 
       const clinicIds = clinics.map((clinic) => clinic.id);
       const appointments = await this.appointmentRepository.find({
-        where: { clinic: { id: In(clinicIds) }, ...prescriptionCondition },
+        where: {
+          clinic: { id: In(clinicIds) },
+          ...prescriptionCondition,
+          ...timeCondition,
+        },
         relations: ['clinic', 'patient', 'doctor', 'vitals'],
         select: {
           patient: {

@@ -9,9 +9,11 @@ import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { AppointmentService } from 'src/appointment/appointment.service';
+import { AppointmentModule } from 'src/appointment/appointment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Doctor, DoctorClinic, DoctorPatient, MetaData, Appointment, Clinic])],
+  imports: [TypeOrmModule.forFeature([User, Doctor, DoctorClinic, DoctorPatient, MetaData, Clinic, Appointment]), AppointmentModule],
   providers: [DashboardService],
   controllers: [DashboardController],
 })

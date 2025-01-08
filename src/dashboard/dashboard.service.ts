@@ -7,6 +7,7 @@ import { addDays, endOfDay, startOfDay, subDays } from 'date-fns';
 import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { AppointmentService } from 'src/appointment/appointment.service';
 
 @Injectable()
 export class DashboardService {
@@ -22,6 +23,8 @@ export class DashboardService {
 
     @InjectRepository(Clinic)
     private clinicRepository: Repository<Clinic>,
+
+    private appointmentService: AppointmentService,
   ) {}
 
   async getDashboard(userId: string, role: string): Promise<any> {
@@ -40,22 +43,30 @@ export class DashboardService {
         userId,
         role,
         dates,
-        countByDate,
+        { ...countByDate },
         today,
       );
-
-      const appointmentData = await this.findAppointmentTrend(
+      const appointmentTrend = await this.findAppointmentTrend(
         userId,
         role,
         dates,
-        countByDate,
+        { ...countByDate },
         today,
       );
+      const todayAppointmentArray =
+        await this.appointmentService.findAllAppointments(userId, role, true, {
+          time: Between(startOfDay(today), endOfDay(today)),
+        });
       const appointmentCountTrend = await this.appointmentComparisonTrend(
         userId,
         role,
       );
-      return { newPatinetTrend, appointmentCountTrend, ...appointmentData };
+      return {
+        newPatinetTrend,
+        appointmentCountTrend,
+        todayAppointmentArray,
+        appointmentTrend,
+      };
     } catch (error) {
       return error;
     }
@@ -77,7 +88,7 @@ export class DashboardService {
               startOfDay(subDays(today, 14)),
               endOfDay(today),
             ),
-            doctor: { user: { uid: userId } },
+            doctor: { user: { uid: userId, role: UserRole.DOCTOR } },
           },
 
           select: {
@@ -87,17 +98,18 @@ export class DashboardService {
         });
       } else if (role === UserRole.ADMIN) {
         const adminDoctorIds = await this.doctorClinicRepository.find({
-          where: { clinic: { admin: { uid: userId } } },
+          where: { clinic: { admin: { uid: userId, role: UserRole.ADMIN } } },
+          relations: ['doctor'],
           select: {
             doctor: {
               id: true,
             },
           },
         });
-        const doctorIds = adminDoctorIds.map((doctor) => doctor.id);
+        const doctorIds = adminDoctorIds.map((doctor) => doctor.doctor.id);
         patients = await this.doctorPatientRepository.find({
           where: {
-            doctor: In(doctorIds),
+            doctor: { id: In(doctorIds) },
             created_at: Between(
               startOfDay(subDays(today, 14)),
               endOfDay(today),
@@ -121,6 +133,7 @@ export class DashboardService {
       });
       return patientTrend;
     } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException('Something Went Wrong');
     }
   }
@@ -133,36 +146,15 @@ export class DashboardService {
     today: Date,
   ) {
     var appointments = [];
-    var todayAppointmentArray = [];
     try {
       if (role === UserRole.DOCTOR) {
         appointments = await this.appointmentRepository.find({
           where: {
-            created_at: Between(
-              startOfDay(subDays(today, 14)),
-              endOfDay(today),
-            ),
+            time: Between(startOfDay(subDays(today, 14)), endOfDay(today)),
             doctor: { uid: userId },
-            prescription: IsNull()
           },
-          relations: ['doctor', 'patient'],
-          select: {
-            doctor: {
-              name: true,
-            },
-            patient: {
-              uid: true,
-              name: true,
-            },
-            time: true,
-            id: true,
-            visitType: true,
-            status: true,
-            hasVisited: true,
-            notes: true,
-          },
+          select: { time: true },
         });
-        todayAppointmentArray = await this.getTodayAppointments(appointments);
       } else if (role === UserRole.ADMIN) {
         const adminClinics = await this.clinicRepository.find({
           where: { admin: { uid: userId } },
@@ -176,24 +168,10 @@ export class DashboardService {
             time: Between(startOfDay(subDays(today, 14)), endOfDay(today)),
             clinic: { id: In(clinicIds) },
           },
-          relations: ['doctor', 'patient'],
           select: {
-            doctor: {
-              name: true,
-            },
-            patient: {
-              uid: true,
-              name: true,
-            },
             time: true,
-            id: true,
-            visitType: true,
-            status: true,
-            hasVisited: true,
-            notes: true,
           },
         });
-        todayAppointmentArray = await this.getTodayAppointments(appointments);
       }
       appointments.forEach((appointment) => {
         const appointmentDate = appointment.time.toISOString().split('T')[0];
@@ -209,7 +187,7 @@ export class DashboardService {
           count: appointmentCountByDate[formattedDate],
         };
       });
-      return { appointmentTrend, todayAppointmentArray };
+      return appointmentTrend;
     } catch (error) {
       // await this.errorLogService.logError(
       //   error.message,
@@ -220,20 +198,6 @@ export class DashboardService {
       // );
       throw new Error('Something Went Wrong');
     }
-  }
-
-  private async getTodayAppointments(
-    appointments: Appointment[],
-  ): Promise<Appointment[]> {
-    const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
-
-    const todayAppointments = appointments.filter((appointment) => {
-      const appointmentDate = appointment.time.toISOString().split('T')[0];
-      return appointmentDate === todayString;
-    });
-
-    return todayAppointments;
   }
 
   private async appointmentComparisonTrend(userId: string, role: string) {
@@ -251,7 +215,7 @@ export class DashboardService {
       seenAppointments = await this.appointmentRepository.count({
         where: {
           doctor: { uid: userId },
-          prescription: (IsNull()),
+          prescription: IsNull(),
           time: Between(startOfDay(today), endOfDay(today)),
         },
       });
