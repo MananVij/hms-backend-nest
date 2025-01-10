@@ -3,13 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  DeepPartial,
-  IsNull,
-  Not,
-  QueryRunner,
-  Repository,
-} from 'typeorm';
+import { DeepPartial, IsNull, Not, QueryRunner, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
@@ -34,7 +28,7 @@ export class AppointmentService {
   async create(
     createAppointmentDto: CreateAppointmentDto,
     queryRunner: QueryRunner,
-  ): Promise<Appointment> {
+  ): Promise<any> {
     const { doctor, patient, clinic_id, ...otherEntites } =
       createAppointmentDto;
 
@@ -85,7 +79,31 @@ export class AppointmentService {
         });
         await queryRunner.manager.save(doctorPatient);
       }
-      return queryRunner.manager.save(appointment);
+      const savedAppointment = await queryRunner.manager.save(appointment);
+      const formattedData = {
+        doctor: {
+          name: savedAppointment.doctor.name,
+          phoneNumber: savedAppointment.doctor.phoneNumber,
+        },
+        patient: {
+          uid: savedAppointment.patient.uid,
+          name: savedAppointment.patient.name,
+          phoneNumber: savedAppointment.patient.phoneNumber,
+          address: {
+            line1: savedAppointment.patient.address.line1,
+            line2: savedAppointment.patient.address.line2,
+            pincode: savedAppointment.patient.address.pincode,
+          },
+        },
+        clinic: {
+          id: savedAppointment.clinic.id,
+          name: savedAppointment.clinic.name,
+          line1: savedAppointment.clinic.line1,
+          line2: savedAppointment.clinic.line2,
+          pincode: savedAppointment.clinic.pincode,
+        },
+      };
+      return formattedData;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -136,7 +154,7 @@ export class AppointmentService {
           patient: { uid: patientId },
           clinic: { id: clinicId },
         },
-        relations: [ 'doctor', 'prescription', 'vitals'],
+        relations: ['doctor', 'prescription', 'vitals'],
         select: {
           ...selectCondition,
         },
