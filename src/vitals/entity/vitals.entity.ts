@@ -3,11 +3,9 @@ import {
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
-  OneToMany,
   CreateDateColumn,
   OneToOne,
 } from 'typeorm';
-import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 
@@ -15,11 +13,6 @@ import { Appointment } from 'src/appointment/entity/appointment.entity';
 export class Vitals {
   @PrimaryGeneratedColumn('uuid')
   id: number;
-
-  @OneToMany(() => Prescription, (prescription) => prescription.vitals, {
-    nullable: false,
-  })
-  prescription: Prescription;
 
   @OneToOne(() => Appointment, (appointment) => appointment.vitals, {
     nullable: true,

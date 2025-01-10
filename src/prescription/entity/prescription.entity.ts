@@ -1,13 +1,11 @@
 import { Appointment } from 'src/appointment/entity/appointment.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import { Vitals } from 'src/vitals/entity/vitals.entity';
 
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
-  JoinColumn,
   CreateDateColumn,
   OneToOne,
 } from 'typeorm';
@@ -65,13 +63,6 @@ export class Prescription {
       pc: boolean; // After meals
     };
   }[];
-
-  @ManyToOne(() => Vitals, (vitals) => vitals.prescription, {
-    nullable: true,
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'vitals_id' })
-  vitals?: Vitals;
 
   @OneToOne(() => Appointment, (appointment) => appointment.prescription, {
     nullable: true,
