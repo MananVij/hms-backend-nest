@@ -1,13 +1,13 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Param,
   UseGuards,
   UseInterceptors,
   NotFoundException,
   InternalServerErrorException,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -16,6 +16,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
+import { Request } from 'src/interfaces/request.interface';
 
 @Controller('prescriptions')
 @UseGuards(JwtAuthGuard)
@@ -25,13 +26,18 @@ export class PrescriptionController {
   @Post('create')
   @UseInterceptors(TransactionInterceptor)
   async create(
-    @Body() createPrescriptionDto: CreatePrescriptionDto,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Query('clinicId') clinicId: number,
+    @Body() createPrescriptionDto: CreatePrescriptionDto,
   ): Promise<Prescription> {
+    const doctorId = req?.user?.uid
     try {
       return await this.prescriptionService.create(
         createPrescriptionDto,
         queryRunner,
+        doctorId,
+        clinicId
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -41,25 +47,5 @@ export class PrescriptionController {
         'Unable to save prescription. Something went wrong.',
       );
     }
-  }
-
-  @Get('doctor')
-  async findPrescriptionsByDoctor(
-    @Param('id') id: string,
-  ): Promise<Prescription[]> {
-    return await this.prescriptionService.findPrescriptionsByDoctor(id);
-  }
-
-  // Get prescriptions by patient ID
-  @Get('patient/:id')
-  async findPrescriptionsByPatient(
-    @Param('id') id: string,
-  ): Promise<Prescription[]> {
-    return await this.prescriptionService.findPrescriptionsOfPatient(id);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: number): Promise<Prescription> {
-    return await this.prescriptionService.findOne(id);
   }
 }

@@ -3,10 +3,11 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entity/user.enitiy';
-import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, PatientClinic])],
+  imports: [TypeOrmModule.forFeature([User]), UserClinicModule, ErrorLogModule],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],

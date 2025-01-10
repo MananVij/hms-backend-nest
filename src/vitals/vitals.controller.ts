@@ -2,21 +2,19 @@ import {
   Controller,
   Post,
   Body,
-  Get,
-  Param,
   UseGuards,
   UseInterceptors,
-  Query,
   NotFoundException,
   InternalServerErrorException,
+  Req,
 } from '@nestjs/common';
 import { VitalsService } from './vitals.service';
 import { CreateVitalsDto } from './dto/create-vitals.dto';
-import { Vitals } from './entity/vitals.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
+import { Request } from 'src/interfaces/request.interface';
 
 @Controller('vitals')
 @UseGuards(JwtAuthGuard)
@@ -26,11 +24,13 @@ export class VitalsController {
   @Post()
   @UseInterceptors(TransactionInterceptor)
   async createVitals(
-    @Body() createVitalsDto: CreateVitalsDto,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Body() createVitalsDto: CreateVitalsDto,
   ): Promise<any> {
+    const userId = req?.user?.uid
     try {
-      return this.vitalsService.createVitals(createVitalsDto, queryRunner);
+      return this.vitalsService.createVitals(queryRunner, userId, createVitalsDto);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -39,19 +39,5 @@ export class VitalsController {
         'Something went wrong. Failed to update metadata.',
       );
     }
-  }
-
-  @Get(':prescriptionId')
-  async getVitalsByPrescription(
-    @Param('prescriptionId') prescriptionId: number,
-  ): Promise<Vitals[]> {
-    return this.vitalsService.getVitalsByPrescription(prescriptionId);
-  }
-
-  @Get('/latest/:userId')
-  async getLatestVitalsByUser(
-    @Param('userId') userId: string,
-  ): Promise<Vitals> {
-    return this.vitalsService.getLatestVitalsByUser(userId);
   }
 }

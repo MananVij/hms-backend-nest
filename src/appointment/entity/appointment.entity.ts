@@ -39,11 +39,11 @@ export class Appointment {
   @PrimaryGeneratedColumn('uuid')
   id: number; // Unique identifier for the appointment
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'doctor' })
   doctor: User; // Reference to the Doctor's User ID
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'patient' })
   patient: User; // Reference to the Patient's User ID
 

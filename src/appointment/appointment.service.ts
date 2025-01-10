@@ -4,9 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  Between,
   DeepPartial,
-  In,
   IsNull,
   Not,
   QueryRunner,
@@ -15,23 +13,22 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
-import { User, UserRole } from 'src/user/entity/user.enitiy';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { User } from 'src/user/entity/user.enitiy';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { startOfDay, endOfDay } from 'date-fns';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { UserService } from 'src/user/user.service';
+import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
+import { UserClinicService } from 'src/user_clinic/user_clinic.service';
+import { ClinicService } from 'src/clininc/clinic.service';
 
 @Injectable()
 export class AppointmentService {
   constructor(
-    private userService: UserService,
     @InjectRepository(Appointment)
     private appointmentRepository: Repository<Appointment>,
-
-    @InjectRepository(Clinic)
-    private clinicRepository: Repository<Clinic>,
+    private readonly userService: UserService,
+    private readonly userClinicService: UserClinicService,
+    private readonly clinicService: ClinicService,
   ) {}
 
   async create(
@@ -42,31 +39,21 @@ export class AppointmentService {
       createAppointmentDto;
 
     try {
-      const [patientFound, doctorFound, clinic] = await Promise.all([
+      const [patientFound, clinic, doctorFound] = await Promise.all([
         queryRunner.manager.findOne(User, {
-          where: { uid: patient, role: UserRole.PATIENT },
-          select: {
-            uid: true,
-            name: true,
-            phoneNumber: true,
-          },
+          where: { uid: patient, isPatient: true },
         }),
-        queryRunner.manager.findOne(User, {
-          where: { uid: doctor, role: UserRole.DOCTOR },
-          select: {
-            uid: true,
-            name: true,
-          },
-        }),
+
         queryRunner.manager.findOne(Clinic, {
           where: { id: clinic_id },
-          select: {
-            id: true,
-            name: true,
-            line1: true,
-            line2: true,
-            pincode: true,
+        }),
+
+        queryRunner.manager.findOne(User, {
+          where: {
+            uid: doctor,
+            userClinics: { clinic: { id: clinic_id }, role: UserRole.DOCTOR },
           },
+          relations: ['userClinics', 'doctor'],
         }),
       ]);
 
@@ -81,10 +68,6 @@ export class AppointmentService {
         ...otherEntites,
       } as DeepPartial<Appointment>);
 
-      const doctorEntity = await queryRunner.manager.findOne(Doctor, {
-        where: { user: { uid: doctor } },
-      });
-
       const doctorPatientExists = await queryRunner.manager.findOne(
         DoctorPatient,
         {
@@ -97,12 +80,11 @@ export class AppointmentService {
 
       if (!doctorPatientExists) {
         const doctorPatient = queryRunner.manager.create(DoctorPatient, {
-          doctor: doctorEntity,
+          doctor: doctorFound.doctor,
           patient: patientFound,
         });
         await queryRunner.manager.save(doctorPatient);
       }
-
       return queryRunner.manager.save(appointment);
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -111,186 +93,127 @@ export class AppointmentService {
       throw new InternalServerErrorException('Something Went Wrong');
     }
   }
-  async findAllAppointments(
+
+  async findAppointmentsOfPatient(
+    queryRunner: QueryRunner,
     userId: string,
-    role: string,
+    patientId: string,
+    clinicId: number,
+  ) {
+    const selectCondition = {
+      doctor: {
+        name: true,
+        phoneNumber: true,
+      },
+    };
+
+    const role = await this.userClinicService.findUserRoleInClinic(
+      queryRunner,
+      userId,
+      clinicId,
+    );
+    const [patient, clinic] = await Promise.all([
+      await this.userService.findUserByUserId(patientId),
+      await this.clinicService.findOne(clinicId),
+    ]);
+
+    if (role === UserRole.DOCTOR) {
+      const appointments = await this.appointmentRepository.find({
+        where: {
+          patient: { uid: patientId },
+          doctor: { uid: userId },
+          clinic: { id: clinicId },
+        },
+        relations: ['doctor', 'prescription', 'vitals'],
+        select: {
+          ...selectCondition,
+        },
+      });
+      return { appointments, patient, clinic };
+    } else if (role === UserRole.ADMIN) {
+      const appointments = await this.appointmentRepository.find({
+        where: {
+          patient: { uid: patientId },
+          clinic: { id: clinicId },
+        },
+        relations: [ 'doctor', 'prescription', 'vitals'],
+        select: {
+          ...selectCondition,
+        },
+      });
+      console.log(appointments);
+      return { appointments, patient, clinic };
+    }
+  }
+
+  async findAllAppointments(
+    queryRunner: QueryRunner,
+    userId: string,
+    clinicId: number,
     upcoming: boolean,
-    timeCondition: object = {},
-  ): Promise<any> {
-    const prescriptionCondition = upcoming ? { prescription: IsNull() } : {prescription: Not(IsNull())};
+  ) {
+    const role = await this.userClinicService.findUserRoleInClinic(
+      queryRunner,
+      userId,
+      clinicId,
+    );
+
+    const prescriptionCondition = upcoming
+      ? { prescription: IsNull() }
+      : { prescription: Not(IsNull()) };
+
+    const selectCondition = {
+      doctor: {
+        name: true,
+        phoneNumber: true,
+      },
+      patient: {
+        uid: true,
+        name: true,
+        phoneNumber: true,
+        address: {
+          line1: true,
+          line2: true,
+          pincode: true,
+        },
+      },
+      clinic: {
+        id: true,
+        name: true,
+        line1: true,
+        line2: true,
+        pincode: true,
+      },
+    };
+
     if (role === UserRole.DOCTOR) {
       return await this.appointmentRepository.find({
         where: {
+          clinic: { id: clinicId },
           doctor: { uid: userId },
           ...prescriptionCondition,
-          ...timeCondition,
         },
-        relations: ['clinic', 'patient', 'vitals'],
-        order: { time: 'DESC' },
+        relations: ['patient', 'doctor', 'clinic', 'vitals'],
         select: {
-          patient: {
-            uid: true,
-            name: true,
-            phoneNumber: true,
-          },
+          ...selectCondition,
+        },
+        order: {
+          time: 'DESC',
         },
       });
-    } else if (role === UserRole.PATIENT) {
-      try {
-        const [user, appointments] = await Promise.all([
-          this.userService.getUserDetails(userId),
-          this.appointmentRepository.find({
-            where: {
-              patient: { uid: userId, role: UserRole.PATIENT },
-              ...prescriptionCondition,
-            },
-            relations: ['doctor', 'clinic', 'prescription', 'vitals'],
-            select: {
-              doctor: {
-                uid: true,
-                name: true,
-              },
-              clinic: {
-                name: true,
-                line1: true,
-                line2: true,
-                pincode: true,
-              },
-            },
-            order: { time: 'DESC' },
-          }),
-        ]);
-        if (!user) {
-          throw new NotFoundException('User Not Found');
-        }
-
-        if (!appointments) {
-          throw new Error(`No appointments found for user ID ${userId}`);
-        }
-
-        return { appointments, patient: user };
-      } catch (error) {
-        throw error;
-      }
     } else if (role === UserRole.ADMIN) {
-      const clinics = await this.clinicRepository.find({
-        where: { admin: { uid: userId } },
-      });
-
-      const clinicIds = clinics.map((clinic) => clinic.id);
-      const appointments = await this.appointmentRepository.find({
-        where: {
-          clinic: { id: In(clinicIds) },
-          ...prescriptionCondition,
-          ...timeCondition,
+      const hello = this.appointmentRepository.find({
+        where: { clinic: { id: clinicId }, ...prescriptionCondition },
+        relations: ['patient', 'doctor', 'clinic', 'vitals'],
+        order: {
+          time: 'DESC',
         },
-        relations: ['clinic', 'patient', 'doctor', 'vitals'],
         select: {
-          patient: {
-            uid: true,
-            name: true,
-            phoneNumber: true,
-            address: {
-              line1: true,
-              line2: true,
-              pincode: true,
-            },
-          },
-          doctor: {
-            name: true,
-            phoneNumber: true,
-          },
-          clinic: {
-            id: true,
-            name: true,
-            line1: true,
-            line2: true,
-            pincode: true,
-          },
+          ...selectCondition,
         },
       });
-      return appointments;
-    }
-  }
-
-  async getTodayAppointmentsForDoctor(
-    doctorId: string,
-  ): Promise<Appointment[]> {
-    const todayStart = startOfDay(new Date());
-    const todayEnd = endOfDay(new Date());
-
-    const appointments = await this.appointmentRepository.find({
-      where: {
-        doctor: { uid: doctorId }, // Replace 'uid' with your doctor's user ID field
-        time: Between(todayStart, todayEnd),
-      },
-      relations: ['clinic_id', 'patient', 'prescription'], // Add relevant relations as needed
-    });
-    return appointments;
-  }
-
-  async findOne(id: number): Promise<Appointment> {
-    const appointment = await this.appointmentRepository.findOne({
-      where: { id },
-      relations: [
-        'doctor',
-        'clinic',
-        'patient',
-        'patient.metaData',
-        'prescription',
-        'vitals',
-      ],
-      select: {
-        doctor: {
-          uid: true,
-          name: true,
-          phoneNumber: true,
-        },
-        patient: {
-          uid: true,
-          name: true,
-          phoneNumber: true,
-          address: {
-            line1: true,
-            line2: true,
-            pincode: true,
-          },
-          metaData: {
-            dob: true,
-            sex: true,
-            height: true,
-          },
-        },
-      },
-    });
-
-    if (!appointment) {
-      throw new NotFoundException(`Appointment with ID ${id} not found`);
-    }
-    return appointment;
-  }
-
-  async updateAppointment(
-    id: number,
-    updateAppointmentDto: UpdateAppointmentDto,
-    queryRunner: QueryRunner,
-  ): Promise<Appointment> {
-    try {
-      const appointment = await queryRunner.manager.findOne(Appointment, {
-        where: { id },
-      });
-
-      if (!appointment) {
-        throw new NotFoundException(`Appointment not found`);
-      }
-
-      Object.assign(appointment, updateAppointmentDto);
-      return queryRunner.manager.save(appointment);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Something went wrong.');
+      console.log(hello);
+      return hello;
     }
   }
 }

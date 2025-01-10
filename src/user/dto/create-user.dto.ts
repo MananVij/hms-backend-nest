@@ -8,7 +8,6 @@ import {
   IsOptional,
   Matches,
 } from 'class-validator';
-import { UserRole } from '../entity/user.enitiy';
 import { Type } from 'class-transformer';
 
 class AddressDto {
@@ -28,9 +27,6 @@ class AddressDto {
 }
 
 export class CreateUserDto {
-  @IsNotEmpty()
-  @IsEnum(UserRole, { each: true })
-  role: UserRole;
 
   @IsNotEmpty()
   @IsString()
@@ -46,6 +42,9 @@ export class CreateUserDto {
     message: 'Phone number must be exactly 10 digits and only contain numbers',
   })
   phoneNumber?: string;
+
+  @IsOptional()
+  isPatient?: boolean;
 
   @IsOptional()
   @Type(() => AddressDto)

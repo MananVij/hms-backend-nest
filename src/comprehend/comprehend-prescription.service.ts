@@ -25,6 +25,7 @@ export class ComprehendPrescriptionService {
     file: Express.Multer.File,
     doctor: string,
     patient: string,
+    clinic: number,
     queryRunner: QueryRunner,
   ): Promise<any> {
     let audio_url: string | null = null;
@@ -66,11 +67,10 @@ export class ComprehendPrescriptionService {
       const presDbData = {
         ...parsedJson,
         audio_url,
-        doctor,
         patient,
         is_gemini_data: true,
       };
-      await this.prescriptionService.create(presDbData, queryRunner);
+      await this.prescriptionService.create(presDbData, queryRunner, doctor, clinic);
 
       return validatedData;
     } catch (error) {

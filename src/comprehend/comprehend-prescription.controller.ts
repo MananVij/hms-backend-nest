@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   Body,
   UseGuards,
-  Query,
+  Req,
 } from '@nestjs/common';
 import { ComprehendPrescriptionService } from './comprehend-prescription.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -14,6 +14,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunner } from 'typeorm';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
+import { Request } from 'src/interfaces/request.interface';
 
 @Controller('prescription')
 @UseGuards(JwtAuthGuard)
@@ -26,17 +27,20 @@ export class ComprehendPrescriptionController {
   @UseInterceptors(FileInterceptor('file'))
   @UseInterceptors(TransactionInterceptor)
   async comprehendPrescription(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('doctor') doctor: string,
-    @Body('patient') patient: string,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('patient') patient: string,
+    @Body('clinicId') clinicId: number,
   ): Promise<any> {
     try {
+      const doctor = req?.user?.uid;
       const result =
         await this.googleGenerativeAiService.comprehendPrescription(
           file,
           doctor,
           patient,
+          clinicId,
           queryRunner,
         );
       return result;

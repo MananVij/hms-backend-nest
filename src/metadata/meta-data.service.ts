@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryRunner, Repository } from 'typeorm';
 import { MetaData } from './entity/metadata.entity';
@@ -12,8 +16,6 @@ import { UserService } from 'src/user/user.service';
 export class MetaDataService {
   constructor(
     @InjectRepository(MetaData)
-    private metaDataRepository: Repository<MetaData>,
-
     private readonly userService: UserService,
     private readonly errorLogService: ErrorLogService,
   ) {}
@@ -53,7 +55,9 @@ export class MetaDataService {
         null,
         createMetaDataDto?.uid,
       );
-      throw Error('Something Went Wrong');
+      throw new InternalServerErrorException(
+        'Unable to create metadata. Something went wrong',
+      );
     }
   }
 
@@ -88,39 +92,6 @@ export class MetaDataService {
         id,
       );
       throw Error('Something Went Wrong');
-    }
-  }
-
-  // Retrieve a specific meta-data entry by ID
-  async find(id: string): Promise<any> {
-    try {
-      const metaData = await this.metaDataRepository.findOne({
-        where: { user: { uid: id } },
-        relations: ['user'],
-      });
-      if (!metaData) {
-        return null;
-      }
-      const { user, ...metaDataWihoutUser } = metaData;
-      return { ...metaDataWihoutUser, name: metaData.user.name };
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error in updating metadata: ${error.message}`,
-        error.stack,
-        null,
-        null,
-        id,
-      );
-      throw Error('Something Went Wrong');
-    }
-  }
-
-  // Delete a meta-data entry by ID
-  async remove(id: string): Promise<void> {
-    const result = await this.metaDataRepository.delete({ user: { uid: id } });
-
-    if (result.affected === 0) {
-      throw new NotFoundException('Meta-data not found');
     }
   }
 }

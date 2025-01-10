@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
-import { User, UserRole } from 'src/user/entity/user.enitiy';
+import { User } from 'src/user/entity/user.enitiy';
 import { QueryRunner, Repository } from 'typeorm';
 import { PatientClinic } from './entity/patient_clinic.entity';
 import { CreatePatientClinicDto } from './dto/patinet_clinic.dto';
@@ -29,7 +29,7 @@ export class PatientClinicService {
     try {
       const [patient, clinic] = await Promise.all([
         queryRunner.manager.findOne(User, {
-          where: { uid: patientId, role: UserRole.PATIENT },
+          where: { uid: patientId, isPatient: true },
           relations: ['metaData'],
           select: {
             uid: true,

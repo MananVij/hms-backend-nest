@@ -16,7 +16,7 @@ export class BloodPressureDto {
 export class CreateVitalsDto {
   // The ID of the user to whom these vitals belong
   @IsUUID()
-  userId: string;
+  patientId: string;
 
   @IsUUID()
   appointmentId: number;

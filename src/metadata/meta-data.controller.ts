@@ -12,7 +12,6 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { MetaDataService } from './meta-data.service';
-import { CreateMetaDataDto } from './dto/create-meta-data.dto';
 import { UpdateMetaDataDto } from './dto/update-meta-data.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { QueryRunner } from 'typeorm';
@@ -23,22 +22,6 @@ import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 @UseGuards(JwtAuthGuard)
 export class MetaDataController {
   constructor(private readonly metaDataService: MetaDataService) {}
-
-  @Post()
-  @UseInterceptors(TransactionInterceptor)
-  async create(
-    @Body() createMetaDataDto: CreateMetaDataDto,
-    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
-  ) {
-    try {
-      return await this.metaDataService.create(createMetaDataDto, queryRunner);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to add metadata.');
-    }
-  }
 
   @Put(':id')
   @UseInterceptors(TransactionInterceptor)
@@ -61,15 +44,5 @@ export class MetaDataController {
         'Something went wrong. Failed to update metadata.',
       );
     }
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return await this.metaDataService.find(id);
-  }
-
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return await this.metaDataService.remove(id);
   }
 }

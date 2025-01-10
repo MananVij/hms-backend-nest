@@ -5,16 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, QueryRunner, Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User, UserRole } from './entity/user.enitiy';
+import { User } from './entity/user.enitiy';
 import * as bcrypt from 'bcrypt';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
+import { UserClinicService } from 'src/user_clinic/user_clinic.service';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly userClinicService: UserClinicService,
+    private readonly errorLogService: ErrorLogService,
   ) {}
 
   async createUser(
@@ -35,13 +39,17 @@ export class UserService {
       user.address = createUserDto.address;
       user.email = createUserDto.email;
       user.is_verified = createUserDto.is_verified || false;
-      user.role = createUserDto.role;
       user.password = await this.hashPassword(createUserDto.password);
       return await userRepo.save(user);
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Unable to create user: ${error.message}`,
+        error.stacks,
+        null,
+      );
       throw new InternalServerErrorException(
         'Something went wrong. Please try again later.',
       );
@@ -56,25 +64,17 @@ export class UserService {
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userRepository.findOne({
       where: { email },
-      relations: [
-        'doctor',
-        'doctor.doctorClinics',
-        'doctor.doctorClinics.clinic',
-        'clinics',
-      ],
+      relations: ['doctor'],
     });
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password, doctor, ...result } = user;
       const qualification = user.doctor?.qualification;
-      var clinicIds = [];
-      if (user.role === UserRole.ADMIN) {
-        clinicIds = user.clinics.map((clinic) => clinic.id);
-      } else if (user.role === UserRole.DOCTOR) {
-        clinicIds = user.doctor.doctorClinics.map(
-          (clinics) => clinics.clinic.id,
-        );
-      }
-      return { qualification, clinicIds, ...result };
+      const clinicIds = await this.userClinicService.findClinicsOfUser(
+        user.uid,
+      );
+      const defaultClinicId = clinicIds[0]?.id;
+      const role = clinicIds[0]?.role;
+      return { qualification, defaultClinicId, role, ...result };
     }
     return null;
   }
@@ -103,17 +103,17 @@ export class UserService {
     }
   }
 
-  async getUserDetails(id: string): Promise<User> {
+  async getUserDetails(userId: string): Promise<User> {
     const isValidUUID =
       /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-        id,
+        userId,
       );
 
     if (!isValidUUID) {
       throw new NotFoundException('User Not Found');
     }
     const user = await this.userRepository.findOne({
-      where: { uid: id },
+      where: { uid: userId },
       relations: ['metaData'],
       select: {
         uid: true,
@@ -127,32 +127,46 @@ export class UserService {
     }
     return user;
   }
-
-  async findPatientByPhoneNumber(phoneNumber: string): Promise<User> {
-    const patient = await this.userRepository.findOne({
-      where: { phoneNumber, role: UserRole.PATIENT },
-      select: {
-        name: true,
-        uid: true,
-      },
-    });
-    if (!patient) {
-      throw new NotFoundException('No Patient Found');
+  async findUserByPhoneNumber(
+    phoneNumber: string,
+    patientCondition: object,
+  ): Promise<User> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { phoneNumber, ...patientCondition },
+        select: {
+          uid: true,
+          name: true,
+        },
+      });
+      if (!user) {
+        throw new NotFoundException('No User Found');
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Unable to find patient. Something went wrong.',
+      );
     }
-    return patient;
   }
 
-  async findStaffByPhoneNumber(phoneNumber: string): Promise<User> {
-    const staff = await this.userRepository.findOne({
-      where: { phoneNumber, role: In([UserRole.DOCTOR, UserRole.NURSE]) },
+  async findUserByUserId(userId: string): Promise<User> {
+    return await this.userRepository.findOne({
+      where: { uid: userId, isPatient: true },
+      relations: ['metaData'],
       select: {
-        name: true,
         uid: true,
+        name: true,
+        phoneNumber: true,
+        metaData: {
+          dob: true,
+          sex: true,
+          height: true,
+        },
       },
     });
-    if (!staff) {
-      throw new NotFoundException('No User Found');
-    }
-    return staff;
   }
 }

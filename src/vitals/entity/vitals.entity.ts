@@ -45,7 +45,10 @@ export class Vitals {
   oxy?: number;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
-  user: User;
+  patiet: User;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' }) 
+  createdBy : User; 
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

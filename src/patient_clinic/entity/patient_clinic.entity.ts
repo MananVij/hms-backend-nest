@@ -1,6 +1,6 @@
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 
 @Entity('patient_clinic')
 export class PatientClinic {
@@ -18,4 +18,7 @@ export class PatientClinic {
   })
   @JoinColumn({ name: 'clinic_id' })
   clinic: Clinic;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  created_at: Date;
 }

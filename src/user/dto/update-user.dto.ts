@@ -4,7 +4,6 @@ import {
   IsBoolean,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../entity/user.enitiy';
 
 export class UpdateUserDto {
 

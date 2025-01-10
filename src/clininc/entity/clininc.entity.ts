@@ -1,7 +1,7 @@
 import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
-import { User } from 'src/user/entity/user.enitiy';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -11,11 +11,19 @@ import {
   OneToMany,
   CreateDateColumn,
 } from 'typeorm';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Entity('clinic')
 export class Clinic {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @ManyToOne(() => User, (user) => user.clinics, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'createdBy' })
+  createdBy: User;
 
   @Column({ nullable: false })
   name: string;
@@ -35,17 +43,10 @@ export class Clinic {
   @Column({ nullable: false, length: 10 })
   contactNumber: string;
 
-  @ManyToOne(() => User, (user) => user.clinics, {
-    onDelete: 'CASCADE',
-    nullable: false,
-  })
-  @JoinColumn({ name: 'admin_id' })
-  admin: User; // Admin associated with the clinic
-
-  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.clinic, {
+  @OneToMany(() => UserClinic, (userClinic) => userClinic.clinic, {
     onDelete: 'CASCADE',
   })
-  doctorClinics: DoctorClinic[];
+  userClinic: UserClinic[];
 
   @OneToMany(() => Appointment, (appointment) => appointment.clinic, {
     onDelete: 'CASCADE',

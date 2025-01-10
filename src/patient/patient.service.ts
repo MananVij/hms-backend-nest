@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryRunner, Repository } from 'typeorm';
-import { User, UserRole } from 'src/user/entity/user.enitiy';
+import { User } from 'src/user/entity/user.enitiy';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
@@ -56,7 +56,7 @@ export class PatientService {
       }
 
       const newPatient = queryRunner.manager.create(User, {
-        role: [UserRole.PATIENT],
+        isPatient: true,
         ...createPatientDto,
       });
       const patient = await queryRunner.manager.save(newPatient);
@@ -175,7 +175,7 @@ export class PatientService {
           where: { user: { uid: doctorId } },
         }),
         queryRunner.manager.findOne(User, {
-          where: { uid: patientId, role: UserRole.PATIENT },
+          where: {uid: patientId, isPatient: true},
           relations: ['metaData'],
           select: {
             uid: true,
@@ -214,7 +214,7 @@ export class PatientService {
         queryRunner.manager.findOne(Doctor, {
           where: { user: { uid: doctorId } },
         }),
-        queryRunner.manager.findOne(User, { where: { uid: patientId } }),
+        queryRunner.manager.findOne(User, { where: { uid: patientId, isPatient: true } }),
       ]);
 
       if (!doctor) {

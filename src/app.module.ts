@@ -16,8 +16,8 @@ import { SideBar } from './sidebar/entity/sidebar.entity';
 import { SidebarModule } from './sidebar/sidebar.module';
 import { ClinicModule } from './clininc/clinic.module';
 import { AuthModule } from './auth/auth.module';
-import { DoctorClinicModule } from './doctor_clinic/doctor_clinic.module';
-import { DoctorClinic } from './doctor_clinic/entity/doctor_clinic.entity';
+import { UserClinicModule } from './user_clinic/user_clinic.module';
+import { UserClinic } from './user_clinic/entity/user_clinic.entity';
 import { Vitals } from './vitals/entity/vitals.entity';
 import { VitalsModule } from './vitals/vitals.module';
 import { FirebaseModule } from './firebase/firebase.module';
@@ -56,7 +56,7 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware'; // I
         Appointment,
         SideBar,
         Clinic,
-        DoctorClinic,
+        UserClinic,
         PatientClinic,
         Vitals,
         DoctorPatient,
@@ -78,7 +78,7 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware'; // I
     SidebarModule,
     ClinicModule,
     AuthModule,
-    DoctorClinicModule,
+    UserClinicModule,
     PatientClinicModule,
     VitalsModule,
     DashboardModule,

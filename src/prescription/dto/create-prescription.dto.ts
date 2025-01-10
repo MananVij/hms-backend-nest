@@ -48,9 +48,6 @@ export class FrequencyDto {
 
 export class CreatePrescriptionDto {
   @IsUUID()
-  doctorId: string;
-
-  @IsUUID()
   patientId: string;
 
   @IsUUID()

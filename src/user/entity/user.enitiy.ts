@@ -3,6 +3,7 @@ import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 
 import {
   Entity,
@@ -15,26 +16,11 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
-export enum UserRole {
-  ADMIN = 'admin',
-  PATIENT = 'patient',
-  NURSE = 'nurse',
-  DOCTOR = 'doctor',
-}
-
 @Entity('users')
 @Unique(['uid'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   uid: string;
-
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.PATIENT,
-    nullable: false,
-  })
-  role: UserRole;
 
   @Column({ length: 100 })
   name: string;
@@ -47,6 +33,9 @@ export class User {
 
   @Column({ nullable: false, unique: true, length: 10 })
   phoneNumber: string;
+
+  @Column({ nullable: false, default: false })
+  isPatient: boolean;
 
   @Column({ default: false, nullable: false })
   hasOnboardedClinic: boolean;
@@ -71,9 +60,6 @@ export class User {
   @OneToOne(() => Doctor, (doctor) => doctor.user, { onDelete: 'CASCADE' })
   doctor: Doctor;
 
-  @OneToMany(() => Clinic, (clinic) => clinic.admin, { onDelete: 'CASCADE' })
-  clinics: Clinic[];
-
   @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.patient, {
     onDelete: 'CASCADE',
   })
@@ -83,6 +69,17 @@ export class User {
     onDelete: 'CASCADE',
   })
   patientClinics: PatientClinic[];
+
+  @OneToMany(() => UserClinic, (userClinic) => userClinic.user, {
+    onDelete: 'CASCADE',
+  })
+  userClinics: UserClinic[];
+
+  // To track the creator of clinic can give admin access to multiple users
+  @OneToMany(() => Clinic, (clinic) => clinic.createdBy, {
+    onDelete: 'CASCADE',
+  })
+  clinics: Clinic[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

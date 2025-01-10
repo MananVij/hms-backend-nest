@@ -4,58 +4,86 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryRunner, Repository } from 'typeorm';
+import { IsNull, QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { User, UserRole } from 'src/user/entity/user.enitiy';
+import { User } from 'src/user/entity/user.enitiy';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
+import {
+  UserClinic,
+  UserRole,
+} from 'src/user_clinic/entity/user_clinic.entity';
+import { Clinic } from 'src/clininc/entity/clininc.entity';
 
 @Injectable()
 export class PrescriptionService {
   constructor(
     @InjectRepository(Prescription)
-    private readonly prescriptionRepository: Repository<Prescription>,
     private readonly errorLogService: ErrorLogService,
   ) {}
 
   async create(
     createPrescriptionDto: CreatePrescriptionDto,
     queryRunner: QueryRunner,
+    doctorId: string,
+    clinicId: number,
   ): Promise<Prescription> {
     try {
-      const {
-        doctorId,
-        patientId,
-        vitalsId,
-        appointmentId,
-        ...prescriptionData
-      } = createPrescriptionDto;
+      const { patientId, vitalsId, appointmentId, ...prescriptionData } =
+        createPrescriptionDto;
 
-      const [doctor, patient, appointment] = await Promise.all([
+      const [doctor, patient, clinic, appointment] = await Promise.all([
         queryRunner.manager.findOne(User, {
-          where: { uid: doctorId, role: UserRole.DOCTOR },
+          where: { uid: doctorId },
         }),
         queryRunner.manager.findOne(User, {
-          where: { uid: patientId, role: UserRole.PATIENT },
+          where: { uid: patientId, isPatient: true },
         }),
-
+        queryRunner.manager.findOne(Clinic, {
+          where: { id: clinicId },
+        }),
         queryRunner.manager.findOne(Appointment, {
-          where: { id: appointmentId },
+          where: { id: appointmentId, prescription: IsNull() },
         }),
       ]);
-      if (!doctor || !patient) {
-        throw new NotFoundException('Doctor or Patient not found');
+
+      if (!doctor || !patient || !clinic || !appointment) {
+        throw new NotFoundException(
+          'Credentials not found. Something Went Wrong.',
+        );
       }
 
-      const prescription = queryRunner.manager.create(Prescription, {
-        ...prescriptionData,
-        appointment,
-        doctor,
-        patient,
+      const doctorClinic = await queryRunner.manager.findOne(UserClinic, {
+        where: {
+          user: { uid: doctorId },
+          clinic: { id: clinicId },
+          role: UserRole.DOCTOR,
+        },
       });
-      await queryRunner.manager.save(prescription);
-      return prescription;
+
+      if (!doctorClinic) {
+        throw new NotFoundException('Doctor clinic relationship not found.');
+      }
+
+      if (prescriptionData?.is_final_prescription ?? false) {
+        const prescription = queryRunner.manager.create(Prescription, {
+          ...prescriptionData,
+          appointment,
+          doctor,
+          patient,
+        });
+        await queryRunner.manager.save(prescription);
+        return prescription;
+      } else {
+        const prescription = queryRunner.manager.create(Prescription, {
+          ...prescriptionData,
+          doctor,
+          patient,
+        });
+        await queryRunner.manager.save(prescription);
+        return prescription;
+      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -64,79 +92,10 @@ export class PrescriptionService {
         `Error in creating prescription: ${error.message}`,
         error.stack,
         null,
-        createPrescriptionDto?.doctorId,
+        doctorId,
         createPrescriptionDto?.patientId,
       );
       throw new InternalServerErrorException('Unable to save prescription.');
-    }
-  }
-
-  // Find all prescriptions for a specific doctor
-  async findPrescriptionsByDoctor(doctorId: string): Promise<Prescription[]> {
-    try {
-      const prescriptions = await this.prescriptionRepository.find({
-        where: { doctor: { uid: doctorId } },
-        relations: ['vitals'],
-        order: { created_at: 'DESC' },
-      });
-
-      if (!prescriptions.length) {
-        return [];
-      }
-      return prescriptions;
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error in finding presctiption of doctor: ${error.message}`,
-        error.stack,
-        null,
-        doctorId,
-        null,
-      );
-    }
-  }
-
-  // Find all prescriptions for a specific patient
-  async findPrescriptionsOfPatient(patientId: string): Promise<Prescription[]> {
-    try {
-      const prescriptions = await this.prescriptionRepository.find({
-        where: { patient: { uid: patientId }, is_final_prescription: true },
-        relations: ['vitals'],
-        order: { created_at: 'DESC' },
-      });
-      if (!prescriptions.length) {
-        return [];
-      }
-      return prescriptions;
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error in finding prescription of Patient: ${error.message}`,
-        error.stack,
-        null,
-        null,
-        patientId,
-      );
-    }
-  }
-
-  // Find perticular prescription with prescription id
-  async findOne(id: number): Promise<Prescription> {
-    try {
-      const prescription = await this.prescriptionRepository.findOne({
-        where: { id },
-        relations: ['vitals'],
-      });
-      if (!prescription) {
-        return null;
-      }
-      return prescription;
-    } catch (error) {
-      await this.errorLogService.logError(
-        error.message,
-        error.stack,
-        null,
-        null,
-        null,
-      );
     }
   }
 }

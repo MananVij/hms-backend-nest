@@ -1,4 +1,4 @@
-import { DoctorClinic } from 'src/doctor_clinic/entity/doctor_clinic.entity';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import {
@@ -42,15 +42,15 @@ export class Doctor {
 
   @OneToOne(() => User, (user) => user.doctor, {
     nullable: true,
-    onDelete: 'SET NULL',
+    onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'user_id' }) // Creates the foreign key to User
   user: User;
 
-  @OneToMany(() => DoctorClinic, (doctorClinic) => doctorClinic.doctor, {
+  @OneToMany(() => UserClinic, (userClinic) => userClinic.user, {
     onDelete: 'CASCADE',
   })
-  doctorClinics: DoctorClinic[];
+  userClinic: UserClinic[];
 
   @OneToMany(() => DoctorPatient, (doctorPatient) => doctorPatient.doctor, {
     onDelete: 'CASCADE',
