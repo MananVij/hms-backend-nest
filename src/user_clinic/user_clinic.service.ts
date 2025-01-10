@@ -56,7 +56,29 @@ export class UserClinicService {
         clinic,
         role,
       });
-      return await queryRunner.manager.save(userClinic);
+      const savedUserClinic = await queryRunner.manager.save(userClinic);
+      const formattedData = {
+        role: savedUserClinic.role,
+        user: {
+          id: savedUserClinic.user.uid,
+          name: savedUserClinic.user.name,
+          email: savedUserClinic.user.email,
+          phoneNumber: savedUserClinic.user.phoneNumber,
+          address: {
+            line1: savedUserClinic.user.address.line1,
+            line2: savedUserClinic.user.address.line2,
+            pincode: savedUserClinic.user.address.pincode,
+          },
+          doctor: {
+            id: savedUserClinic.user.doctor.id,
+            fee: savedUserClinic.user.doctor.fee,
+            licenseNumber: savedUserClinic.user.doctor.licenseNumber,
+            qualification: savedUserClinic.user.doctor.qualification,
+            specialization: savedUserClinic.user.doctor.specialization,
+          },
+        },
+      };
+      return formattedData;
     } catch (error) {
       if (
         error instanceof NotFoundException ||

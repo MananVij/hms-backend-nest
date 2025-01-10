@@ -59,7 +59,7 @@ export class DoctorController {
   ): Promise<any> {
     try {
       const { userId, clinicId, role } = createUserClinicDto;
-      const userClinic = await this.userClinicService.createUserClinic(
+      return await this.userClinicService.createUserClinic(
         queryRunner,
         {
           userId,
@@ -67,28 +67,6 @@ export class DoctorController {
           role,
         },
       );
-      const formattedData = {
-        role: userClinic.role,
-        user: {
-          id: userClinic.user.uid,
-          name: userClinic.user.name,
-          email: userClinic.user.email,
-          phoneNumber: userClinic.user.phoneNumber,
-          address: {
-            line1: userClinic.user.address.line1,
-            line2: userClinic.user.address.line2,
-            pincode: userClinic.user.address.pincode,
-          },
-          doctor: {
-            id: userClinic.user.doctor.id,
-            fee: userClinic.user.doctor.fee,
-            licenseNumber: userClinic.user.doctor.licenseNumber,
-            qualification: userClinic.user.doctor.qualification,
-            specialization: userClinic.user.doctor.specialization,
-          },
-        },
-      };
-      return formattedData;
     } catch (error) {
       if (
         error instanceof ConflictException ||
