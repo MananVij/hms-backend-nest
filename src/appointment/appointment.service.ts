@@ -159,7 +159,6 @@ export class AppointmentService {
           ...selectCondition,
         },
       });
-      console.log(appointments);
       return { appointments, patient, clinic };
     }
   }

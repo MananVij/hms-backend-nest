@@ -9,6 +9,7 @@ import { MetadataModule } from 'src/metadata/metadata.module';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { PatientClinicModule } from 'src/patient_clinic/patient_clinic.module';
 import { DoctorPatientModule } from 'src/doctor_patient/doctor_patient.module';
+import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { DoctorPatientModule } from 'src/doctor_patient/doctor_patient.module';
     MetadataModule,
     ErrorLogModule,
     PatientClinicModule,
-    DoctorPatientModule
+    DoctorPatientModule,
+    UserClinicModule
   ],
   controllers: [PatientController],
   providers: [PatientService],

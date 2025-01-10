@@ -10,6 +10,7 @@ import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
 import { MetadataModule } from 'src/metadata/metadata.module';
 import { ClinicService } from 'src/clininc/clinic.service';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ClinicService } from 'src/clininc/clinic.service';
     UserClinicModule,
     MetadataModule,
     UserModule,
+    ErrorLogModule
   ],
   controllers: [DoctorController],
   providers: [DoctorService, ClinicService],

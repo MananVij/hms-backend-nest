@@ -8,6 +8,7 @@ import {
   InternalServerErrorException,
   Get,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ClinicService } from './clinic.service';
 import { CreateClinicDto } from './dto/add-clinic.dto';
@@ -52,6 +53,17 @@ export class ClinicController {
       return await this.userClinicService.findClinicsOfUser(userId);
     } catch (error) {
       throw error;
+    }
+  }
+
+  @Get('')
+  async findClinic(
+    @Query('id') clinicId: number,
+  ): Promise<Clinic> {
+    try {
+      return await this.clinicService.findOne(clinicId);
+    } catch (error) {
+      throw error
     }
   }
 }

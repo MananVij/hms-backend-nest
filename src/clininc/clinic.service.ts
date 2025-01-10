@@ -10,6 +10,7 @@ import { CreateClinicDto } from './dto/add-clinic.dto';
 import { User } from 'src/user/entity/user.enitiy';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class ClinicService {
@@ -17,6 +18,7 @@ export class ClinicService {
     @InjectRepository(Clinic)
     private readonly clinicRepository: Repository<Clinic>,
     private readonly userClinicService: UserClinicService,
+    private readonly errorLogService: ErrorLogService,
   ) {}
 
   async create(
@@ -58,20 +60,33 @@ export class ClinicService {
   }
 
   async findOne(id: number): Promise<Clinic> {
-    const clinic = await this.clinicRepository.findOne({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        line1: true,
-        line2: true,
-        pincode: true,
-        contactNumber: true,
-      },
-    });
-    if (!clinic) {
-      return null;
+    try {
+      const clinic = await this.clinicRepository.findOne({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          line1: true,
+          line2: true,
+          pincode: true,
+          contactNumber: true,
+        },
+      });
+      if (!clinic) {
+        return null;
+      }
+      return clinic;
+    } catch (error) {
+      await this.errorLogService.logError(
+        error.message,
+        error.stack,
+        null,
+        null,
+        null,
+      );
+      throw new InternalServerErrorException(
+        'Something Went Wrong. Unable to fetch clinic details at moment.',
+      );
     }
-    return clinic;
   }
 }

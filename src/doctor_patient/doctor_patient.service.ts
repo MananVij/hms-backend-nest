@@ -19,6 +19,17 @@ export class DoctorPatientService {
         patient: { patientClinics: { clinic: { id: clinicId } } },
       },
       relations: ['patient', 'patient.metaData'],
+      select: {
+        patient: {
+          uid: true,
+          name: true,
+          phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true
+          }
+        }
+      }
     });
     const patients = doctorPatients.map((patients) => patients.patient);
     return patients;

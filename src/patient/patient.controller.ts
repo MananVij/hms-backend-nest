@@ -9,6 +9,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ConflictException,
+  Req,
 } from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -20,6 +21,9 @@ import { DoctorPatientService } from 'src/doctor_patient/doctor_patient.service'
 import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
+import { Request } from 'src/interfaces/request.interface';
+import { UserClinicService } from 'src/user_clinic/user_clinic.service';
+import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 
 @Controller('patients')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +32,7 @@ export class PatientController {
     private readonly patientService: PatientService,
     private readonly patientClinicService: PatientClinicService,
     private readonly doctorPatientService: DoctorPatientService,
+    private readonly userClinicService: UserClinicService,
   ) {}
 
   @Post('/register')
@@ -52,7 +57,10 @@ export class PatientController {
         queryRunner,
       );
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -130,16 +138,19 @@ export class PatientController {
 
   @Get('all')
   async getAllPatientsByClinic(
-    @Query('doctorId') doctorId: string,
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
     @Query('clinicId') clinicId: number,
   ): Promise<User[]> {
-    if (!doctorId) {
+    const userId = req?.user?.uid
+    const role = await this.userClinicService.findUserRoleInClinic(queryRunner, userId, clinicId)
+    if (role === UserRole.ADMIN) {
       return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
         clinicId,
       );
     } else {
       return await this.doctorPatientService.findAllPatientsOfDoctorByClinicId(
-        doctorId,
+        userId,
         clinicId,
       );
     }
