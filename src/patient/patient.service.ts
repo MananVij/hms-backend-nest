@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -45,7 +46,7 @@ export class PatientService {
         where: { phoneNumber: createPatientDto.phoneNumber },
       });
       if (checkPatient) {
-        throw new NotFoundException('Patient with phone number exists.');
+        throw new ConflictException('User with phone number exists.');
       }
 
       const doctor = await queryRunner.manager.findOne(Doctor, {
@@ -93,7 +94,7 @@ export class PatientService {
         },
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
       await this.errorLogService.logError(

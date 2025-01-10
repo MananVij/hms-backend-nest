@@ -25,7 +25,6 @@ export class UserService {
     createUserDto: CreateUserDto,
     queryRunner: QueryRunner,
   ): Promise<User> {
-    const userRepo = queryRunner.manager.getRepository(User);
     try {
       const existingUser = await this.userRepository.findOne({
         where: { email: createUserDto.email },
@@ -33,14 +32,16 @@ export class UserService {
       if (existingUser) {
         throw new ConflictException('Email already exists');
       }
-      const user: User = new User();
-      user.name = createUserDto.name;
-      user.phoneNumber = createUserDto.phoneNumber;
-      user.address = createUserDto.address;
-      user.email = createUserDto.email;
-      user.is_verified = createUserDto.is_verified || false;
-      user.password = await this.hashPassword(createUserDto.password);
-      return await userRepo.save(user);
+      const hashedPassword = await this.hashPassword(createUserDto.password);
+      const user = queryRunner.manager.create(User, {
+        name: createUserDto.name,
+        phoneNumber: createUserDto.phoneNumber,
+        address: createUserDto.address,
+        email: createUserDto.email,
+        is_verified: createUserDto.is_verified || false,
+        password: hashedPassword,
+      });
+      return await queryRunner.manager.save(user);
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;

@@ -52,7 +52,7 @@ export class PatientController {
         queryRunner,
       );
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof ConflictException) {
         throw error;
       }
       throw new InternalServerErrorException(

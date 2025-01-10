@@ -46,7 +46,7 @@ export class DoctorController {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Unable to Create Doctor. Something Went Wrong.',
+        'Unable to Create Staff. Something Went Wrong.',
       );
     }
   }

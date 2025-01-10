@@ -171,6 +171,17 @@ export class UserClinicService {
       }));
 
       return clinics;
-    } catch (error) {}
+    } catch (error) {
+      await this.errorLogService.logError(
+        error.message,
+        error.stack,
+        null,
+        userId,
+        null,
+      );
+      throw new InternalServerErrorException(
+        'Unable to fetch clinics. Something went wrong.',
+      );
+    }
   }
 }

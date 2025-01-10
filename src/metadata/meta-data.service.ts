@@ -15,7 +15,6 @@ import { UserService } from 'src/user/user.service';
 @Injectable()
 export class MetaDataService {
   constructor(
-    @InjectRepository(MetaData)
     private readonly userService: UserService,
     private readonly errorLogService: ErrorLogService,
   ) {}

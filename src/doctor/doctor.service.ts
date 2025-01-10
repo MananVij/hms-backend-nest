@@ -15,7 +15,6 @@ import { MetaDataService } from 'src/metadata/meta-data.service';
 @Injectable()
 export class DoctorService {
   constructor(
-    @InjectRepository(Doctor)
     private readonly userService: UserService,
     private readonly metaDataService: MetaDataService,
     private readonly userClinicService: UserClinicService,
