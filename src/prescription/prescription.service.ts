@@ -28,7 +28,7 @@ export class PrescriptionService {
     queryRunner: QueryRunner,
     doctorId: string,
     clinicId: number,
-  ): Promise<Prescription> {
+  ): Promise<any> {
     try {
       const { patientId, vitalsId, appointmentId, ...prescriptionData } =
         createPrescriptionDto;
@@ -73,17 +73,42 @@ export class PrescriptionService {
           doctor,
           patient,
         });
-        await queryRunner.manager.save(prescription);
-        return prescription;
+        const savedPrescription = await queryRunner.manager.save(prescription);
+        const formattedData = {
+          ...savedPrescription,
+          doctor: {
+            uid: savedPrescription?.doctor?.uid,
+            name: savedPrescription?.doctor?.name,
+          },
+          patient: {
+            uid: savedPrescription?.patient?.uid,
+            name: savedPrescription?.patient?.name,
+            phoneNumber: savedPrescription?.patient?.phoneNumber,
+            address: savedPrescription?.patient?.address
+          }
+        }
+        return formattedData
       } else {
         const prescription = queryRunner.manager.create(Prescription, {
           ...prescriptionData,
           doctor,
           patient,
         });
-        await queryRunner.manager.save(prescription);
-        return prescription;
-      }
+        const savedPrescription = await queryRunner.manager.save(prescription);
+        const formattedData = {
+          ...savedPrescription,
+          doctor: {
+            uid: savedPrescription?.doctor?.uid,
+            name: savedPrescription?.doctor?.name,
+          },
+          patient: {
+            uid: savedPrescription?.patient?.uid,
+            name: savedPrescription?.patient?.name,
+            phoneNumber: savedPrescription?.patient?.phoneNumber,
+            address: savedPrescription?.patient?.address
+          }
+        }
+        return formattedData      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
