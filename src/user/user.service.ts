@@ -27,7 +27,10 @@ export class UserService {
   ): Promise<User> {
     try {
       const existingUser = await this.userRepository.findOne({
-        where: { email: createUserDto.email },
+        where: [
+          { email: createUserDto.email },
+          { phoneNumber: createUserDto.phoneNumber },
+        ],
       });
       if (existingUser) {
         throw new ConflictException('Email already exists');

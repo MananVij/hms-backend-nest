@@ -8,15 +8,13 @@ import { Appointment } from 'src/appointment/entity/appointment.entity';
 
 @Injectable()
 export class VitalsService {
-  constructor(
-    private readonly errorLogService: ErrorLogService,
-  ) {}
+  constructor(private readonly errorLogService: ErrorLogService) {}
 
   async createVitals(
     queryRunner: QueryRunner,
     staffId: string,
     createVitalsDto: CreateVitalsDto,
-  ): Promise<Vitals> {
+  ): Promise<any> {
     try {
       const { patientId, appointmentId, ...vitalsData } = createVitalsDto;
 
@@ -52,12 +50,26 @@ export class VitalsService {
 
       appointment.vitals = vitals;
       await queryRunner.manager.save([vitals, appointment]);
-      return vitals;
+      const formattedData = {
+        id: vitals?.id,
+        bp: vitals?.bp,
+        weight: vitals?.weight,
+        pulse: vitals?.pulse,
+        temp: vitals?.temp,
+        oxy: vitals?.oxy,
+      };
+      return formattedData;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      await this.errorLogService.logError(error?.message, error.stack, null, staffId, createVitalsDto?.patientId)
+      await this.errorLogService.logError(
+        error?.message,
+        error.stack,
+        null,
+        staffId,
+        createVitalsDto?.patientId,
+      );
       throw error;
     }
   }

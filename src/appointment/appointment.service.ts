@@ -81,6 +81,7 @@ export class AppointmentService {
       }
       const savedAppointment = await queryRunner.manager.save(appointment);
       const formattedData = {
+        ...savedAppointment,
         doctor: {
           name: savedAppointment.doctor.name,
           phoneNumber: savedAppointment.doctor.phoneNumber,

@@ -30,7 +30,9 @@ export class AuthService {
       return { access_token: this.jwtService.sign(payload) };
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw error;
+        throw new ConflictException(
+          'Unable to Signup User. Credentials Already Exists.',
+        );
       }
       throw new InternalServerErrorException(
         'Something went wrong. Please try again later.',
@@ -55,18 +57,19 @@ export class AuthService {
       hasOnboardedClinic: user?.hasOnboardedClinic,
     };
     const access_token = this.jwtService.sign(payload);
+    console.log(user);
+    // if role === null && default clinic id is null -> admin hasnt onboarded
     if (
-      user?.hasOnboardedClinic &&
-      user?.defaultClinicId !== undefined &&
-      user?.role !== undefined
+      user?.role === undefined &&
+      user?.defaultClinicId === undefined &&
+      user?.hasOnboardedClinic === false
     ) {
-      return {
-        access_token,
-        defaultClinicId: user?.defaultClinicId,
-        role: user?.role,
-      };
-    } else {
       return { access_token };
     }
+    return {
+      access_token,
+      defaultClinicId: user?.defaultClinicId,
+      role: user?.role,
+    };
   }
 }
