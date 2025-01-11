@@ -1,17 +1,18 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, IsNull, QueryRunner, Repository } from 'typeorm';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { addDays, endOfDay, startOfDay, subDays } from 'date-fns';
-import {
-  UserClinic,
-  UserRole,
-} from 'src/user_clinic/entity/user_clinic.entity';
+import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
-import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { AppointmentService } from 'src/appointment/appointment.service';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class DashboardService {
@@ -19,24 +20,15 @@ export class DashboardService {
     @InjectRepository(DoctorPatient)
     private readonly doctorPatientRepository: Repository<DoctorPatient>,
 
-    // @InjectRepository(PatientClinic)
-    // private readonly patientClinicRepository: Repository<PatientClinic>,
-
-    @InjectRepository(UserClinic)
-    private readonly userClinicRepository: Repository<UserClinic>,
-
     @InjectRepository(PatientClinic)
     private readonly patientClinicRepository: Repository<PatientClinic>,
 
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
 
-    @InjectRepository(Clinic)
-    private readonly clinicRepository: Repository<Clinic>,
-
     private readonly appointmentService: AppointmentService,
-
     private readonly userClinicService: UserClinicService,
+    private readonly errorLogService: ErrorLogService,
   ) {}
 
   async getDashboard(
@@ -84,7 +76,7 @@ export class DashboardService {
           clinicId,
           true,
         ),
-        this.appointmentComparisonTrend(userId, role),
+        this.appointmentComparisonTrend(userId, clinicId, role),
       ]);
       return {
         newPatinetTrend,
@@ -93,7 +85,15 @@ export class DashboardService {
         appointmentTrend,
       };
     } catch (error) {
-      return error;
+      if (
+        error instanceof NotFoundException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Unable to fetch dashboard details at moment.',
+      );
     }
   }
 
@@ -106,36 +106,55 @@ export class DashboardService {
   ) {
     const today = new Date();
     var patients = [];
-    if (role === UserRole.DOCTOR) {
-      patients = await this.doctorPatientRepository.find({
-        where: {
-          doctor: { user: { uid: userId } },
-          created_at: Between(startOfDay(subDays(today, 14)), endOfDay(today)),
-        },
-      });
-    } else if (role === UserRole.ADMIN) {
-      patients = await this.patientClinicRepository.find({
-        where: {
-          clinic: { id: clinicId },
-          created_at: Between(startOfDay(subDays(today, 14)), endOfDay(today)),
-        },
-      });
-    }
-    patients.forEach((patient) => {
-      const patientDate = patient?.created_at?.toISOString()?.split('T')?.[0];
-      if (patientCountByDate?.[patientDate] !== undefined) {
-        patientCountByDate[patientDate]++;
+    try {
+      if (role === UserRole.DOCTOR) {
+        patients = await this.doctorPatientRepository.find({
+          where: {
+            doctor: { user: { uid: userId } },
+            created_at: Between(
+              startOfDay(subDays(today, 14)),
+              endOfDay(today),
+            ),
+          },
+        });
+      } else if (role === UserRole.ADMIN) {
+        patients = await this.patientClinicRepository.find({
+          where: {
+            clinic: { id: clinicId },
+            created_at: Between(
+              startOfDay(subDays(today, 14)),
+              endOfDay(today),
+            ),
+          },
+        });
       }
-    });
+      patients.forEach((patient) => {
+        const patientDate = patient?.created_at?.toISOString()?.split('T')?.[0];
+        if (patientCountByDate?.[patientDate] !== undefined) {
+          patientCountByDate[patientDate]++;
+        }
+      });
 
-    const patientTrend = dates?.map((date) => {
-      const formattedDate = date?.toISOString()?.split('T')?.[0];
-      return {
-        date: formattedDate,
-        count: patientCountByDate?.[formattedDate],
-      };
-    });
-    return patientTrend;
+      const patientTrend = dates?.map((date) => {
+        const formattedDate = date?.toISOString()?.split('T')?.[0];
+        return {
+          date: formattedDate,
+          count: patientCountByDate?.[formattedDate],
+        };
+      });
+      return patientTrend;
+    } catch (error) {
+      await this.errorLogService.logError(
+        error.message,
+        error.stack,
+        userId,
+        null,
+        null,
+      );
+    }
+    throw new InternalServerErrorException(
+      'Something went wrong. Unable to fetch dashboard details at moment.',
+    );
   }
   private async findAppointmentTrend(
     userId: string,
@@ -183,65 +202,76 @@ export class DashboardService {
       });
       return appointmentTrend;
     } catch (error) {
-      // await this.errorLogService.logError(
-      //   error.message,
-      //   error.stack,
-      //   userId,
-      //   null,
-      //   null,
-      // );
-      throw new Error('Something Went Wrong');
+      await this.errorLogService.logError(
+        error.message,
+        error.stack,
+        userId,
+        null,
+        null,
+      );
+      throw new InternalServerErrorException('Something Went Wrong');
     }
   }
 
-  private async appointmentComparisonTrend(userId: string, role: string) {
+  private async appointmentComparisonTrend(
+    userId: string,
+    clinicId: number,
+    role: string,
+  ) {
     const today = new Date();
     let seenAppointments = 0;
     let allAppointments = 0;
-    if (role === UserRole.DOCTOR) {
-      allAppointments = await this.appointmentRepository.count({
-        where: {
-          doctor: { uid: userId },
-          time: Between(startOfDay(today), endOfDay(today)),
-        },
-      });
+    try {
+      if (role === UserRole.DOCTOR) {
+        allAppointments = await this.appointmentRepository.count({
+          where: {
+            doctor: { uid: userId },
+            clinic: { id: clinicId },
+            time: Between(startOfDay(today), endOfDay(today)),
+          },
+        });
 
-      seenAppointments = await this.appointmentRepository.count({
-        where: {
-          doctor: { uid: userId },
-          prescription: IsNull(),
-          time: Between(startOfDay(today), endOfDay(today)),
-        },
-      });
-    } else if (role === UserRole.ADMIN) {
-      const adminDoctorIds = [];
-      // const adminDoctorIds = await this.userClinicRepository.find({
-      //   // where: { clinic: { admin: { uid: userId } } },
-      //   relations: ['doctor', 'doctor.user'],
-      //   select: {
-      //     user: {
-      //       uid: true,
-      //       user: {
-      //         uid: true,
-      //       },
-      //     },
-      //   },
-      // });
-      const doctorIds = adminDoctorIds.map((doctor) => doctor.doctor.user.uid);
-      allAppointments = await this.appointmentRepository.count({
-        where: {
-          doctor: { uid: In(doctorIds) },
-          time: Between(startOfDay(today), endOfDay(today)),
-        },
-      });
-      seenAppointments = await this.appointmentRepository.count({
-        where: {
-          doctor: { uid: In(doctorIds) },
-          prescription: IsNull(),
-          time: Between(startOfDay(today), endOfDay(today)),
-        },
-      });
+        seenAppointments = await this.appointmentRepository.count({
+          where: {
+            doctor: { uid: userId },
+            prescription: IsNull(),
+            clinic: { id: clinicId },
+            time: Between(startOfDay(today), endOfDay(today)),
+          },
+        });
+      } else if (role === UserRole.ADMIN) {
+        const adminDoctorIds = [];
+        const doctorIds = adminDoctorIds.map(
+          (doctor) => doctor.doctor.user.uid,
+        );
+        allAppointments = await this.appointmentRepository.count({
+          where: {
+            doctor: { uid: In(doctorIds) },
+            clinic: { id: clinicId },
+            time: Between(startOfDay(today), endOfDay(today)),
+          },
+        });
+        seenAppointments = await this.appointmentRepository.count({
+          where: {
+            doctor: { uid: In(doctorIds) },
+            prescription: IsNull(),
+            clinic: { id: clinicId },
+            time: Between(startOfDay(today), endOfDay(today)),
+          },
+        });
+      }
+      return { allAppointments, seenAppointments };
+    } catch (error) {
+      await this.errorLogService.logError(
+        error.message,
+        error.stack,
+        userId,
+        null,
+        null,
+      );
     }
-    return { allAppointments, seenAppointments };
+    throw new InternalServerErrorException(
+      'Something went wrong. Unable to fetch dashboard details at moment.',
+    );
   }
 }
