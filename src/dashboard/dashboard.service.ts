@@ -61,35 +61,31 @@ export class DashboardService {
         clinicId,
       );
 
-      const newPatinetTrend = await this.findNewPatientTrend(
-        userId,
-        clinicId,
-        role,
-        dates,
-        { ...countByDate },
-      );
-
-      const appointmentTrend = await this.findAppointmentTrend(
-        userId,
-        clinicId,
-        role,
-        dates,
-        { ...countByDate },
-        today,
-      );
-
-      const todayAppointmentArray =
-        await this.appointmentService.findAllAppointments(
+      const [
+        newPatinetTrend,
+        appointmentTrend,
+        todayAppointmentArray,
+        appointmentCountTrend,
+      ] = await Promise.all([
+        this.findNewPatientTrend(userId, clinicId, role, dates, {
+          ...countByDate,
+        }),
+        this.findAppointmentTrend(
+          userId,
+          clinicId,
+          role,
+          dates,
+          { ...countByDate },
+          today,
+        ),
+        this.appointmentService.findAllAppointments(
           queryRunner,
           userId,
           clinicId,
           true,
-        );
-
-      const appointmentCountTrend = await this.appointmentComparisonTrend(
-        userId,
-        role,
-      );
+        ),
+        this.appointmentComparisonTrend(userId, role),
+      ]);
       return {
         newPatinetTrend,
         appointmentCountTrend,
@@ -126,17 +122,17 @@ export class DashboardService {
       });
     }
     patients.forEach((patient) => {
-      const patientDate = patient.created_at.toISOString().split('T')[0];
-      if (patientCountByDate[patientDate] !== undefined) {
+      const patientDate = patient?.created_at?.toISOString()?.split('T')?.[0];
+      if (patientCountByDate?.[patientDate] !== undefined) {
         patientCountByDate[patientDate]++;
       }
     });
 
-    const patientTrend = dates.map((date) => {
-      const formattedDate = date.toISOString().split('T')[0];
+    const patientTrend = dates?.map((date) => {
+      const formattedDate = date?.toISOString()?.split('T')?.[0];
       return {
         date: formattedDate,
-        count: patientCountByDate[formattedDate],
+        count: patientCountByDate?.[formattedDate],
       };
     });
     return patientTrend;

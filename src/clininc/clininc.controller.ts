@@ -36,7 +36,7 @@ export class ClinicController {
     @Body() createClinicDto: CreateClinicDto,
   ): Promise<Clinic> {
     try {
-      const adminId = req?.user?.uid 
+      const adminId = req?.user?.uid
       return await this.clinicService.create(adminId, createClinicDto, queryRunner);
     } catch (error) {
       if (error instanceof NotFoundException) {

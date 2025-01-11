@@ -54,10 +54,19 @@ export class AuthService {
       name: user?.name,
       hasOnboardedClinic: user?.hasOnboardedClinic,
     };
-    return {
-      access_token: this.jwtService.sign(payload),
-      defaultClinicId: user?.defaultClinicId,
-      role: user?.role
-    };
+    const access_token = this.jwtService.sign(payload);
+    if (
+      user?.hasOnboardedClinic &&
+      user?.defaultClinicId !== undefined &&
+      user?.role !== undefined
+    ) {
+      return {
+        access_token,
+        defaultClinicId: user?.defaultClinicId,
+        role: user?.role,
+      };
+    } else {
+      return { access_token };
+    }
   }
 }

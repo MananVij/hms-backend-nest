@@ -16,15 +16,13 @@ import { Doctor } from './entity/doctor.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { CreateUserClinicDto } from 'src/user_clinic/dto/create_user_clinic.dto';
-import { Not, QueryRunner } from 'typeorm';
+import { Equal, Not, QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { ClinicService } from 'src/clininc/clinic.service';
-import {
-  UserRole,
-} from 'src/user_clinic/entity/user_clinic.entity';
+import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 
-@Controller('doctors')
+@Controller('staff')
 @UseGuards(JwtAuthGuard)
 export class DoctorController {
   constructor(
@@ -59,14 +57,11 @@ export class DoctorController {
   ): Promise<any> {
     try {
       const { userId, clinicId, role } = createUserClinicDto;
-      return await this.userClinicService.createUserClinic(
-        queryRunner,
-        {
-          userId,
-          clinicId,
-          role,
-        },
-      );
+      return await this.userClinicService.createUserClinic(queryRunner, {
+        userId,
+        clinicId,
+        role,
+      });
     } catch (error) {
       if (
         error instanceof ConflictException ||
@@ -80,18 +75,23 @@ export class DoctorController {
     }
   }
 
-  @Get('clinic')
-  async findStaffInClinic(@Query('id') clinicId: number): Promise<any> {
+  @Get('')
+  async findStaffInClinic(
+    @Query('clinicId') clinicId: number,
+    @Query('type') type: string,
+  ): Promise<any> {
     try {
+      var roleCondition = { role: Not(UserRole.ADMIN) };
+      if (type !== undefined && type === UserRole.DOCTOR) {
+        roleCondition = { role: Equal(UserRole.DOCTOR) };
+      }
       const [clinic, staff] = await Promise.all([
         this.clinicService.findOne(clinicId),
-        this.userClinicService.findStaffOfClinic(clinicId, {
-          role: Not(UserRole.ADMIN),
-        }),
+        this.userClinicService.findStaffOfClinic(clinicId, roleCondition),
       ]);
       return { clinic, staff };
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 }
