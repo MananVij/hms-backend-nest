@@ -1,9 +1,17 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { DeepPartial, IsNull, Not, QueryRunner, Repository } from 'typeorm';
+import {
+  Between,
+  DeepPartial,
+  IsNull,
+  Not,
+  QueryRunner,
+  Repository,
+} from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { Appointment } from './entity/appointment.entity';
@@ -14,6 +22,7 @@ import { UserService } from 'src/user/user.service';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { ClinicService } from 'src/clininc/clinic.service';
+import { endOfDay, startOfDay } from 'date-fns';
 
 @Injectable()
 export class AppointmentService {
@@ -31,28 +40,46 @@ export class AppointmentService {
   ): Promise<any> {
     const { doctor, patient, clinic_id, ...otherEntites } =
       createAppointmentDto;
+    const today = new Date();
 
     try {
-      const [patientFound, clinic, doctorFound] = await Promise.all([
-        queryRunner.manager.findOne(User, {
-          where: { uid: patient, isPatient: true },
-        }),
+      const [patientFound, clinic, doctorFound, existingAppointment] =
+        await Promise.all([
+          queryRunner.manager.findOne(User, {
+            where: { uid: patient, isPatient: true },
+          }),
 
-        queryRunner.manager.findOne(Clinic, {
-          where: { id: clinic_id },
-        }),
+          queryRunner.manager.findOne(Clinic, {
+            where: { id: clinic_id },
+          }),
 
-        queryRunner.manager.findOne(User, {
-          where: {
-            uid: doctor,
-            userClinics: { clinic: { id: clinic_id }, role: UserRole.DOCTOR },
-          },
-          relations: ['userClinics', 'doctor'],
-        }),
-      ]);
+          queryRunner.manager.findOne(User, {
+            where: {
+              uid: doctor,
+              userClinics: { clinic: { id: clinic_id }, role: UserRole.DOCTOR },
+            },
+            relations: ['userClinics', 'doctor'],
+          }),
+          queryRunner.manager.findOne(Appointment, {
+            where: {
+              patient: { uid: patient },
+              doctor: { uid: doctor },
+              clinic: {id: clinic_id},
+              prescription: IsNull(),
+              time: Between(startOfDay(today), endOfDay(today)),
+            },
+            relations: ['prescription']
+          }),
+        ]);
 
       if (!doctorFound || !patientFound || !clinic) {
         throw new NotFoundException('Doctor, patient, or clinic not found');
+      }
+      console.log(existingAppointment)
+      if (existingAppointment) {
+        throw new ConflictException(
+          'Existing appointment with empty prescription already exists for today.',
+        );
       }
 
       const appointment = queryRunner.manager.create(Appointment, {
@@ -106,7 +133,10 @@ export class AppointmentService {
       };
       return formattedData;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException('Something Went Wrong');
@@ -147,6 +177,9 @@ export class AppointmentService {
         select: {
           ...selectCondition,
         },
+        order: {
+          time: 'DESC',
+        },
       });
       return { appointments, patient, clinic };
     } else if (role === UserRole.ADMIN) {
@@ -158,6 +191,9 @@ export class AppointmentService {
         relations: ['doctor', 'prescription', 'vitals'],
         select: {
           ...selectCondition,
+        },
+        order: {
+          time: 'DESC',
         },
       });
       return { appointments, patient, clinic };
