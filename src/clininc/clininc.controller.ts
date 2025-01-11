@@ -28,20 +28,22 @@ export class ClinicController {
     private readonly userClinicService: UserClinicService,
   ) {}
 
-  @Post('create')
+  @Post('')
   @UseInterceptors(TransactionInterceptor)
   async create(
-    @Body() createClinicDto: CreateClinicDto,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Body() createClinicDto: CreateClinicDto,
   ): Promise<Clinic> {
     try {
-      return await this.clinicService.create(createClinicDto, queryRunner);
+      const adminId = req?.user?.uid 
+      return await this.clinicService.create(adminId, createClinicDto, queryRunner);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
       throw new InternalServerErrorException(
-        'Failed to update appointment. Something went wrong.',
+        'Failed to create clinic. Something went wrong.',
       );
     }
   }

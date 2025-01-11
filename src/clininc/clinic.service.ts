@@ -22,12 +22,13 @@ export class ClinicService {
   ) {}
 
   async create(
+    adminId: string,
     createClinicDto: CreateClinicDto,
     queryRunner: QueryRunner,
   ): Promise<any> {
     try {
       const admin = await queryRunner.manager.findOne(User, {
-        where: { uid: createClinicDto.admin_id },
+        where: { uid: adminId },
         select: {
           uid: true,
         },
@@ -43,7 +44,7 @@ export class ClinicService {
       });
       const savedClinic = await queryRunner.manager.save(clinic);
       await this.userClinicService.createUserClinic(queryRunner, {
-        userId: admin.uid,
+        userId: adminId,
         clinicId: clinic.id,
         role: UserRole.ADMIN,
       });
@@ -55,6 +56,13 @@ export class ClinicService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Error in creating clinic: ${error.message}`,
+        error.stack,
+        null,
+        adminId,
+        null,
+      );
       throw new InternalServerErrorException('Something Went Wrong.');
     }
   }

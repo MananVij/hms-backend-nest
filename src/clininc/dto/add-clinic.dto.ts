@@ -34,8 +34,4 @@ export class CreateClinicDto {
     message: 'Phone number must be exactly 10 digits and only contain numbers',
   })
   contactNumber: string;
-
-  @IsNotEmpty()
-  @IsString()
-  admin_id: string;
 }
