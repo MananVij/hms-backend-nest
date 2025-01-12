@@ -8,7 +8,7 @@ import {
   IsEnum,
 } from 'class-validator';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { AddressDto, CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 
 class CreateStaffDto {
@@ -42,12 +42,13 @@ class CreateStaffDto {
     endTime: Date;
   }[];
 }
-export class CreateDoctorDto {
+
+export class AddRoleToAdminDto {
   @IsNotEmpty()
   staffData: CreateStaffDto;
 
   @IsNotEmpty()
-  userData: CreateUserDto;
+  address: AddressDto;
 
   @IsNotEmpty()
   metaData: CreateMetaDataDto;

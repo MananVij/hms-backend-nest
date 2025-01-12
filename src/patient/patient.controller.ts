@@ -142,9 +142,13 @@ export class PatientController {
     @Req() req: Request,
     @Query('clinicId') clinicId: number,
   ): Promise<User[]> {
-    const userId = req?.user?.uid
-    const role = await this.userClinicService.findUserRoleInClinic(queryRunner, userId, clinicId)
-    if (role === UserRole.ADMIN) {
+    const userId = req?.user?.uid;
+    const userRoles = await this.userClinicService.findUserRolesInClinic(
+      queryRunner,
+      userId,
+      clinicId,
+    );
+    if (userRoles.includes(UserRole.ADMIN)) {
       return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
         clinicId,
       );
