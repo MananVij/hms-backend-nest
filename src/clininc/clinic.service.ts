@@ -51,7 +51,7 @@ export class ClinicService {
       admin.hasOnboardedClinic = true;
       await queryRunner.manager.save(admin);
 
-      return { ...savedClinic, role: UserRole.ADMIN };
+      return { ...savedClinic, role: [UserRole.ADMIN] };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

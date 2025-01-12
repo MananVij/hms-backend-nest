@@ -1,10 +1,11 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, QueryRunner, Repository } from 'typeorm';
+import { ArrayContains, IsNull, QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { User } from 'src/user/entity/user.enitiy';
@@ -33,7 +34,13 @@ export class PrescriptionService {
       const { patientId, vitalsId, appointmentId, ...prescriptionData } =
         createPrescriptionDto;
 
-      const [doctor, patient, clinic, appointment] = await Promise.all([
+      const [
+        doctor,
+        patient,
+        clinic,
+        appointment,
+        doctorClinic,
+      ] = await Promise.all([
         queryRunner.manager.findOne(User, {
           where: { uid: doctorId },
         }),
@@ -46,6 +53,13 @@ export class PrescriptionService {
         queryRunner.manager.findOne(Appointment, {
           where: { id: appointmentId, prescription: IsNull() },
         }),
+        queryRunner.manager.findOne(UserClinic, {
+          where: {
+            user: { uid: doctorId },
+            clinic: { id: clinicId },
+            role: ArrayContains([UserRole.DOCTOR]),
+          },
+        }),
       ]);
 
       if (!doctor || !patient || !clinic || !appointment) {
@@ -54,16 +68,8 @@ export class PrescriptionService {
         );
       }
 
-      const doctorClinic = await queryRunner.manager.findOne(UserClinic, {
-        where: {
-          user: { uid: doctorId },
-          clinic: { id: clinicId },
-          role: UserRole.DOCTOR,
-        },
-      });
-
       if (!doctorClinic) {
-        throw new NotFoundException('Doctor clinic relationship not found.');
+        throw new ForbiddenException('Doctor clinic relationship not found.');
       }
 
       if (prescriptionData?.is_final_prescription ?? false) {
@@ -84,10 +90,10 @@ export class PrescriptionService {
             uid: savedPrescription?.patient?.uid,
             name: savedPrescription?.patient?.name,
             phoneNumber: savedPrescription?.patient?.phoneNumber,
-            address: savedPrescription?.patient?.address
-          }
-        }
-        return formattedData
+            address: savedPrescription?.patient?.address,
+          },
+        };
+        return formattedData;
       } else {
         const prescription = queryRunner.manager.create(Prescription, {
           ...prescriptionData,
@@ -105,10 +111,11 @@ export class PrescriptionService {
             uid: savedPrescription?.patient?.uid,
             name: savedPrescription?.patient?.name,
             phoneNumber: savedPrescription?.patient?.phoneNumber,
-            address: savedPrescription?.patient?.address
-          }
-        }
-        return formattedData      }
+            address: savedPrescription?.patient?.address,
+          },
+        };
+        return formattedData;
+      }
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

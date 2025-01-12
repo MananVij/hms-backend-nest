@@ -28,9 +28,10 @@ export class UserClinic {
   @Column({
     type: 'enum',
     enum: UserRole,
+    array: true,
     nullable: false,
   })
-  role: UserRole;
+  role: UserRole[];
 
   @ManyToOne(() => Clinic, (clinic) => clinic.userClinic, {
     onDelete: 'CASCADE',

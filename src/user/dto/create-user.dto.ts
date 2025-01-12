@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class AddressDto {
+export class AddressDto {
   @IsNotEmpty()
   @IsString()
   line1: string;
