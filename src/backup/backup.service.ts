@@ -7,9 +7,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Injectable()
 export class BackupService {
-  constructor(private readonly firebaseService: FirebaseService) {
-    console.log('In BackupService');
-  }
+  constructor(private readonly firebaseService: FirebaseService) {}
 
   onModuleInit() {
     console.log('BackupService initialized, cron job should be active now.');

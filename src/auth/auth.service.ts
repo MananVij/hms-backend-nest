@@ -57,8 +57,6 @@ export class AuthService {
       hasOnboardedClinic: user?.hasOnboardedClinic,
     };
     const access_token = this.jwtService.sign(payload);
-    console.log(user);
-    // if role === null && default clinic id is null -> admin hasnt onboarded
     if (
       user?.role === undefined &&
       user?.defaultClinicId === undefined &&

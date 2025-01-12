@@ -75,7 +75,6 @@ export class AppointmentService {
       if (!doctorFound || !patientFound || !clinic) {
         throw new NotFoundException('Doctor, patient, or clinic not found');
       }
-      console.log(existingAppointment)
       if (existingAppointment) {
         throw new ConflictException(
           'Existing appointment with empty prescription already exists for today.',
@@ -171,7 +170,6 @@ export class AppointmentService {
         where: {
           patient: { uid: patientId },
           doctor: { uid: userId },
-          clinic: { id: clinicId },
         },
         relations: ['doctor', 'prescription', 'vitals'],
         select: {
@@ -266,7 +264,6 @@ export class AppointmentService {
           ...selectCondition,
         },
       });
-      console.log(hello);
       return hello;
     }
   }
