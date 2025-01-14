@@ -235,7 +235,6 @@ export class DashboardService {
           { role: ArrayContains([UserRole.DOCTOR]) },
         );
         const doctorIds = adminDoctorIds.map((doctor) => doctor.user.uid);
-        console.log(adminDoctorIds);
         allAppointments = await this.appointmentRepository.count({
           where: {
             doctor: { uid: In(doctorIds) },

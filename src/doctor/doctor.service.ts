@@ -56,7 +56,7 @@ export class DoctorService {
       return await this.userClinicService.createUserClinic(queryRunner, {
         userId: user.uid,
         clinicId,
-        role,
+        role: [role],
       });
     } catch (error) {
       if (error instanceof ConflictException) {

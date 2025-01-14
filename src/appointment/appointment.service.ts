@@ -59,7 +59,10 @@ export class AppointmentService {
           queryRunner.manager.findOne(User, {
             where: {
               uid: doctor,
-              userClinics: { clinic: { id: clinic_id }, role: ArrayContains([UserRole.DOCTOR]) },
+              userClinics: {
+                clinic: { id: clinic_id },
+                role: ArrayContains([UserRole.DOCTOR]),
+              },
             },
             relations: ['userClinics', 'doctor'],
           }),
@@ -163,6 +166,15 @@ export class AppointmentService {
         name: true,
         phoneNumber: true,
       },
+      clinic: {
+        name: true,
+        line1: true,
+      },
+      id: true,
+      time: true,
+      isPaid: true,
+      visitType: true,
+      status: true,
     };
 
     const userRoles = await this.userClinicService.findUserRolesInClinic(
@@ -175,13 +187,38 @@ export class AppointmentService {
       await this.clinicService.findOne(clinicId),
     ]);
 
-    if (userRoles.includes(UserRole.ADMIN)) {
+    if (
+      userRoles?.length === 2 &&
+      userRoles?.includes(UserRole.ADMIN) &&
+      userRoles?.includes(UserRole.DOCTOR)
+    ) {
+      const appointments = await this.appointmentRepository.find({
+        where: [
+          {
+            patient: {
+              uid: patientId,
+            },
+            doctor: { uid: userId },
+          },
+          {
+            patient: { uid: patientId },
+            clinic: { id: clinicId },
+            doctor: { uid: Not(userId) },
+          },
+        ],
+        relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+        select: {
+          ...selectCondition,
+        },
+      });
+      return { appointments, patient };
+    } else if (userRoles.includes(UserRole.DOCTOR)) {
       const appointments = await this.appointmentRepository.find({
         where: {
           patient: { uid: patientId },
-          clinic: { id: clinicId },
+          doctor: { uid: userId },
         },
-        relations: ['doctor', 'prescription', 'vitals'],
+        relations: ['doctor', 'prescription', 'vitals', 'clinic'],
         select: {
           ...selectCondition,
         },
@@ -189,12 +226,12 @@ export class AppointmentService {
           time: 'DESC',
         },
       });
-      return { appointments, patient, clinic };
-    } else if (userRoles.includes(UserRole.DOCTOR)) {
+      return { appointments, patient };
+    } else if (userRoles.includes(UserRole.ADMIN)) {
       const appointments = await this.appointmentRepository.find({
         where: {
           patient: { uid: patientId },
-          doctor: { uid: userId },
+          clinic: { id: clinicId },
         },
         relations: ['doctor', 'prescription', 'vitals'],
         select: {
@@ -250,7 +287,7 @@ export class AppointmentService {
     if (userRoles.includes(UserRole.ADMIN)) {
       return await this.appointmentRepository.find({
         where: { clinic: { id: clinicId }, ...prescriptionCondition },
-        relations: ['patient', 'doctor', 'clinic', 'vitals'],
+        relations: ['patient', 'doctor', 'vitals'],
         order: {
           time: 'DESC',
         },
