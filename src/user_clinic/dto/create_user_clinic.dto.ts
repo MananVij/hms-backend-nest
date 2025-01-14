@@ -12,5 +12,5 @@ export class CreateUserClinicDto {
 
   @IsNotEmpty()
   @IsEnum(UserRole, { each: true })
-  role: UserRole;
+  role: UserRole[];
 }

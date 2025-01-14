@@ -46,7 +46,7 @@ export class ClinicService {
       await this.userClinicService.createUserClinic(queryRunner, {
         userId: adminId,
         clinicId: clinic.id,
-        role: UserRole.ADMIN,
+        role: [UserRole.ADMIN],
       });
       admin.hasOnboardedClinic = true;
       await queryRunner.manager.save(admin);

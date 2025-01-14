@@ -40,12 +40,10 @@ export class UserClinicService {
           where: {
             clinic: { id: clinicId },
             user: { uid: userId },
-            role: ArrayContains([role]),
+            role: ArrayContains(role),
           },
         }),
       ]);
-
-      console.log(user, clinic, existingRelationship);
 
       if (!user) {
         throw new NotFoundException('User Not Found');
@@ -64,7 +62,7 @@ export class UserClinicService {
       const userClinic = queryRunner.manager.create(UserClinic, {
         user,
         clinic,
-        role: [role],
+        role: role,
       });
       const savedUserClinic = await queryRunner.manager.save(userClinic);
       const formattedData = {
@@ -271,8 +269,6 @@ export class UserClinicService {
           await queryRunner.manager.save(User, admin),
         ]);
 
-      console.log(savedMetaData, savedStaff, savedUserClinic, updatedUser);
-
       const formattedData = {
         role: savedUserClinic.role,
         user: {
@@ -282,11 +278,11 @@ export class UserClinicService {
           phoneNumber: updatedUser.phoneNumber,
           address: updatedUser.address,
           doctor: {
-            id: updatedUser?.doctor?.id,
-            qualification: updatedUser?.doctor?.qualification,
-            fee: updatedUser?.doctor?.fee,
-            licenseNumber: updatedUser?.doctor?.licenseNumber,
-            specialization: updatedUser?.doctor?.specialization,
+            id: savedStaff?.id,
+            qualification: savedStaff?.qualification,
+            fee: savedStaff?.fee,
+            licenseNumber: savedStaff?.licenseNumber,
+            specialization: savedStaff?.specialization,
           },
         },
       };
