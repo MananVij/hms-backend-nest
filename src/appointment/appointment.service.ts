@@ -163,6 +163,7 @@ export class AppointmentService {
   ) {
     const selectCondition = {
       doctor: {
+        uid: true,
         name: true,
         phoneNumber: true,
       },
@@ -187,11 +188,7 @@ export class AppointmentService {
       await this.clinicService.findOne(clinicId),
     ]);
 
-    if (
-      userRoles?.length === 2 &&
-      userRoles?.includes(UserRole.ADMIN) &&
-      userRoles?.includes(UserRole.DOCTOR)
-    ) {
+    if (userRoles?.includes(UserRole.ADMIN)) {
       const appointments = await this.appointmentRepository.find({
         where: [
           {
@@ -227,21 +224,6 @@ export class AppointmentService {
         },
       });
       return { appointments, patient };
-    } else if (userRoles.includes(UserRole.ADMIN)) {
-      const appointments = await this.appointmentRepository.find({
-        where: {
-          patient: { uid: patientId },
-          clinic: { id: clinicId },
-        },
-        relations: ['doctor', 'prescription', 'vitals'],
-        select: {
-          ...selectCondition,
-        },
-        order: {
-          time: 'DESC',
-        },
-      });
-      return { appointments, patient, clinic };
     }
   }
 
@@ -287,7 +269,7 @@ export class AppointmentService {
     if (userRoles.includes(UserRole.ADMIN)) {
       return await this.appointmentRepository.find({
         where: { clinic: { id: clinicId }, ...prescriptionCondition },
-        relations: ['patient', 'doctor', 'vitals'],
+        relations: ['patient', 'doctor', 'vitals', 'clinic'],
         order: {
           time: 'DESC',
         },
