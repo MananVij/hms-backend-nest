@@ -6,10 +6,7 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-  NotFoundException,
-  InternalServerErrorException,
   Req,
-  ConflictException,
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -35,12 +32,7 @@ export class AppointmentController {
     try {
       return this.appointmentService.create(createAppointmentDto, queryRunner);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to create appointment. Something went wrong.',
-      );
+      throw error;
     }
   }
 
@@ -51,14 +43,18 @@ export class AppointmentController {
     @Query('clinicId') clinicId: number,
     @Query('upcoming') upcoming: string,
   ): Promise<any> {
-    const userId = req?.user?.uid;
-    const isUpcoming = upcoming === 'true';
-    return this.appointmentService.findAllAppointments(
-      queryRunner,
-      userId,
-      clinicId,
-      isUpcoming,
-    );
+    try {
+      const userId = req?.user?.uid;
+      const isUpcoming = upcoming === 'true';
+      return this.appointmentService.findAllAppointments(
+        queryRunner,
+        userId,
+        clinicId,
+        isUpcoming,
+      );
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Get('')
@@ -68,12 +64,16 @@ export class AppointmentController {
     @Query('patientId') patientId: string,
     @Query('clinicId') clinicId: number,
   ) {
-    const userId = req?.user?.uid;
-    return await this.appointmentService.findAppointmentsOfPatient(
-      queryRunner,
-      userId,
-      patientId,
-      clinicId,
-    );
+    try {
+      const userId = req?.user?.uid;
+      return await this.appointmentService.findAppointmentsOfPatient(
+        queryRunner,
+        userId,
+        patientId,
+        clinicId,
+      );
+    } catch (error) {
+      throw error;
+    }
   }
 }

@@ -94,7 +94,10 @@ export class PatientService {
         },
       };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       await this.errorLogService.logError(
@@ -104,7 +107,9 @@ export class PatientService {
         null,
         null,
       );
-      throw new InternalServerErrorException('Something Went Wrong!');
+      throw new InternalServerErrorException(
+        'Something Went Wrong! Unable to add new patient at the moment. Please try again later.',
+      );
     }
   }
 
@@ -161,7 +166,7 @@ export class PatientService {
         id,
         null,
       );
-      throw new Error('Something Went Wrong!');
+      throw new InternalServerErrorException('Something Went Wrong!');
     }
   }
 
@@ -176,7 +181,7 @@ export class PatientService {
           where: { user: { uid: doctorId } },
         }),
         queryRunner.manager.findOne(User, {
-          where: {uid: patientId, isPatient: true},
+          where: { uid: patientId, isPatient: true },
           relations: ['metaData'],
           select: {
             uid: true,
@@ -200,7 +205,13 @@ export class PatientService {
       });
       return await queryRunner.manager.save(relationship);
     } catch (error) {
-      console.log(error);
+      await this.errorLogService.logError(
+        `Unable to add doctor patient relation: ${error?.message}`,
+        error?.stack,
+        null,
+        doctorId,
+        patientId,
+      );
       throw new InternalServerErrorException('Something Went Wrong.');
     }
   }
@@ -215,7 +226,9 @@ export class PatientService {
         queryRunner.manager.findOne(Doctor, {
           where: { user: { uid: doctorId } },
         }),
-        queryRunner.manager.findOne(User, { where: { uid: patientId, isPatient: true } }),
+        queryRunner.manager.findOne(User, {
+          where: { uid: patientId, isPatient: true },
+        }),
       ]);
 
       if (!doctor) {
@@ -239,6 +252,13 @@ export class PatientService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService?.logError(
+        `Unable to check for doctor patient relationship: ${error?.message}`,
+        error?.stack,
+        null,
+        doctorId,
+        patientId,
+      );
       throw new InternalServerErrorException('Something Went Wrong');
     }
   }

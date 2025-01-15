@@ -57,15 +57,7 @@ export class PatientController {
         queryRunner,
       );
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Unable to register patient. Something went wrong.',
-      );
+      throw error;
     }
   }
 
@@ -142,21 +134,25 @@ export class PatientController {
     @Req() req: Request,
     @Query('clinicId') clinicId: number,
   ): Promise<User[]> {
-    const userId = req?.user?.uid;
-    const userRoles = await this.userClinicService.findUserRolesInClinic(
-      queryRunner,
-      userId,
-      clinicId,
-    );
-    if (userRoles.includes(UserRole.ADMIN)) {
-      return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
-        clinicId,
-      );
-    } else {
-      return await this.doctorPatientService.findAllPatientsOfDoctorByClinicId(
+    try {
+      const userId = req?.user?.uid;
+      const userRoles = await this.userClinicService.findUserRolesInClinic(
+        queryRunner,
         userId,
         clinicId,
       );
+      if (userRoles.includes(UserRole.ADMIN)) {
+        return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
+          clinicId,
+        );
+      } else {
+        return await this.doctorPatientService.findAllPatientsOfDoctorByClinicId(
+          userId,
+          clinicId,
+        );
+      }
+    } catch (error) {
+      throw error;
     }
   }
 }

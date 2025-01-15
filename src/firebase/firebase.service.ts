@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -30,30 +30,34 @@ export class FirebaseService {
     doctor: string,
     patient: string,
   ): Promise<{ pres_url: string; audio_url: string }> {
-    const folderPath = `prescription_data/${doctor}/${patient}`;
-    const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
-    const audioFile = files.find(
-      (file) =>
-        file.mimetype.startsWith('audio/') || file.mimetype === 'video/mp4',
-    );
-    if (!pdfFile && !audioFile)
-      throw new Error('PDF and audio files are required');
+    try {
+      const folderPath = `prescription_data/${doctor}/${patient}`;
+      const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
+      const audioFile = files.find(
+        (file) =>
+          file.mimetype.startsWith('audio/') || file.mimetype === 'video/mp4',
+      );
+      if (!pdfFile && !audioFile)
+        throw new Error('PDF and audio files are required');
 
-    let audio_url = '';
-    let pres_url = '';
-    if (audioFile) {
-      audio_url = await this.uploadSingleFile(
-        audioFile,
-        `${folderPath}/${audioFile.originalname}`,
-      );
+      let audio_url = '';
+      let pres_url = '';
+      if (audioFile) {
+        audio_url = await this.uploadSingleFile(
+          audioFile,
+          `${folderPath}/${audioFile.originalname}`,
+        );
+      }
+      if (pdfFile) {
+        pres_url = await this.uploadSingleFile(
+          pdfFile,
+          `${folderPath}/${pdfFile.originalname}`,
+        );
+      }
+      return { pres_url, audio_url };
+    } catch (error) {
+      throw error;
     }
-    if (pdfFile) {
-      pres_url = await this.uploadSingleFile(
-        pdfFile,
-        `${folderPath}/${pdfFile.originalname}`,
-      );
-    }
-    return { pres_url, audio_url };
   }
 
   async uploadSingleFile(
@@ -107,7 +111,9 @@ export class FirebaseService {
               null,
             );
             reject(
-              new Error('Failed to make file public or generate signed URL'),
+              new InternalServerErrorException(
+                'Failed to make file public or generate signed URL',
+              ),
             );
           }
         }
@@ -171,7 +177,9 @@ export class FirebaseService {
               null,
             );
             reject(
-              new Error('Failed to make backup public or generate signed URL'),
+              new InternalServerErrorException(
+                'Failed to make backup public or generate signed URL',
+              ),
             );
           }
         }

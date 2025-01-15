@@ -25,11 +25,15 @@ export class DashboardController {
     @Req() req: Request,
     @Query('clinicId') clinicId: number,
   ): Promise<any> {
-    const userId = req?.user?.uid;
-    return await this.dashboardService.getDashboard(
-      queryRunner,
-      userId,
-      clinicId,
-    );
+    try {
+      const userId = req?.user?.uid;
+      return await this.dashboardService.getDashboard(
+        queryRunner,
+        userId,
+        clinicId,
+      );
+    } catch (error) {
+      throw error;
+    }
   }
 }

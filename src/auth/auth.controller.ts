@@ -1,10 +1,7 @@
 import {
   Body,
-  ConflictException,
   Controller,
-  InternalServerErrorException,
   Post,
-  Query,
   UseInterceptors,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -26,12 +23,7 @@ export class AuthController {
     try {
       return await this.authService.signup(createUserDto, queryRunner);
     } catch (error) {
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Unable to signup user.Something Went Wrong.',
-      );
+      throw error;
     }
   }
 
@@ -40,6 +32,10 @@ export class AuthController {
     @Body('email') email: string,
     @Body('password') password: string,
   ) {
-    return await this.authService.login({ email, password });
+    try {
+      return await this.authService.login({ email, password });
+    } catch (error) {
+      throw error;
+    }
   }
 }

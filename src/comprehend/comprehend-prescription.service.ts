@@ -70,12 +70,17 @@ export class ComprehendPrescriptionService {
         patient,
         is_gemini_data: true,
       };
-      await this.prescriptionService.create(presDbData, queryRunner, doctor, clinic);
+      await this.prescriptionService.create(
+        presDbData,
+        queryRunner,
+        doctor,
+        clinic,
+      );
 
       return validatedData;
     } catch (error) {
       await this.errorLogService.logError(
-        error.message,
+        `Error while comprehending audio prescription: ${error.message}`,
         error.stack || '',
         audio_url,
         doctor,
