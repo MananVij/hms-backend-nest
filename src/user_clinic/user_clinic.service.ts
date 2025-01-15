@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Any, ArrayContains, In, QueryRunner, Repository } from 'typeorm';
+import { ArrayContains, QueryRunner, Repository } from 'typeorm';
 import { UserClinic, UserRole } from './entity/user_clinic.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { User } from 'src/user/entity/user.enitiy';
@@ -139,15 +139,34 @@ export class UserClinicService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Error in finding user role in clinic: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
       throw new InternalServerErrorException('Something went wrong');
     }
   }
 
   async findStaffOfClinic(
+    queryRunner: QueryRunner,
+    userId: string,
     clinicId: number,
     roleCondition: object,
   ): Promise<UserClinic[]> {
     try {
+      const roleCheck = await this.findUserRolesInClinic(
+        queryRunner,
+        userId,
+        clinicId,
+      );
+      if (!roleCheck?.includes(UserRole.ADMIN)) {
+        throw new ForbiddenException(
+          'You arent authorised to view staff of clinic.',
+        );
+      }
       return await this.userClinicRepository.find({
         where: { clinic: { id: clinicId }, ...roleCondition },
         relations: ['user', 'user.doctor'],
@@ -174,6 +193,16 @@ export class UserClinicService {
         },
       });
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Unable to fetch staff of clinic: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        `ClinicId: ${clinicId}`,
+      );
       throw new InternalServerErrorException(
         'Unble to Fetch Staff of Clinic. Something Went Wrong',
       );

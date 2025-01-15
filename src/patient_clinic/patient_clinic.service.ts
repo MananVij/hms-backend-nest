@@ -20,7 +20,6 @@ export class PatientClinicService {
     private readonly errorLogService: ErrorLogService,
   ) {}
 
-  // Create a new user-clinic association
   async createPatientClinicRelationship(
     createUserClinicDto: CreatePatientClinicDto,
     queryRunner: QueryRunner,
@@ -56,6 +55,13 @@ export class PatientClinicService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Unable to create patient clinic relationship: ${error?.message}`,
+        error?.stack,
+        null,
+        `ClinicId: ${clinicId}`,
+        patientId,
+      );
       throw new InternalServerErrorException('Something Went Wrong.');
     }
   }
@@ -90,6 +96,13 @@ export class PatientClinicService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Unable to check patient clinic relationship: ${error?.message}`,
+        error?.stack,
+        null,
+        `Clinic Id: ${clinicId}`,
+        patientId,
+      );
       throw new InternalServerErrorException('Something went wrong.');
     }
   }
@@ -124,7 +137,7 @@ export class PatientClinicService {
         null,
         null,
       );
-      throw new Error('Something Went Wrong!');
+      throw new InternalServerErrorException('Something Went Wrong!');
     }
   }
 }

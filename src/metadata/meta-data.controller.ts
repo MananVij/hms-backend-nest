@@ -37,12 +37,7 @@ export class MetaDataController {
         queryRunner,
       );
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Something went wrong. Failed to update metadata.',
-      );
+      throw error;
     }
   }
 }

@@ -3,7 +3,6 @@ import {
   Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { QueryRunner } from 'typeorm';
 import { Doctor } from './entity/doctor.entity';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
@@ -11,6 +10,7 @@ import { User } from 'src/user/entity/user.enitiy';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { UserService } from 'src/user/user.service';
 import { MetaDataService } from 'src/metadata/meta-data.service';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class DoctorService {
@@ -18,6 +18,7 @@ export class DoctorService {
     private readonly userService: UserService,
     private readonly metaDataService: MetaDataService,
     private readonly userClinicService: UserClinicService,
+    private readonly errorLogService: ErrorLogService,
   ) {}
 
   async create(
@@ -62,7 +63,16 @@ export class DoctorService {
       if (error instanceof ConflictException) {
         throw error;
       }
-      throw new InternalServerErrorException('Something Went Wrong.');
+      await this.errorLogService.logError(
+        `Unable to create staff: ${error?.mesage}`,
+        error?.stack,
+        null,
+        null,
+        null,
+      );
+      throw new InternalServerErrorException(
+        'Something Went Wrong. Unable to create staff at the moment.',
+      );
     }
   }
 }

@@ -4,11 +4,8 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  NotFoundException,
-  InternalServerErrorException,
   Req,
   Query,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -41,15 +38,7 @@ export class PrescriptionController {
         clinicId,
       );
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ForbiddenException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Unable to save prescription. Something went wrong.',
-      );
+      throw error;
     }
   }
 }

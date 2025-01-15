@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ErrorLogModule } from 'src/errorlog/error-log.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
       secret: process.env.JWT_SECRET_KEY, // Secret used to sign the JWT
       signOptions: { expiresIn: '24h' }, // Expiration time of the JWT
     }),
+    ErrorLogModule,
   ],
   providers: [AuthService, JwtStrategy, JwtAuthGuard], // The services and guards used by the module
   controllers: [AuthController], // Controllers exposed by the module

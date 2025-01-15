@@ -15,33 +15,37 @@ export class BackupService {
 
   @Cron('30 15 * * *')
   async handleCron() {
-    console.log('Backup cron job is running...', new Date().toISOString());
+    try {
+      console.log('Backup cron job is running...', new Date().toISOString());
 
-    const backupFileName = `backup-${new Date().toISOString()}.sql`;
-    const backupDirectory = path.join(__dirname, 'backups');
-    const backupFilePath = path.join(backupDirectory, backupFileName);
+      const backupFileName = `backup-${new Date().toISOString()}.sql`;
+      const backupDirectory = path.join(__dirname, 'backups');
+      const backupFilePath = path.join(backupDirectory, backupFileName);
 
-    if (!fs.existsSync(backupDirectory)) {
-      fs.mkdirSync(backupDirectory, { recursive: true });
-      console.log('Backup directory created:', backupDirectory);
+      if (!fs.existsSync(backupDirectory)) {
+        fs.mkdirSync(backupDirectory, { recursive: true });
+        console.log('Backup directory created:', backupDirectory);
+      }
+
+      process.env.PGPASSWORD = process.env.DB_PASSWORD;
+
+      const pgDumpCommand = `pg_dump --host=${process.env.DB_HOST_URL} --port=${process.env.DB_PORT} --username=${process.env.DB_USER_NAME} --dbname=${process.env.DB_NAME} --no-password --format=c --file=${backupFilePath} --no-owner --no-comments --no-publications --no-subscriptions`;
+
+      exec(pgDumpCommand, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error during backup: ${error.message}`);
+          return;
+        }
+        if (stderr) {
+          console.error(`stderr: ${stderr}`);
+          return;
+        }
+        console.log(`Backup completed: ${stdout}`);
+
+        this.firebaseService.uploadBackupToFirebase(backupFilePath);
+      });
+    } catch (error) {
+      throw error;
     }
-
-    process.env.PGPASSWORD = process.env.DB_PASSWORD;
-
-    const pgDumpCommand = `pg_dump --host=${process.env.DB_HOST_URL} --port=${process.env.DB_PORT} --username=${process.env.DB_USER_NAME} --dbname=${process.env.DB_NAME} --no-password --format=c --file=${backupFilePath} --no-owner --no-comments --no-publications --no-subscriptions`;
-
-    exec(pgDumpCommand, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error during backup: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`stderr: ${stderr}`);
-        return;
-      }
-      console.log(`Backup completed: ${stdout}`);
-
-      this.firebaseService.uploadBackupToFirebase(backupFilePath);
-    });
   }
 }

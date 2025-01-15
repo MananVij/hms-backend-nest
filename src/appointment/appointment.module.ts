@@ -8,7 +8,6 @@ import { User } from 'src/user/entity/user.enitiy';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { UserService } from 'src/user/user.service';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
-import { ClinicModule } from 'src/clininc/clinic.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { ClinicModule } from 'src/clininc/clinic.module';
     Appointment,
     ErrorLogModule,
     UserClinicModule,
-    ClinicModule,
   ],
   controllers: [AppointmentController],
   providers: [AppointmentService, UserService],

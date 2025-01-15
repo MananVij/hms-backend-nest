@@ -1,4 +1,4 @@
- import {
+import {
   Body,
   Controller,
   Post,
@@ -25,29 +25,31 @@ export class FirebaseController {
     @Body('doctor') doctor: string,
     @Body('patient') patient: string,
   ) {
-    // Validate files
-    if (!Array.isArray(files) || files.length === 0) {
-      throw new BadRequestException('No files received');
-    }
+    try {
+      if (!Array.isArray(files) || files.length === 0) {
+        throw new BadRequestException('No files received');
+      }
 
-    // Create DTO instance
-    const uploadFileDto = new UploadFileDto();
-    uploadFileDto.doctor = doctor;
-    uploadFileDto.patient = patient;
-    uploadFileDto.files = files;
+      const uploadFileDto = new UploadFileDto();
+      uploadFileDto.doctor = doctor;
+      uploadFileDto.patient = patient;
+      uploadFileDto.files = files;
 
-    // Validate the DTO
-    const errors = await validate(uploadFileDto);
-    if (errors.length > 0) {
-      throw new BadRequestException('Validation failed: ' + 
-        errors.map(e => Object.values(e.constraints)).join(', ')
+      const errors = await validate(uploadFileDto);
+      if (errors.length > 0) {
+        throw new BadRequestException(
+          'Validation failed: ' +
+            errors.map((e) => Object.values(e.constraints)).join(', '),
+        );
+      }
+
+      return await this.firebaseService.uploadFiles(
+        uploadFileDto.files,
+        uploadFileDto.doctor,
+        uploadFileDto.patient,
       );
+    } catch (error) {
+      throw error;
     }
-
-    return await this.firebaseService.uploadFiles(
-      uploadFileDto.files,
-      uploadFileDto.doctor,
-      uploadFileDto.patient
-    );
   }
 }

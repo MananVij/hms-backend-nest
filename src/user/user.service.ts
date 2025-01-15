@@ -33,7 +33,7 @@ export class UserService {
         ],
       });
       if (existingUser) {
-        throw new ConflictException('Email already exists');
+        throw new ConflictException('Credentials already exists');
       }
       const hashedPassword = await this.hashPassword(createUserDto.password);
       const user = queryRunner.manager.create(User, {
@@ -51,7 +51,7 @@ export class UserService {
       }
       await this.errorLogService.logError(
         `Unable to create user: ${error.message}`,
-        error.stacks,
+        error.stack,
         null,
       );
       throw new InternalServerErrorException(
@@ -66,21 +66,32 @@ export class UserService {
   }
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userRepository.findOne({
-      where: { email },
-      relations: ['doctor'],
-    });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, doctor, ...result } = user;
-      const qualification = user.doctor?.qualification;
-      const clinicIds = await this.userClinicService.findClinicsOfUser(
-        user.uid,
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+        relations: ['doctor'],
+      });
+      if (user && (await bcrypt.compare(password, user.password))) {
+        const { password, doctor, ...result } = user;
+        const qualification = user.doctor?.qualification;
+        const clinicIds = await this.userClinicService.findClinicsOfUser(
+          user.uid,
+        );
+        const defaultClinicId = clinicIds[0]?.id;
+        const role = clinicIds[0]?.role;
+        return { qualification, defaultClinicId, role, ...result };
+      }
+      return null;
+    } catch (error) {
+      await this.errorLogService.logError(
+        `Unable to validate user ${error?.mesage}`,
+        error?.stack,
+        null,
+        `Email: ${email}`,
+        null,
       );
-      const defaultClinicId = clinicIds[0]?.id;
-      const role = clinicIds[0]?.role;
-      return { qualification, defaultClinicId, role, ...result };
+      throw new InternalServerErrorException('Something went wrong');
     }
-    return null;
   }
 
   async updateMetaData(
@@ -101,6 +112,13 @@ export class UserService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService?.logError(
+        `Unable to update metadata: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
       throw new InternalServerErrorException(
         'Something went wrong. Please try again later.',
       );
@@ -108,30 +126,46 @@ export class UserService {
   }
 
   async getUserDetails(userId: string): Promise<User> {
-    const isValidUUID =
-      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-        userId,
-      );
+    try {
+      const isValidUUID =
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          userId,
+        );
 
-    if (!isValidUUID) {
-      throw new NotFoundException('User Not Found');
+      if (!isValidUUID) {
+        throw new NotFoundException('User Not Found');
+      }
+      const user = await this.userRepository.findOne({
+        where: { uid: userId },
+        relations: ['metaData'],
+        select: {
+          uid: true,
+          name: true,
+          phoneNumber: true,
+          metaData: { dob: true, height: true, sex: true },
+        },
+      });
+      if (!user) {
+        throw new NotFoundException('User Not Found');
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Unable to find User Details: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
+      throw new InternalServerErrorException('Something went wrong!');
     }
-    const user = await this.userRepository.findOne({
-      where: { uid: userId },
-      relations: ['metaData'],
-      select: {
-        uid: true,
-        name: true,
-        phoneNumber: true,
-        metaData: { dob: true, height: true, sex: true },
-      },
-    });
-    if (!user) {
-      throw new NotFoundException('User Not Found');
-    }
-    return user;
   }
+
   async findUserByPhoneNumber(
+    userId: string,
     phoneNumber: string,
     patientCondition: object,
   ): Promise<User> {
@@ -151,6 +185,13 @@ export class UserService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      await this.errorLogService.logError(
+        `Unable to find user by phone number: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
       throw new InternalServerErrorException(
         'Unable to find patient. Something went wrong.',
       );
@@ -158,19 +199,30 @@ export class UserService {
   }
 
   async findUserByUserId(userId: string): Promise<User> {
-    return await this.userRepository.findOne({
-      where: { uid: userId, isPatient: true },
-      relations: ['metaData'],
-      select: {
-        uid: true,
-        name: true,
-        phoneNumber: true,
-        metaData: {
-          dob: true,
-          sex: true,
-          height: true,
+    try {
+      return await this.userRepository.findOne({
+        where: { uid: userId, isPatient: true },
+        relations: ['metaData'],
+        select: {
+          uid: true,
+          name: true,
+          phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true,
+            height: true,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      await this.errorLogService.logError(
+        `Unable to find user by userId: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
+    }
+    throw new InternalServerErrorException('Unable to find user.');
   }
 }

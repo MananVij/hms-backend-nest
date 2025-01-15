@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -83,7 +84,12 @@ export class DashboardService {
           clinicId,
           true,
         ),
-        this.appointmentComparisonTrend(userId, clinicId, userRoles),
+        this.appointmentComparisonTrend(
+          queryRunner,
+          userId,
+          clinicId,
+          userRoles,
+        ),
       ]);
       return {
         newPatinetTrend,
@@ -152,7 +158,7 @@ export class DashboardService {
       return patientTrend;
     } catch (error) {
       await this.errorLogService.logError(
-        error.message,
+        `Unable to find new patient trend: ${error.message}`,
         error.stack,
         userId,
         null,
@@ -210,7 +216,7 @@ export class DashboardService {
       return appointmentTrend;
     } catch (error) {
       await this.errorLogService.logError(
-        error.message,
+        `Unable to find appointment trend: ${error.message}`,
         error.stack,
         userId,
         null,
@@ -221,6 +227,7 @@ export class DashboardService {
   }
 
   private async appointmentComparisonTrend(
+    queryRunner: QueryRunner,
     userId: string,
     clinicId: number,
     role: UserRole[],
@@ -231,6 +238,8 @@ export class DashboardService {
     try {
       if (role.includes(UserRole.ADMIN)) {
         const adminDoctorIds = await this.userClinicService.findStaffOfClinic(
+          queryRunner,
+          userId,
           clinicId,
           { role: ArrayContains([UserRole.DOCTOR]) },
         );
@@ -271,8 +280,11 @@ export class DashboardService {
 
       return { allAppointments, seenAppointments };
     } catch (error) {
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
       await this.errorLogService.logError(
-        error.message,
+        `Unable to find appointment comparison trend: ${error.message}`,
         error.stack,
         userId,
         null,

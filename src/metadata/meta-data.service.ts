@@ -30,13 +30,12 @@ export class MetaDataService {
         throw new NotFoundException('User not found');
       }
 
-      const metaDataRepo = queryRunner.manager.getRepository(MetaData);
-      const metaData = metaDataRepo.create({
+      const metaData = queryRunner.manager.create(MetaData, {
         ...createMetaDataDto,
         user,
       });
 
-      const savedMetaData = await metaDataRepo.save(metaData);
+      const savedMetaData = await queryRunner.manager.save(metaData);
       await this.userService.updateMetaData(
         user.uid,
         savedMetaData,
@@ -90,7 +89,9 @@ export class MetaDataService {
         null,
         id,
       );
-      throw Error('Something Went Wrong');
+      throw new InternalServerErrorException(
+        'Something Went Wrong. Unable to update metadata.',
+      );
     }
   }
 }

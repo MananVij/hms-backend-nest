@@ -4,8 +4,6 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  NotFoundException,
-  InternalServerErrorException,
   Get,
   Req,
   Query,
@@ -36,15 +34,14 @@ export class ClinicController {
     @Body() createClinicDto: CreateClinicDto,
   ): Promise<Clinic> {
     try {
-      const adminId = req?.user?.uid
-      return await this.clinicService.create(adminId, createClinicDto, queryRunner);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Failed to create clinic. Something went wrong.',
+      const adminId = req?.user?.uid;
+      return await this.clinicService.create(
+        adminId,
+        createClinicDto,
+        queryRunner,
       );
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -59,13 +56,11 @@ export class ClinicController {
   }
 
   @Get('')
-  async findClinic(
-    @Query('id') clinicId: number,
-  ): Promise<Clinic> {
+  async findClinic(@Query('id') clinicId: number): Promise<Clinic> {
     try {
       return await this.clinicService.findOne(clinicId);
     } catch (error) {
-      throw error
+      throw error;
     }
   }
 }

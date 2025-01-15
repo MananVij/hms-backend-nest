@@ -6,9 +6,6 @@ import {
   UseGuards,
   Query,
   UseInterceptors,
-  ConflictException,
-  InternalServerErrorException,
-  NotFoundException,
   Req,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
@@ -43,12 +40,7 @@ export class DoctorController {
     try {
       return await this.doctorService.create(createDoctorDto, queryRunner);
     } catch (error) {
-      if (error instanceof ConflictException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Unable to Create Staff. Something Went Wrong.',
-      );
+      throw error;
     }
   }
 
@@ -66,15 +58,7 @@ export class DoctorController {
         role,
       });
     } catch (error) {
-      if (
-        error instanceof ConflictException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Unable to Create Doctor. Something Went Wrong.',
-      );
+      throw error;
     }
   }
 
@@ -99,17 +83,25 @@ export class DoctorController {
 
   @Get('')
   async findStaffInClinic(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
     @Query('clinicId') clinicId: number,
     @Query('type') type: string,
   ): Promise<any> {
     try {
+      const userId = req?.user?.uid;
       var roleCondition = {};
       if (type !== undefined && type === UserRole.DOCTOR) {
         roleCondition = { role: ArrayContains([UserRole.DOCTOR]) };
       }
       const [clinic, staff] = await Promise.all([
         this.clinicService.findOne(clinicId),
-        this.userClinicService.findStaffOfClinic(clinicId, roleCondition),
+        this.userClinicService.findStaffOfClinic(
+          queryRunner,
+          userId,
+          clinicId,
+          roleCondition,
+        ),
       ]);
       return { clinic, staff };
     } catch (error) {
