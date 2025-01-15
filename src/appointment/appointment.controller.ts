@@ -50,7 +50,7 @@ export class AppointmentController {
     @Req() req: Request,
     @Query('clinicId') clinicId: number,
     @Query('upcoming') upcoming: string,
-  ): Promise<Appointment[]> {
+  ): Promise<any> {
     const userId = req?.user?.uid;
     const isUpcoming = upcoming === 'true';
     return this.appointmentService.findAllAppointments(

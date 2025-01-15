@@ -8,6 +8,7 @@ import {
   InternalServerErrorException,
   Req,
   Query,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -31,16 +32,19 @@ export class PrescriptionController {
     @Query('clinicId') clinicId: number,
     @Body() createPrescriptionDto: CreatePrescriptionDto,
   ): Promise<Prescription> {
-    const doctorId = req?.user?.uid
+    const doctorId = req?.user?.uid;
     try {
       return await this.prescriptionService.create(
         createPrescriptionDto,
         queryRunner,
         doctorId,
-        clinicId
+        clinicId,
       );
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(

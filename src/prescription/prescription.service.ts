@@ -34,33 +34,29 @@ export class PrescriptionService {
       const { patientId, vitalsId, appointmentId, ...prescriptionData } =
         createPrescriptionDto;
 
-      const [
-        doctor,
-        patient,
-        clinic,
-        appointment,
-        doctorClinic,
-      ] = await Promise.all([
-        queryRunner.manager.findOne(User, {
-          where: { uid: doctorId },
-        }),
-        queryRunner.manager.findOne(User, {
-          where: { uid: patientId, isPatient: true },
-        }),
-        queryRunner.manager.findOne(Clinic, {
-          where: { id: clinicId },
-        }),
-        queryRunner.manager.findOne(Appointment, {
-          where: { id: appointmentId, prescription: IsNull() },
-        }),
-        queryRunner.manager.findOne(UserClinic, {
-          where: {
-            user: { uid: doctorId },
-            clinic: { id: clinicId },
-            role: ArrayContains([UserRole.DOCTOR]),
-          },
-        }),
-      ]);
+      const [doctor, patient, clinic, appointment, doctorClinic] =
+        await Promise.all([
+          queryRunner.manager.findOne(User, {
+            where: { uid: doctorId },
+          }),
+          queryRunner.manager.findOne(User, {
+            where: { uid: patientId, isPatient: true },
+          }),
+          queryRunner.manager.findOne(Clinic, {
+            where: { id: clinicId },
+          }),
+          queryRunner.manager.findOne(Appointment, {
+            where: { id: appointmentId, prescription: IsNull() },
+            relations: ['doctor'],
+          }),
+          queryRunner.manager.findOne(UserClinic, {
+            where: {
+              user: { uid: doctorId },
+              clinic: { id: clinicId },
+              role: ArrayContains([UserRole.DOCTOR]),
+            },
+          }),
+        ]);
 
       if (!doctor || !patient || !clinic || !appointment) {
         throw new NotFoundException(
@@ -70,6 +66,11 @@ export class PrescriptionService {
 
       if (!doctorClinic) {
         throw new ForbiddenException('Doctor clinic relationship not found.');
+      }
+      if (appointment.doctor.uid !== doctorId) {
+        throw new ForbiddenException(
+          'You are not authorised to add prescription for this appointment',
+        );
       }
 
       if (prescriptionData?.is_final_prescription ?? false) {
@@ -92,6 +93,9 @@ export class PrescriptionService {
             phoneNumber: savedPrescription?.patient?.phoneNumber,
             address: savedPrescription?.patient?.address,
           },
+          appointment: {
+            id: savedPrescription?.appointment?.id,
+          },
         };
         return formattedData;
       } else {
@@ -113,11 +117,17 @@ export class PrescriptionService {
             phoneNumber: savedPrescription?.patient?.phoneNumber,
             address: savedPrescription?.patient?.address,
           },
+          appointment: {
+            id: savedPrescription?.appointment?.id,
+          },
         };
         return formattedData;
       }
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       await this.errorLogService.logError(
