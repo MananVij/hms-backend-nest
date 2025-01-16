@@ -11,10 +11,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const dataSource = app.get(DataSource);
   app.enableCors({
-    origin: [process.env.FRONT_END_DOMAIN], // Replace with your frontend domain
+    origin: [process.env.FRONT_END_DOMAIN],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Enable credentials (if needed)
-    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Authorization, sentry-trace',
   });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new TransactionInterceptor(dataSource));
