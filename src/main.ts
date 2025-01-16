@@ -14,7 +14,7 @@ async function bootstrap() {
     origin: [process.env.FRONT_END_DOMAIN],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
-    allowedHeaders: 'Content-Type, Authorization, sentry-trace',
+    allowedHeaders: 'Content-Type, Authorization, sentry-trace, baggage',
   });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new TransactionInterceptor(dataSource));
