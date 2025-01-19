@@ -63,6 +63,8 @@ export class AuthService {
         access_token,
         defaultClinicId: user?.defaultClinicId,
         role: user?.role,
+        headerImage: user?.headerImage,
+        footerText: user?.footerText,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

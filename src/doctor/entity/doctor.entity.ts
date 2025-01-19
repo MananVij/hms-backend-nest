@@ -40,6 +40,12 @@ export class Doctor {
     endTime: Date; // Format as HH:MM
   }[];
 
+  @Column({ type: 'text', nullable: false })
+  headerImage: Buffer | '';
+
+  @Column({ type: 'text', nullable: true })
+  footerText: string | null;
+
   @OneToOne(() => User, (user) => user.doctor, {
     nullable: true,
     onDelete: 'CASCADE',

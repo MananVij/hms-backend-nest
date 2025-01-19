@@ -6,9 +6,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { TransactionInterceptor } from './transactions/transaction.interceptor';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.use(bodyParser.json({ limit: '3mb' }));
+  app.use(bodyParser.urlencoded({ limit: '3mb', extended: true }));
   const dataSource = app.get(DataSource);
   app.enableCors({
     origin: [process.env.FRONT_END_DOMAIN],

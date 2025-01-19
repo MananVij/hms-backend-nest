@@ -74,12 +74,14 @@ export class UserService {
       if (user && (await bcrypt.compare(password, user.password))) {
         const { password, doctor, ...result } = user;
         const qualification = user.doctor?.qualification;
+        const headerImage = user.doctor?.headerImage;
+        const footerText = user.doctor?.footerText;
         const clinicIds = await this.userClinicService.findClinicsOfUser(
           user.uid,
         );
         const defaultClinicId = clinicIds[0]?.id;
         const role = clinicIds[0]?.role;
-        return { qualification, defaultClinicId, role, ...result };
+        return { qualification, defaultClinicId, role, headerImage, footerText, ...result };
       }
       return null;
     } catch (error) {
