@@ -162,11 +162,11 @@ export class UserClinicService {
         userId,
         clinicId,
       );
-      if (!roleCheck?.includes(UserRole.ADMIN)) {
-        throw new ForbiddenException(
-          'You arent authorised to view staff of clinic.',
-        );
-      }
+      // if (!roleCheck?.includes(UserRole.ADMIN)) {
+      //   throw new ForbiddenException(
+      //     'You arent authorised to view staff of clinic.',
+      //   );
+      // }
       return await this.userClinicRepository.find({
         where: { clinic: { id: clinicId }, ...roleCondition },
         relations: ['user', 'user.doctor'],
