@@ -24,13 +24,13 @@ export class Doctor {
   @Column({ default: false })
   isOnline: boolean;
 
-  @Column({ unique: true }) // Unique license number
+  @Column({ unique: true, nullable: true }) // Unique license number
   licenseNumber: string;
 
   @Column({ nullable: false }) // Specialization is required
   specialization: string;
 
-  @Column({ type: 'date' }) // Date of practice start
+  @Column({ type: 'date', nullable: true }) // Date of practice start
   startYearOfPractice: Date;
 
   @Column('jsonb') // Timings represented in JSON format
@@ -40,7 +40,7 @@ export class Doctor {
     endTime: Date; // Format as HH:MM
   }[];
 
-  @Column({ type: 'text', nullable: false })
+  @Column({ type: 'text', nullable: true })
   headerImage: Buffer | '';
 
   @Column({ type: 'text', nullable: true })

@@ -141,7 +141,7 @@ export class PatientController {
         userId,
         clinicId,
       );
-      if (userRoles.includes(UserRole.ADMIN)) {
+      if (userRoles.includes(UserRole.ADMIN) || userRoles.includes(UserRole.RECEPTIONIST)) {
         return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
           clinicId,
         );

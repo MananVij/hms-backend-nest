@@ -61,6 +61,13 @@ export class DashboardService {
         clinicId,
       );
 
+      if (
+        !userRoles?.includes(UserRole.ADMIN) &&
+        !userRoles?.includes(UserRole.DOCTOR)
+      ) {
+        throw new ForbiddenException('You arent authorised for this request.');
+      }
+
       const [
         newPatinetTrend,
         appointmentTrend,
@@ -100,7 +107,8 @@ export class DashboardService {
     } catch (error) {
       if (
         error instanceof NotFoundException ||
-        error instanceof InternalServerErrorException
+        error instanceof InternalServerErrorException ||
+        error instanceof ForbiddenException
       ) {
         throw error;
       }

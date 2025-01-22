@@ -24,6 +24,7 @@ import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
 
 @Injectable()
 export class AppointmentService {
@@ -176,36 +177,24 @@ export class AppointmentService {
       status: true,
     };
     try {
-      const userRoles = await this.userClinicService.findUserRolesInClinic(
-        queryRunner,
-        userId,
-        clinicId,
-      );
-      const patient = await this.userService.findUserByUserId(patientId);
+      const [patient, doctor, clinic, userRole] = await Promise.all([
+        this.userService.findUserByUserId(patientId),
+        queryRunner.manager.findOne(Doctor, {
+          where: { user: { uid: userId } },
+        }),
+        queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
+        this.userClinicService.findUserRolesInClinic(
+          queryRunner,
+          userId,
+          clinicId,
+        ),
+      ]);
+      if (!patient || !doctor || !clinic || !userRole) {
+        throw new NotFoundException('Credentails not found.');
+      }
 
-      if (userRoles?.includes(UserRole.ADMIN)) {
-        const appointments = await this.appointmentRepository.find({
-          where: [
-            {
-              patient: {
-                uid: patientId,
-              },
-              doctor: { uid: userId },
-            },
-            {
-              patient: { uid: patientId },
-              clinic: { id: clinicId },
-              doctor: { uid: Not(userId) },
-            },
-          ],
-          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
-          select: {
-            ...selectCondition,
-          },
-        });
-        return { appointments, patient };
-      } else if (userRoles.includes(UserRole.DOCTOR)) {
-        const appointments = await this.appointmentRepository.find({
+      if (userRole.length === 1 && userRole?.includes(UserRole.DOCTOR)) {
+        const doctorAppointments = await this.appointmentRepository.find({
           where: {
             patient: { uid: patientId },
             doctor: { uid: userId },
@@ -218,7 +207,57 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
-        return { appointments, patient };
+        return { appointments: { doctorAppointments }, patient };
+      } else if (userRole?.includes(UserRole.ADMIN)) {
+        const doctorAppointments = await queryRunner.manager.find(Appointment, {
+          where: {
+            doctor: { uid: userId },
+            patient: { uid: patientId },
+          },
+          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          select: {
+            ...selectCondition,
+          },
+          order: {
+            time: 'DESC',
+          },
+        });
+        const clinicAppointments = await queryRunner.manager.find(Appointment, {
+          where: {
+            doctor: { uid: Not(userId) },
+            patient: { uid: patientId },
+            clinic: { id: clinicId },
+          },
+          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          select: {
+            ...selectCondition,
+          },
+          order: {
+            time: 'DESC',
+          },
+        });
+        return {
+          patient,
+          appointments: { doctorAppointments, clinicAppointments },
+        };
+      } else if (userRole?.includes(UserRole.RECEPTIONIST)) {
+        const clinicAppointments = await queryRunner.manager.find(Appointment, {
+          where: {
+            patient: { uid: patientId },
+            clinic: { id: clinicId },
+          },
+          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          select: {
+            ...selectCondition,
+          },
+          order: {
+            time: 'DESC',
+          },
+        });
+        return {
+          patient,
+          appointments: { clinicAppointments },
+        };
       }
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -274,7 +313,10 @@ export class AppointmentService {
           pincode: true,
         },
       };
-      if (userRoles.includes(UserRole.ADMIN)) {
+      if (
+        userRoles.includes(UserRole.ADMIN) ||
+        userRoles.includes(UserRole.RECEPTIONIST)
+      ) {
         return await this.appointmentRepository.find({
           where: { clinic: { id: clinicId }, ...prescriptionCondition },
           relations: ['patient', 'doctor', 'vitals', 'clinic'],

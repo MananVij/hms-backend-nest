@@ -25,16 +25,16 @@ class CreateStaffDto {
   isOnline: boolean;
 
   @IsString()
-  @IsNotEmpty()
-  licenseNumber: string;
+  @IsOptional()
+  licenseNumber?: string;
 
   @IsString()
   @IsNotEmpty()
   specialization: string;
 
   @IsDateString()
-  @IsNotEmpty()
-  startYearOfPractice: string;
+  @IsOptional()
+  startYearOfPractice?: string;
 
   @IsArray()
   @IsNotEmpty()
