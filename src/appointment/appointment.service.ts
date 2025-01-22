@@ -177,10 +177,10 @@ export class AppointmentService {
       status: true,
     };
     try {
-      const [patient, doctor, clinic, userRole] = await Promise.all([
+      const [patient, reqUser, clinic, userRole] = await Promise.all([
         this.userService.findUserByUserId(patientId),
-        queryRunner.manager.findOne(Doctor, {
-          where: { user: { uid: userId } },
+        queryRunner.manager.findOne(User, {
+          where: { uid: userId },
         }),
         queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
         this.userClinicService.findUserRolesInClinic(
@@ -189,7 +189,7 @@ export class AppointmentService {
           clinicId,
         ),
       ]);
-      if (!patient || !doctor || !clinic || !userRole) {
+      if (!patient || !reqUser || !clinic || !userRole) {
         throw new NotFoundException('Credentails not found.');
       }
 
