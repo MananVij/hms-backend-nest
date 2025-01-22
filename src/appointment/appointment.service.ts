@@ -278,7 +278,9 @@ export class AppointmentService {
     userId: string,
     clinicId: number,
     upcoming: boolean,
+    isToday: boolean = false,
   ) {
+    const today = new Date();
     try {
       const userRoles = await this.userClinicService.findUserRolesInClinic(
         queryRunner,
@@ -289,6 +291,10 @@ export class AppointmentService {
       const prescriptionCondition = upcoming
         ? { prescription: IsNull() }
         : { prescription: Not(IsNull()) };
+
+      const timeCondition = isToday
+        ? { time: Between(startOfDay(today), endOfDay(today)) }
+        : {};
 
       const selectCondition = {
         doctor: {
@@ -318,7 +324,11 @@ export class AppointmentService {
         userRoles.includes(UserRole.RECEPTIONIST)
       ) {
         return await this.appointmentRepository.find({
-          where: { clinic: { id: clinicId }, ...prescriptionCondition },
+          where: {
+            clinic: { id: clinicId },
+            ...prescriptionCondition,
+            ...timeCondition,
+          },
           relations: ['patient', 'doctor', 'vitals', 'clinic'],
           order: {
             time: 'DESC',
@@ -333,6 +343,7 @@ export class AppointmentService {
             clinic: { id: clinicId },
             doctor: { uid: userId },
             ...prescriptionCondition,
+            ...timeCondition,
           },
           relations: ['patient', 'doctor', 'clinic', 'vitals'],
           select: {

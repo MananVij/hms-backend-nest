@@ -90,6 +90,7 @@ export class DashboardService {
           userId,
           clinicId,
           true,
+          true
         ),
         this.appointmentComparisonTrend(
           queryRunner,
