@@ -65,6 +65,7 @@ export class AuthService {
         role: user?.role,
         headerImage: user?.headerImage,
         footerText: user?.footerText,
+        padding: user?.padding,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

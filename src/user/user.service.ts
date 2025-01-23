@@ -75,8 +75,10 @@ export class UserService {
       if (user && (await bcrypt.compare(password, user.password))) {
         const { password, doctor, ...result } = user;
         const qualification = user.doctor?.qualification;
-        const headerImage = user.doctor?.headerImage;
-        const footerText = user.doctor?.footerText;
+        const usesOwnLetterPad = user?.doctor?.usesOwnLetterPad;
+        const headerImage = usesOwnLetterPad ? null : user.doctor?.headerImage;
+        const footerText = usesOwnLetterPad ? null : user.doctor?.footerText;
+        const padding = usesOwnLetterPad ? user?.doctor?.padding : null;
         const clinicIds = await this.userClinicService.findClinicsOfUser(
           user.uid,
         );
@@ -88,6 +90,7 @@ export class UserService {
           role,
           headerImage,
           footerText,
+          padding,
           ...result,
         };
       }

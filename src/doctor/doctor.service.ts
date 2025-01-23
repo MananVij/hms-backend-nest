@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { QueryRunner } from 'typeorm';
 import { Doctor } from './entity/doctor.entity';
@@ -72,6 +73,69 @@ export class DoctorService {
       );
       throw new InternalServerErrorException(
         'Something Went Wrong. Unable to create staff at the moment.',
+      );
+    }
+  }
+
+  // add check for super admin later
+  async changePrescriptionPadType(
+    queryRunner: QueryRunner,
+    doctorId: string,
+    usesOwnLetterPad: boolean,
+  ): Promise<any> {
+    try {
+      const doctor = await queryRunner.manager.findOne(Doctor, {
+        where: { user: { uid: doctorId } },
+      });
+      if (!doctor) {
+        throw new NotFoundException('Doctor not found');
+      }
+      doctor.usesOwnLetterPad = usesOwnLetterPad;
+      await queryRunner.manager.save(doctor);
+      return { msg: 'Doctor updated', doctor };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Unable to update doctor details.',
+      );
+    }
+  }
+
+  // add check for super admin later
+  async updatePrescriptionPadding(
+    queryRunner: QueryRunner,
+    doctorId: string,
+    padding: {
+      paddingTop?: number | null;
+      paddingLeft?: number | null;
+      paddingBottom?: number | null;
+      paddingRight?: number | null;
+    },
+  ): Promise<any> {
+    const updatedPadding = {
+      paddingTop: padding.paddingTop ?? 0,
+      paddingLeft: padding.paddingLeft ?? 40,
+      paddingBottom: padding.paddingBottom ?? 0,
+      paddingRight: padding.paddingRight ?? 40,
+    };
+    try {
+      const doctor = await queryRunner.manager.findOne(Doctor, {
+        where: { user: { uid: doctorId } },
+      });
+      if (!doctor) {
+        throw new NotFoundException('Doctor not found');
+      }
+      doctor.padding = updatedPadding;
+      await queryRunner.manager.save(doctor);
+      return { msg: 'Doctor updated', doctor };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Unable to update doctor details.',
       );
     }
   }

@@ -51,6 +51,17 @@ class CreateStaffDto {
   @IsString()
   @MaxLength(100)
   footerText?: string;
+
+  @IsOptional()
+  padding?: {
+    paddingTop?: number | null;
+    paddingLeft?: number | null;
+    paddingBottom?: number | null;
+    paddingRight?: number | null;
+  };
+
+  @IsBoolean()
+  usesOwnLetterPad: boolean;
 }
 export class CreateDoctorDto {
   @IsNotEmpty()

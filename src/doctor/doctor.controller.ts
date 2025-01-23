@@ -7,6 +7,7 @@ import {
   Query,
   UseInterceptors,
   Req,
+  Patch,
 } from '@nestjs/common';
 import { DoctorService } from './doctor.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
@@ -104,6 +105,49 @@ export class DoctorController {
         ),
       ]);
       return { clinic, staff };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // add check for super admin later
+  @Patch('pad-type')
+  async updatePadType(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Body() body: { userId: string; usesOwnLetterPad: boolean },
+  ): Promise<any> {
+    try {
+      return await this.doctorService.changePrescriptionPadType(
+        queryRunner,
+        body.userId,
+        body.usesOwnLetterPad,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // add check for super admin later
+  @Patch('padding')
+  async updatePrescriptionPadding(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Body()
+    body: {
+      userId: string;
+      padding: {
+        paddingTop?: number | null;
+        paddingLeft?: number | null;
+        paddingBottom?: number | null;
+        paddingRight?: number | null;
+      };
+    },
+  ): Promise<any> {
+    try {
+      return await this.doctorService.updatePrescriptionPadding(
+        queryRunner,
+        body.userId,
+        body.padding,
+      );
     } catch (error) {
       throw error;
     }

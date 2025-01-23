@@ -46,6 +46,20 @@ export class Doctor {
   @Column({ type: 'text', nullable: true })
   footerText: string | null;
 
+  @Column({
+    type: 'json',
+    nullable: true,
+  })
+  padding: {
+    paddingTop: number | null;
+    paddingLeft: number | null;
+    paddingBottom: number | null;
+    paddingRight: number | null;
+  };
+
+  @Column({ default: true })
+  usesOwnLetterPad: boolean;
+
   @OneToOne(() => User, (user) => user.doctor, {
     nullable: true,
     onDelete: 'CASCADE',
