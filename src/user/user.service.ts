@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -81,7 +82,14 @@ export class UserService {
         );
         const defaultClinicId = clinicIds[0]?.id;
         const role = clinicIds[0]?.role;
-        return { qualification, defaultClinicId, role, headerImage, footerText, ...result };
+        return {
+          qualification,
+          defaultClinicId,
+          role,
+          headerImage,
+          footerText,
+          ...result,
+        };
       }
       return null;
     } catch (error) {
@@ -226,5 +234,54 @@ export class UserService {
       );
     }
     throw new InternalServerErrorException('Unable to find user.');
+  }
+
+  async updatePassword(
+    queryRunner: QueryRunner,
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<any> {
+    try {
+      if (!newPassword || newPassword.length < 6) {
+        throw new BadRequestException(
+          'Password must be at least 6 characters long.',
+        );
+      }
+      const user = await queryRunner.manager.findOne(User, {
+        where: { uid: userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User Not Found');
+      }
+      const isOldPasswordValid = await bcrypt.compare(
+        oldPassword,
+        user.password,
+      );
+      if (!isOldPasswordValid) {
+        throw new BadRequestException('Old password is incorrect.');
+      }
+
+      const hashedPassword = await this.hashPassword(newPassword);
+      user.password = hashedPassword;
+      await queryRunner.manager.save(user);
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        error?.message,
+        error?.stack,
+        null,
+        userId,
+        null,
+      );
+      throw new InternalServerErrorException(
+        'Unable to update password. Something went wrong.',
+      );
+    }
   }
 }
