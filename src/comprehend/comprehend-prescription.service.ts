@@ -26,6 +26,7 @@ export class ComprehendPrescriptionService {
     doctor: string,
     patient: string,
     clinic: number,
+    appointmentId: string,
     queryRunner: QueryRunner,
   ): Promise<any> {
     let audio_url: string | null = null;
@@ -67,7 +68,8 @@ export class ComprehendPrescriptionService {
       const presDbData = {
         ...parsedJson,
         audio_url,
-        patient,
+        appointmentId,
+        patientId: patient,
         is_gemini_data: true,
       };
       await this.prescriptionService.create(

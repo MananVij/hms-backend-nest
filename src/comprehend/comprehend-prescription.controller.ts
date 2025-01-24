@@ -31,6 +31,7 @@ export class ComprehendPrescriptionController {
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File,
     @Body('patient') patient: string,
+    @Body('appointmentId') appointmentId: string,
     @Body('clinicId') clinicId: number,
   ): Promise<any> {
     try {
@@ -41,6 +42,7 @@ export class ComprehendPrescriptionController {
           doctor,
           patient,
           clinicId,
+          appointmentId,
           queryRunner,
         );
       return result;
