@@ -83,7 +83,7 @@ export class PatientService {
         queryRunner,
       );
       return {
-        id: patient.uid,
+        uid: patient.uid,
         name: patient.name,
         phoneNumber: patient.phoneNumber,
         address: patient.address,
