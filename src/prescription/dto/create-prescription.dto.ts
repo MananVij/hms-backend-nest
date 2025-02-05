@@ -103,9 +103,20 @@ export class CreatePrescriptionDto {
 }
 
 export class MedicationDto {
-  //
   @IsString()
   medicine_name: string;
+
+  @IsOptional()
+  @IsString()
+  original_name?: string;
+
+  @IsOptional()
+  @IsArray()
+  rejected_matches?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  no_match_found?: boolean;
 
   @IsNumber()
   days: number;

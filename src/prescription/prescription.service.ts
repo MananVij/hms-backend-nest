@@ -7,7 +7,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ArrayContains, IsNull, QueryRunner, Repository } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
-import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+import {
+  CreatePrescriptionDto,
+  MedicationDto,
+} from './dto/create-prescription.dto';
 import { User } from 'src/user/entity/user.enitiy';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { Appointment } from 'src/appointment/entity/appointment.entity';
@@ -16,12 +19,14 @@ import {
   UserRole,
 } from 'src/user_clinic/entity/user_clinic.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { DjangoService } from 'src/django/django.service';
 
 @Injectable()
 export class PrescriptionService {
   constructor(
     @InjectRepository(Prescription)
     private readonly errorLogService: ErrorLogService,
+    private readonly djangoService: DjangoService,
   ) {}
 
   async create(
@@ -97,6 +102,9 @@ export class PrescriptionService {
             id: savedPrescription?.appointment?.id,
           },
         };
+        if (prescriptionData?.is_gemini_data ?? false) {
+          await this.postFeeback(prescriptionData?.medication);
+        }
         return formattedData;
       } else {
         const prescription = queryRunner.manager.create(Prescription, {
@@ -138,6 +146,22 @@ export class PrescriptionService {
         createPrescriptionDto?.patientId,
       );
       throw new InternalServerErrorException('Unable to save prescription.');
+    }
+  }
+
+  async postFeeback(medications: MedicationDto[]): Promise<any> {
+    const finalMedicationData = medications.map((med) => ({
+      original_input: med.original_name,
+      selected_match: med.medicine_name,
+      rejected_matches: med.rejected_matches || [],
+      no_match_found: med.no_match_found || false,
+    }));
+    try {
+      const response =
+        await this.djangoService.recordMedicineFeedback(finalMedicationData);
+      return response;
+    } catch (error) {
+      return null;
     }
   }
 }

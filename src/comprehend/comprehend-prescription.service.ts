@@ -5,6 +5,7 @@ import { PrescriptionService } from 'src/prescription/prescription.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { PrescriptionValidator } from 'src/validation/validation-util';
 import { QueryRunner } from 'typeorm';
+import { DjangoService } from 'src/django/django.service';
 
 @Injectable()
 export class ComprehendPrescriptionService {
@@ -15,6 +16,7 @@ export class ComprehendPrescriptionService {
     private readonly firebaseService: FirebaseService,
     private readonly prescriptionService: PrescriptionService,
     private readonly errorLogService: ErrorLogService,
+    private readonly djangoService: DjangoService,
   ) {
     const apiKey = process.env.GEMINI_GEN_AI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -65,8 +67,14 @@ export class ComprehendPrescriptionService {
       const validatedData =
         PrescriptionValidator.validatePrescriptionData(parsedJson);
 
+      const updatedDjangoMedicationData =
+        await this.djangoService.validateMedicines(validatedData?.medication);
+      if (updatedDjangoMedicationData && updatedDjangoMedicationData !== null) {
+        validatedData['medication'] = updatedDjangoMedicationData;
+      }
+
       const presDbData = {
-        ...parsedJson,
+        ...updatedDjangoMedicationData,
         audio_url,
         appointmentId,
         patientId: patient,
