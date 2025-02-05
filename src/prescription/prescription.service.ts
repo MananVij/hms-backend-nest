@@ -151,8 +151,8 @@ export class PrescriptionService {
 
   async postFeeback(medications: MedicationDto[]): Promise<any> {
     const finalMedicationData = medications.map((med) => ({
-      original_input: med.original_name,
-      selected_match: med.medicine_name,
+      original_name: med.original_name,
+      medicine_name: med.medicine_name,
       rejected_matches: med.rejected_matches || [],
       no_match_found: med.no_match_found || false,
     }));

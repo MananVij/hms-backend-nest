@@ -62,6 +62,8 @@ export class Prescription {
       ac: boolean; // Before meals
       pc: boolean; // After meals
     };
+    is_chip_selected: boolean;  
+    is_name_manually_edited: boolean;
   }[];
 
   @OneToOne(() => Appointment, (appointment) => appointment.prescription, {

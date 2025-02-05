@@ -27,15 +27,15 @@ export class DjangoService {
 
   async recordMedicineFeedback(
     medications: {
-      original_input: string;
-      selected_match: string;
+      original_name: string;
+      medicine_name: string;
       rejected_matches: string[];
       no_match_found: boolean;
     }[],
   ): Promise<any> {
     try {
       const response: AxiosResponse = await axios.post(
-        `${process.env.DJANGO_API}/api/validate-medicines/`,
+        `${process.env.DJANGO_API}/api/record-feedback/`,
         { feedback_medications: medications },
       );
       return response;
