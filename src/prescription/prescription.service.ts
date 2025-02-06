@@ -103,7 +103,7 @@ export class PrescriptionService {
           },
         };
         if (prescriptionData?.is_gemini_data ?? false) {
-          await this.postFeeback(prescriptionData?.medication);
+          await this.postFeeback(prescriptionData?.medication, clinicId);
         }
         return formattedData;
       } else {
@@ -149,7 +149,7 @@ export class PrescriptionService {
     }
   }
 
-  async postFeeback(medications: MedicationDto[]): Promise<any> {
+  async postFeeback(medications: MedicationDto[], clinicId: number): Promise<any> {
     const finalMedicationData = medications.map((med) => ({
       original_name: med.original_name,
       medicine_name: med.medicine_name,
@@ -158,7 +158,7 @@ export class PrescriptionService {
     }));
     try {
       const response =
-        await this.djangoService.recordMedicineFeedback(finalMedicationData);
+        await this.djangoService.recordMedicineFeedback(finalMedicationData, clinicId);
       return response;
     } catch (error) {
       return null;

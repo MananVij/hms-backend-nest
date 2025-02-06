@@ -5,11 +5,12 @@ import { ErrorLogService } from 'src/errorlog/error-log.service';
 @Injectable()
 export class DjangoService {
   constructor(private readonly errorLogService: ErrorLogService) {}
-  async validateMedicines(medications: any[]): Promise<any> {
+  async validateMedicines(medication: any[], clinic_id: number): Promise<any> {
     try {
       const response: AxiosResponse = await axios.post(
-        `${process.env.DJANGO_API}/api/validate-medicines/`,
-        { medications },
+        `${process.env.DJANGO_API}/api/validate-medicines`,
+        { medication },
+        { params: { clinic_id } },
       );
 
       return response.data;
@@ -32,11 +33,14 @@ export class DjangoService {
       rejected_matches: string[];
       no_match_found: boolean;
     }[],
+    clinic_id: number,
   ): Promise<any> {
     try {
+      console.log(medications);
       const response: AxiosResponse = await axios.post(
-        `${process.env.DJANGO_API}/api/record-feedback/`,
+        `${process.env.DJANGO_API}/api/record-feedback`,
         { feedback_medications: medications },
+        { params: { clinic_id } },
       );
       return response;
     } catch (error) {

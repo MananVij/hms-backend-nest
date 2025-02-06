@@ -68,7 +68,7 @@ export class ComprehendPrescriptionService {
         PrescriptionValidator.validatePrescriptionData(parsedJson);
 
       const updatedDjangoMedicationData =
-        await this.djangoService.validateMedicines(validatedData?.medication);
+        await this.djangoService.validateMedicines(validatedData?.medication, clinic);
       if (updatedDjangoMedicationData && updatedDjangoMedicationData !== null) {
         validatedData['medication'] = updatedDjangoMedicationData;
       }
