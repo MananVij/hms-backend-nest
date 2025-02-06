@@ -36,7 +36,6 @@ export class DjangoService {
     clinic_id: number,
   ): Promise<any> {
     try {
-      console.log(medications);
       const response: AxiosResponse = await axios.post(
         `${process.env.DJANGO_API}/api/record-feedback`,
         { feedback_medications: medications },
