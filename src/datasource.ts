@@ -11,6 +11,8 @@ import { Vitals } from './vitals/entity/vitals.entity';
 import { DoctorPatient } from './doctor_patient/entity/doctor_patient.entity';
 import { ErrorLog } from './errorlog/error-log.entity';
 import { User } from './user/entity/user.enitiy';
+import { ReportAccess } from './report-access/entity/report-access.entity';
+import { MedicalReport } from './medical-reports/entity/medical-reports.entity';
 
 export const AppDataSourceConfig: DataSourceOptions = {
   type: 'postgres',
@@ -32,6 +34,8 @@ export const AppDataSourceConfig: DataSourceOptions = {
     Vitals,
     DoctorPatient,
     ErrorLog,
+    MedicalReport,
+    ReportAccess,
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsRun: false,
