@@ -24,7 +24,7 @@ enum StatusType {
   COMPLETED = 'completed',
 }
 
-enum VisitType {
+export enum VisitType {
   INITIAL_CONSULTATION = 'Initial Consultation',
   FOLLOW_UP = 'Follow Up',
   CONSULTATION = 'Consultation',

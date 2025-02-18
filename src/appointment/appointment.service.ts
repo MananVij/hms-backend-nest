@@ -24,7 +24,6 @@ import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
-import { Doctor } from 'src/doctor/entity/doctor.entity';
 
 @Injectable()
 export class AppointmentService {
@@ -122,9 +121,9 @@ export class AppointmentService {
           name: savedAppointment.patient.name,
           phoneNumber: savedAppointment.patient.phoneNumber,
           address: {
-            line1: savedAppointment.patient.address.line1,
-            line2: savedAppointment.patient.address.line2,
-            pincode: savedAppointment.patient.address.pincode,
+            line1: savedAppointment.patient.address?.line1,
+            line2: savedAppointment.patient.address?.line2,
+            pincode: savedAppointment.patient.address?.pincode,
           },
         },
         clinic: {
