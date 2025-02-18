@@ -26,6 +26,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppDataSourceConfig } from './datasource';
 import { BackupService } from './backup/backup.service';
 import { IpLocationMiddleware } from './middleware/ip_location.middleware';
+import { MedicalReportModule } from './medical-reports/medical-report.module';
+import { ReportAccessModule } from './report-access/report-access.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware';
     PatientModule,
     ErrorLogModule,
     OtpModule,
+    MedicalReportModule,
+    ReportAccessModule,
   ],
   controllers: [AppController],
   providers: [
