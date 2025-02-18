@@ -24,6 +24,12 @@ import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { Request } from 'src/interfaces/request.interface';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
+import { AppointmentService } from 'src/appointment/appointment.service';
+import { CreateAppointmentDto } from 'src/appointment/dto/create-appointment.dto';
+import {
+  PaymnetMode,
+  VisitType,
+} from 'src/appointment/entity/appointment.entity';
 
 @Controller('patients')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +39,7 @@ export class PatientController {
     private readonly patientClinicService: PatientClinicService,
     private readonly doctorPatientService: DoctorPatientService,
     private readonly userClinicService: UserClinicService,
+    private readonly appointmentService: AppointmentService,
   ) {}
 
   @Post('/register')
@@ -56,6 +63,49 @@ export class PatientController {
         clinicId,
         queryRunner,
       );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('/register-by-doctor')
+  @UseInterceptors(TransactionInterceptor)
+  async addNewPatientByDoctor(
+    @Body()
+    patientData: {
+      patient: CreateUserDto;
+      metaData: CreateMetaDataDto;
+      time: Date,
+      visitType: VisitType;
+      clinicId: number;
+    },
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+  ): Promise<any> {
+    try {
+      const userId = req?.user?.uid;
+      const { patient, metaData, visitType, time, clinicId } = patientData;
+      const newPatient = await this.patientService.addNewPatientByDoctor(
+        patient,
+        metaData,
+        userId,
+        clinicId,
+        queryRunner,
+      );
+      const finalAppointmentData: CreateAppointmentDto = {
+        patient: newPatient.uid,
+        visitType,
+        time,
+        isPaid: true,
+        paymentMode: PaymnetMode.OFFLINE,
+        doctor: userId,
+        clinic_id: clinicId,
+      };
+      const newAppointment = await this.appointmentService.create(
+        finalAppointmentData,
+        queryRunner,
+      );
+      return newAppointment
     } catch (error) {
       throw error;
     }
@@ -141,7 +191,10 @@ export class PatientController {
         userId,
         clinicId,
       );
-      if (userRoles.includes(UserRole.ADMIN) || userRoles.includes(UserRole.RECEPTIONIST)) {
+      if (
+        userRoles.includes(UserRole.ADMIN) ||
+        userRoles.includes(UserRole.RECEPTIONIST)
+      ) {
         return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
           clinicId,
         );

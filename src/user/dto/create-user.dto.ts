@@ -1,7 +1,6 @@
 import {
   IsString,
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsBoolean,
   MinLength,

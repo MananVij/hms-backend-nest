@@ -10,6 +10,7 @@ import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { PatientClinicModule } from 'src/patient_clinic/patient_clinic.module';
 import { DoctorPatientModule } from 'src/doctor_patient/doctor_patient.module';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
+import { AppointmentModule } from 'src/appointment/appointment.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
     ErrorLogModule,
     PatientClinicModule,
     DoctorPatientModule,
-    UserClinicModule
+    UserClinicModule,
+    AppointmentModule
   ],
   controllers: [PatientController],
   providers: [PatientService],

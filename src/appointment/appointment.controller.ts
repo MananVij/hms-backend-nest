@@ -10,12 +10,13 @@ import {
 } from '@nestjs/common';
 import { AppointmentService } from './appointment.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { Appointment } from './entity/appointment.entity';
+import { Appointment, PaymnetMode } from './entity/appointment.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { Request } from 'src/interfaces/request.interface';
+import { CreateExistingPatientAppointmentByDoctorDto } from './dto/create-existing-patient-appointment-doctor';
 
 @Controller('appointments')
 @UseGuards(JwtAuthGuard)
@@ -30,6 +31,28 @@ export class AppointmentController {
     @Body() createAppointmentDto: CreateAppointmentDto,
   ): Promise<Appointment> {
     try {
+      return this.appointmentService.create(createAppointmentDto, queryRunner);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Post('doctor')
+  @UseInterceptors(TransactionInterceptor)
+  async createByDoctor(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Body()
+    createAppointmentDtoByDoctor: CreateExistingPatientAppointmentByDoctorDto,
+  ): Promise<Appointment> {
+    try {
+      const userId = req?.user?.uid;
+      const createAppointmentDto: CreateAppointmentDto = {
+        ...createAppointmentDtoByDoctor,
+        isPaid: true,
+        paymentMode: PaymnetMode.OFFLINE,
+        doctor: userId,
+      };
       return this.appointmentService.create(createAppointmentDto, queryRunner);
     } catch (error) {
       throw error;
