@@ -32,6 +32,13 @@ export class PrescriptionValidator {
         ac: false,
         pc: false,
       },
+      tapering: null,
+    };
+
+    const defaultTapering = {
+      frequency: '',
+      days: 0,
+      comments: '',
     };
 
     // Merge prescription-level defaults
@@ -43,6 +50,14 @@ export class PrescriptionValidator {
       ...med,
       food: { ...defaultMedication.food, ...med.food },
       frequency: { ...defaultMedication.frequency, ...med.frequency },
+      tapering:
+        med?.tapering && med?.tapering?.length > 0
+          ? med.tapering.map((tap: any) => ({
+              ...defaultTapering,
+              ...tap,
+              frequency: typeof tap?.frequency === 'string' ? tap?.frequency : '',
+            }))
+          : null,
     }));
 
     return validatedData;
