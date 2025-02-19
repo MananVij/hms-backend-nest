@@ -6,8 +6,19 @@ import {
   IsBoolean,
   IsNumber,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export enum FrequencyEnum {
+  OD = "Once Daily",
+  BID = "Twice Daily",
+  TID = "Three Times Daily",
+  QID = "Four Times Daily",
+  HS = "At Bedtime",
+  AC = "Before Meals",
+  PC = "After Meals",
+}
 
 export class FoodDto {
   @IsBoolean()
@@ -102,6 +113,17 @@ export class CreatePrescriptionDto {
   is_final_prescription: boolean;
 }
 
+class TaperingDto {
+  @IsEnum(FrequencyEnum)
+  frequency: FrequencyEnum;
+
+  @IsNumber()
+  days: number;
+
+  @IsString()
+  comments: string;
+}
+
 export class MedicationDto {
   @IsString()
   medicine_name: string;
@@ -133,4 +155,9 @@ export class MedicationDto {
   @ValidateNested()
   @Type(() => FoodDto)
   food?: FoodDto;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => TaperingDto)
+  tapering?: TaperingDto[] | null;
 }

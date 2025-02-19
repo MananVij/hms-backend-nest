@@ -53,6 +53,11 @@ export class Prescription {
       after_lunch: boolean;
       after_dinner: boolean;
     };
+    tapering?: {
+      frequency: string;
+      days: number;
+      comments: string
+    }[] | null,
     frequency?: {
       od: boolean; // Once daily
       bid: boolean; // Twice daily
