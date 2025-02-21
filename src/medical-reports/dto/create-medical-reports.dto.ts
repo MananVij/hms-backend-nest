@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsArray,
   IsUUID,
+  IsString,
 } from 'class-validator';
 import { RecordTypeEnum } from '../entity/medical-reports.entity';
 
@@ -27,4 +28,8 @@ export class CreateMedicalReportDto {
   @IsEnum(RecordTypeEnum)
   @IsNotEmpty()
   recordType: RecordTypeEnum;
+
+  @IsString()
+  @IsNotEmpty()
+  comments: string;
 }

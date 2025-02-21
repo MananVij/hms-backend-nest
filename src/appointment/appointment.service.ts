@@ -24,6 +24,7 @@ import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { MedicalReport } from 'src/medical-reports/entity/medical-reports.entity';
 
 @Injectable()
 export class AppointmentService {
@@ -206,7 +207,15 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
-        return { appointments: { doctorAppointments }, patient };
+        const medicalReports = await queryRunner.manager.find(MedicalReport, {
+          where: { patient, doctor: { user: { uid: userId } } },
+          order: { createdAt: 'DESC' },
+        });
+        return {
+          appointments: { doctorAppointments },
+          patient,
+          medicalReports,
+        };
       } else if (userRole?.includes(UserRole.ADMIN)) {
         const doctorAppointments = await queryRunner.manager.find(Appointment, {
           where: {
@@ -235,9 +244,14 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        const medicalReports = await queryRunner.manager.find(MedicalReport, {
+          where: { patient, doctor: { user: { uid: userId } } },
+          order: { createdAt: 'DESC' },
+        });
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },
+          medicalReports
         };
       } else if (userRole?.includes(UserRole.RECEPTIONIST)) {
         const clinicAppointments = await queryRunner.manager.find(Appointment, {

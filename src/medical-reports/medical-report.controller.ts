@@ -47,7 +47,7 @@ export class MedicalReportController {
     @Req() req: Request,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
   ): Promise<MedicalReport> {
-    throw new BadRequestException("Service Not In User Right Now")
+    throw new BadRequestException("Service Not In Use Right Now")
     const userId = req?.user?.uid;
     return this.reportService.getReport(queryRunner, reportId, userId);
   }
@@ -59,7 +59,7 @@ export class MedicalReportController {
     @Req() req: Request,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
   ) {
-    throw new BadRequestException("Service Not In User Right Now")
+    throw new BadRequestException("Service Not In Use Right Now")
     const userId = req?.user?.uid;
     return this.reportService.shareReport(queryRunner, reportId, userId, dto);
   }
@@ -71,7 +71,7 @@ export class MedicalReportController {
     @Req() req: Request,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
   ) {
-    throw new BadRequestException("Service Not In User Right Now")
+    throw new BadRequestException("Service Not In Use Right Now")
     const userId = req?.user?.uid;
     return this.reportService.revokeAccess(queryRunner, reportId, userId, dto);
   }
