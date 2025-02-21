@@ -21,7 +21,6 @@ export enum RecordTypeEnum {
   OTHER = 'OTHER',
 }
 
-
 @Entity('medical_reports')
 export class MedicalReport {
   @PrimaryGeneratedColumn('uuid')
@@ -48,7 +47,9 @@ export class MedicalReport {
   @Column({ type: 'enum', enum: RecordTypeEnum })
   recordType: RecordTypeEnum;
 
+  @Column()
+  comments: string;
+
   @OneToMany(() => ReportAccess, (access) => access.report)
   accessGrants: ReportAccess[];
 }
-

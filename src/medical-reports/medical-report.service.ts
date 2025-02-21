@@ -70,7 +70,14 @@ export class MedicalReportService {
             fileUrl: url,
             uploadedBy: uploadedByUser,
           });
-          return queryRunner.manager.save(medicalReport);
+          const savedReport = await queryRunner.manager.save(medicalReport);
+          return {
+            reportId: savedReport?.reportId,
+            recordType: savedReport.recordType,
+            comments: savedReport.comments,
+            fileUrl: savedReport.fileUrl,
+            createdAt: savedReport.createdAt,
+          };
         }),
       );
     } catch (error) {
