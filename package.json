@@ -39,6 +39,7 @@
     "fs": "^0.0.1-security",
     "maxmind": "^4.3.23",
     "mmdb-reader": "^1.2.0",
+    "nanoid": "^5.1.0",
     "muhammara": "^5.3.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
