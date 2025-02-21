@@ -14,6 +14,7 @@ import {
   Unique,
   JoinColumn,
   CreateDateColumn,
+  BeforeInsert,
 } from 'typeorm';
 
 @Entity('users')
@@ -21,6 +22,9 @@ import {
 export class User {
   @PrimaryGeneratedColumn('uuid')
   uid: string;
+
+  @Column({ unique: true })
+  publicIdentifier: string;
 
   @Column({ length: 100 })
   name: string;
@@ -31,7 +35,7 @@ export class User {
   @Column({ nullable: true })
   password: string | null;
 
-  @Column({ nullable: false, unique: true, length: 10 })
+  @Column({ nullable: false, length: 10 })
   phoneNumber: string;
 
   @Column({ nullable: false, default: false })
@@ -83,4 +87,43 @@ export class User {
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
+
+  @BeforeInsert()
+  generatePublicIdentifier() {
+    // Remove non-alphabet characters and extract the first word of the name
+    const firstName = this.name.replace(/[^A-Za-z\s]/g, '').trim().split(' ')[0];
+  
+    // Extract up to 4 letters from the first name, convert to uppercase
+    let prefix = firstName.toUpperCase().slice(0, 4);
+  
+    // If the prefix has fewer than 4 letters, pad it with random uppercase letters.
+    if (prefix.length < 4) {
+      prefix += this.generateRandomLetters(4 - prefix.length);
+    }
+  
+    // Generate 10 random digits
+    const digitPart = this.generateRandomDigits(10);
+  
+    // Final identifier
+    this.publicIdentifier = `${prefix}${digitPart}`;
+  }
+  
+  private generateRandomLetters(length: number): string {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    return result;
+  }
+  
+  private generateRandomDigits(length: number): string {
+    const digits = '0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += digits.charAt(Math.floor(Math.random() * digits.length));
+    }
+    return result;
+  }
+  
 }
