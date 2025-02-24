@@ -28,10 +28,14 @@ import { BackupService } from './backup/backup.service';
 import { IpLocationMiddleware } from './middleware/ip_location.middleware';
 import { MedicalReportModule } from './medical-reports/medical-report.module';
 import { ReportAccessModule } from './report-access/report-access.module';
+import { RedisModule } from './redis/redis.module';
+import { SmsModule } from './sms/sms.module';
+import { ConfigModule } from '@nestjs/config';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRoot(AppDataSourceConfig),
     UserModule,
@@ -54,12 +58,14 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     OtpModule,
     MedicalReportModule,
     ReportAccessModule,
+    RedisModule,
+    SmsModule,
     WhatsappModule
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    BackupService,
+    // BackupService,
     {
       provide: APP_INTERCEPTOR,
       useClass: TransactionInterceptor,
@@ -68,6 +74,6 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(IpLocationMiddleware).forRoutes('*');
+    // consumer.apply(IpLocationMiddleware).forRoutes('*');
   }
 }

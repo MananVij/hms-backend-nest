@@ -1,71 +1,65 @@
-import {
-  Injectable,
-  BadRequestException,
-  InternalServerErrorException,
-} from '@nestjs/common';
-import { Twilio } from 'twilio';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { RedisService } from '../redis/redis.service';
+import { ConfigService } from '@nestjs/config';
+import { SmsService } from '../sms/sms.service';
+import * as bcrypt from 'bcrypt';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 
 @Injectable()
 export class OtpService {
-  private client: Twilio;
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
+    private readonly smsService: SmsService,
+    private readonly errorLogService: ErrorLogService,
+  ) {}
 
-  constructor() {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    this.client = new Twilio(accountSid, authToken);
-  }
-
-  async sendOtp(phoneNumber: string): Promise<object> {
+  async generateOtp(phoneNumber: string): Promise<void> {
     try {
-      const serviceSid = process.env.TWILIO_SERVICE_SID;
-      const verification = await this.client.verify.v2
-        .services(serviceSid)
-        .verifications.create({
-          to: `+91${phoneNumber}`,
-          channel: 'sms',
-        });
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const hashedOtp = await bcrypt.hash(otp, 10);
+      console.log(otp);
 
-      if (verification.status !== 'pending') {
-        throw new Error('Failed to send OTP. Please try again!');
-      }
+      const ttl = this.configService.get<number>('OTP_EXPIRATION_TIME');
+      await this.redisService.set(phoneNumber, hashedOtp, ttl);
 
-      return {
-        status: 'succeess',
-        message: 'Otp sent successfully.',
-      };
+      const message = `Your OTP is: ${otp}. It will expire in ${ttl / 60} minutes.`;
+      await this.smsService.sendSms(`${phoneNumber}`, message);
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : new BadRequestException('An unexpected error occurred');
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Unable to generate OTP: ${error?.message}`,
+        error?.stack,
+      );
+      throw new InternalServerErrorException(
+        'Unable to send OTP at the moment. Pleaser try again later.',
+      );
     }
   }
 
-  async verifyOtp(phoneNumber: string, otp: string): Promise<object> {
+  async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     try {
-      const serviceSid = process.env.TWILIO_SERVICE_SID;
-
-      const verificationCheck = await this.client.verify.v2
-        .services(serviceSid)
-        .verificationChecks.create({
-          to: `+91${phoneNumber}`,
-          code: otp,
-        });
-
-      if (verificationCheck.status !== 'approved') {
-        throw new BadRequestException('Invalid or expired otp');
+      const hashedOtp = await this.redisService.get(phoneNumber);
+      if (!hashedOtp) {
+        return false;
       }
 
-      return {
-        status: 'success',
-        message: 'OTP verified successfully',
-      };
+      const isValid = await bcrypt.compare(otp, hashedOtp);
+      if (isValid) {
+        await this.redisService.del(phoneNumber);
+        return true;
+      }
+      return false;
     } catch (error) {
-        console.log(error)
-      throw error instanceof BadRequestException
-        ? error
-        : new InternalServerErrorException(
-            'Something Went Wrong. Please try again!',
-          );
+      await this.errorLogService.logError(
+        `Unable to verify OTP: ${error?.message}`,
+        error?.stack,
+      );
+      throw new InternalServerErrorException(
+        'Unable to verify OTP at the moment. Pleaser try again later.',
+      );
     }
   }
 }
