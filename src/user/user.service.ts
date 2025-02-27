@@ -75,15 +75,15 @@ export class UserService {
       if (user && (await bcrypt.compare(password, user.password))) {
         const { password, doctor, ...result } = user;
         const qualification = user.doctor?.qualification;
-        const usesOwnLetterPad = user?.doctor?.usesOwnLetterPad;
-        const headerImage = usesOwnLetterPad ? null : user.doctor?.headerImage;
-        const footerText = usesOwnLetterPad ? null : user.doctor?.footerText;
-        const padding = usesOwnLetterPad ? user?.doctor?.padding : null;
         const clinicIds = await this.userClinicService.findClinicsOfUser(
           user.uid,
         );
         const defaultClinicId = clinicIds[0]?.id;
         const role = clinicIds[0]?.role;
+        const usesOwnLetterPad = clinicIds[0]?.usesOwnLetterPad;
+        const headerImage = usesOwnLetterPad ? null : clinicIds[0]?.headerImage;
+        const footerText = usesOwnLetterPad ? null : clinicIds[0]?.footerText;
+        const padding = usesOwnLetterPad ? clinicIds[0]?.padding : null;
         return {
           qualification,
           defaultClinicId,
