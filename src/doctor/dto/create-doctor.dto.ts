@@ -7,7 +7,6 @@ import {
   IsBoolean,
   IsEnum,
   IsOptional,
-  MaxLength,
 } from 'class-validator';
 import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -43,25 +42,6 @@ class CreateStaffDto {
     startTime: Date;
     endTime: Date;
   }[];
-
-  @IsOptional()
-  headerImage?: Buffer;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  footerText?: string;
-
-  @IsOptional()
-  padding?: {
-    paddingTop?: number | null;
-    paddingLeft?: number | null;
-    paddingBottom?: number | null;
-    paddingRight?: number | null;
-  };
-
-  @IsBoolean()
-  usesOwnLetterPad: boolean;
 }
 export class CreateDoctorDto {
   @IsNotEmpty()
