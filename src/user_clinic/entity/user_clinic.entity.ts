@@ -41,4 +41,23 @@ export class UserClinic {
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
+
+  @Column({ default: true })
+  usesOwnLetterPad: boolean;
+
+  @Column({
+    type: 'json',
+    nullable: true,
+  })
+  padding: {
+    paddingTop: number | null;
+    paddingLeft: number | null;
+    paddingBottom: number | null;
+    paddingRight: number | null;
+  };
+  @Column({ type: 'text', nullable: true })
+  footerText: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  headerImage: Buffer | '';
 }

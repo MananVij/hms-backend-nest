@@ -226,13 +226,34 @@ export class UserClinicService {
             line1: true,
             line2: true,
           },
+          headerImage: true,
+          footerText: true,
+          usesOwnLetterPad: true,
+          padding: {
+            paddingTop: true,
+            paddingBottom: true,
+            paddingLeft: true,
+            paddingRight: true,
+          },
         },
       });
-      const clinics = userClinics.map((userClinic) => ({
-        role: userClinic.role,
-        ...userClinic.clinic,
-      }));
-
+      const clinics = userClinics.map(
+        ({
+          usesOwnLetterPad,
+          role,
+          headerImage,
+          footerText,
+          padding,
+          clinic,
+        }) => ({
+          role,
+          headerImage,
+          footerText,
+          padding,
+          usesOwnLetterPad,
+          ...clinic,
+        }),
+      );
       return clinics;
     } catch (error) {
       await this.errorLogService.logError(
@@ -330,6 +351,88 @@ export class UserClinicService {
         null,
         adminId,
         null,
+      );
+    }
+  }
+
+  // add check for super admin later
+  async changePrescriptionPadType(
+    queryRunner: QueryRunner,
+    doctorId: string,
+    clinicId: number,
+    usesOwnLetterPad: boolean,
+  ): Promise<any> {
+    try {
+      const [doctor, clinic, doctorClinic] = await Promise.all([
+        queryRunner.manager.findOne(Doctor, {
+          where: { user: { uid: doctorId } },
+        }),
+        queryRunner.manager.findOne(Clinic, {
+          where: { id: clinicId },
+        }),
+        queryRunner.manager.findOne(UserClinic, {
+          where: { user: { uid: doctorId }, clinic: { id: clinicId } },
+        }),
+      ]);
+      if (!doctor || !clinic || !doctorClinic) {
+        throw new NotFoundException('Doctor not found');
+      }
+
+      doctorClinic.usesOwnLetterPad = usesOwnLetterPad;
+      await queryRunner.manager.save(doctorClinic);
+      return { msg: 'Doctor-Clinic Updated', doctor };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Unable to update doctor details.',
+      );
+    }
+  }
+
+  // add check for super admin later
+  async updatePrescriptionPadding(
+    queryRunner: QueryRunner,
+    doctorId: string,
+    clinicId: number,
+    padding: {
+      paddingTop?: number | null;
+      paddingLeft?: number | null;
+      paddingBottom?: number | null;
+      paddingRight?: number | null;
+    },
+  ): Promise<any> {
+    const updatedPadding = {
+      paddingTop: padding.paddingTop ?? 0,
+      paddingLeft: padding.paddingLeft ?? 40,
+      paddingBottom: padding.paddingBottom ?? 0,
+      paddingRight: padding.paddingRight ?? 40,
+    };
+    try {
+      const [doctor, clinic, doctorClinic] = await Promise.all([
+        queryRunner.manager.findOne(Doctor, {
+          where: { user: { uid: doctorId } },
+        }),
+        queryRunner.manager.findOne(Clinic, {
+          where: { id: clinicId },
+        }),
+        queryRunner.manager.findOne(UserClinic, {
+          where: { user: { uid: doctorId }, clinic: { id: clinicId } },
+        }),
+      ]);
+      if (!doctor || !clinic || !doctorClinic) {
+        throw new NotFoundException('Doctor not found');
+      }
+      doctorClinic.padding = updatedPadding;
+      await queryRunner.manager.save(doctorClinic);
+      return { msg: 'Doctor-Clinic Updated', doctor };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Something went wrong. Unable to update doctor details.',
       );
     }
   }
