@@ -63,9 +63,6 @@ export class AuthService {
         access_token,
         defaultClinicId: user?.defaultClinicId,
         role: user?.role,
-        padding: user?.padding,
-        footerText: user?.footerText,
-        headerImage: user?.headerImage,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

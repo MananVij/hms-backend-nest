@@ -154,6 +154,43 @@ export class AppointmentService {
     }
   }
 
+  processAppointments = (appointments: any[]) => {
+    return appointments?.map((appointment) => {
+      const doctorId = appointment?.doctor?.uid;
+      const clinicId = appointment?.clinic?.id;
+
+      // Filter userClinics to get only the matching clinic
+      const filteredUserClinic = appointment?.doctor?.userClinics.find(
+        (clinic) =>
+          clinic?.clinic?.id === clinicId && clinic?.user?.uid === doctorId,
+      );
+
+      if (filteredUserClinic) {
+        if (filteredUserClinic.usesOwnLetterPad) {
+          filteredUserClinic.headerImage = null;
+          filteredUserClinic.footerText = null;
+        } else {
+          filteredUserClinic.padding = {
+            paddingTop: 0,
+            paddingLeft: 40,
+            paddingBottom: 0,
+            paddingRight: 40,
+          };
+        }
+      }
+
+      delete filteredUserClinic?.user
+      delete filteredUserClinic?.clinic
+      delete appointment?.doctor?.userClinics
+
+        appointment.doctor.letterPadStyle  = filteredUserClinic
+        ? filteredUserClinic
+        : null;
+
+      return appointment;
+    });
+  };
+
   async findAppointmentsOfPatient(
     queryRunner: QueryRunner,
     userId: string,
@@ -165,8 +202,26 @@ export class AppointmentService {
         uid: true,
         name: true,
         phoneNumber: true,
+        userClinics: {
+          usesOwnLetterPad: true,
+          padding: {
+            paddingTop: true,
+            paddingBottom: true,
+            paddingLeft: true,
+            paddingRight: true,
+          },
+          footerText: true,
+          headerImage: true,
+          user: {
+            uid: true,
+          },
+          clinic: {
+            id: true,
+          },
+        },
       },
       clinic: {
+        id: true,
         name: true,
         line1: true,
       },
@@ -194,12 +249,20 @@ export class AppointmentService {
       }
 
       if (userRole.length === 1 && userRole?.includes(UserRole.DOCTOR)) {
-        const doctorAppointments = await this.appointmentRepository.find({
+        let doctorAppointments = await this.appointmentRepository.find({
           where: {
             patient: { uid: patientId },
             doctor: { uid: userId },
           },
-          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          relations: [
+            'doctor',
+            'prescription',
+            'vitals',
+            'clinic',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
+            'doctor.userClinics.user',
+          ],
           select: {
             ...selectCondition,
           },
@@ -207,6 +270,7 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        doctorAppointments = this.processAppointments(doctorAppointments);
         const medicalReports = await queryRunner.manager.find(MedicalReport, {
           where: { patient, doctor: { user: { uid: userId } } },
           order: { createdAt: 'DESC' },
@@ -217,12 +281,20 @@ export class AppointmentService {
           medicalReports,
         };
       } else if (userRole?.includes(UserRole.ADMIN)) {
-        const doctorAppointments = await queryRunner.manager.find(Appointment, {
+        let doctorAppointments = await queryRunner.manager.find(Appointment, {
           where: {
             doctor: { uid: userId },
             patient: { uid: patientId },
           },
-          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          relations: [
+            'doctor',
+            'prescription',
+            'vitals',
+            'clinic',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
+            'doctor.userClinics.user',
+          ],
           select: {
             ...selectCondition,
           },
@@ -230,13 +302,25 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
-        const clinicAppointments = await queryRunner.manager.find(Appointment, {
+        doctorAppointments = this.processAppointments(doctorAppointments);
+        let clinicAppointments = await queryRunner.manager.find(Appointment, {
           where: {
-            doctor: { uid: Not(userId) },
+            doctor: {
+              uid: Not(userId),
+            },
             patient: { uid: patientId },
             clinic: { id: clinicId },
           },
-          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          relations: [
+            'doctor',
+            'prescription',
+            'vitals',
+            'clinic',
+            'doctor.userClinics',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
+            'doctor.userClinics.user',
+          ],
           select: {
             ...selectCondition,
           },
@@ -244,6 +328,7 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        clinicAppointments = this.processAppointments(clinicAppointments);
         const medicalReports = await queryRunner.manager.find(MedicalReport, {
           where: { patient, doctor: { user: { uid: userId } } },
           order: { createdAt: 'DESC' },
@@ -251,15 +336,24 @@ export class AppointmentService {
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },
-          medicalReports
+          medicalReports,
         };
       } else if (userRole?.includes(UserRole.RECEPTIONIST)) {
-        const clinicAppointments = await queryRunner.manager.find(Appointment, {
+        let clinicAppointments = await queryRunner.manager.find(Appointment, {
           where: {
             patient: { uid: patientId },
             clinic: { id: clinicId },
           },
-          relations: ['doctor', 'prescription', 'vitals', 'clinic'],
+          relations: [
+            'doctor',
+            'prescription',
+            'vitals',
+            'clinic',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
+            'doctor.userClinics.user',
+          ],
+
           select: {
             ...selectCondition,
           },
@@ -267,6 +361,7 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        clinicAppointments = this.processAppointments(clinicAppointments);
         return {
           patient,
           appointments: { clinicAppointments },
