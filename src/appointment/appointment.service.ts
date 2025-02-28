@@ -195,6 +195,7 @@ export class AppointmentService {
 
       delete filteredUserClinic?.user
       delete filteredUserClinic?.clinic
+      delete filteredUserClinic?.usesOwnLetterPad
       delete appointment?.doctor?.userClinics
 
         appointment.doctor.letterPadStyle  = filteredUserClinic
