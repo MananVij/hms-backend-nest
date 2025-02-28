@@ -80,10 +80,6 @@ export class UserService {
         );
         const defaultClinicId = clinicIds[0]?.id;
         const role = clinicIds[0]?.role;
-        const usesOwnLetterPad = clinicIds[0]?.usesOwnLetterPad;
-        const headerImage = usesOwnLetterPad ? null : clinicIds[0]?.headerImage;
-        const footerText = usesOwnLetterPad ? null : clinicIds[0]?.footerText;
-        const padding = usesOwnLetterPad ? clinicIds[0]?.padding : null;
         return {
           qualification,
           defaultClinicId,
