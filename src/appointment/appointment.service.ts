@@ -414,6 +414,7 @@ export class AppointmentService {
           uid: true,
           name: true,
           phoneNumber: true,
+          publicIdentifier: true,
           address: {
             line1: true,
             line2: true,

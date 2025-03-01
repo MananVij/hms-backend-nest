@@ -28,14 +28,26 @@ export class UserService {
   ): Promise<User> {
     try {
       const existingUser = await this.userRepository.findOne({
-        where: [
-          { email: createUserDto.email },
-          { phoneNumber: createUserDto.phoneNumber },
-        ],
+        where: { email: createUserDto.email },
       });
       if (existingUser) {
-        throw new ConflictException('Credentials already exists');
+        throw new ConflictException('Credentials already exist');
       }
+      
+      const phoneUserCount = await queryRunner.manager.count(User, {
+        where: { phoneNumber: createUserDto.phoneNumber },
+      });
+      const isPatient = createUserDto.isPatient ?? false;
+      if (isPatient && phoneUserCount >= 4) {
+        throw new ConflictException(
+          'This phone number is already associated with 4 users.',
+        );
+      } else if (!isPatient && phoneUserCount === 1) {
+        throw new ConflictException(
+          'This phone number is already associated with a user.',
+        );
+      }
+
       const hashedPassword = await this.hashPassword(createUserDto.password);
       const user = queryRunner.manager.create(User, {
         name: createUserDto.name,
@@ -213,6 +225,7 @@ export class UserService {
           uid: true,
           name: true,
           phoneNumber: true,
+          publicIdentifier: true,
           metaData: {
             dob: true,
             sex: true,
