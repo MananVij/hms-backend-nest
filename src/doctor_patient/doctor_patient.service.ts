@@ -32,6 +32,7 @@ export class DoctorPatientService {
               dob: true,
               sex: true,
             },
+            publicIdentifier: true
           },
         },
       });

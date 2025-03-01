@@ -121,6 +121,7 @@ export class PatientClinicService {
               dob: true,
               sex: true,
             },
+            publicIdentifier: true,
           },
         },
       });

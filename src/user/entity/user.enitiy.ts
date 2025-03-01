@@ -15,6 +15,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 
 @Entity('users')
@@ -89,10 +90,44 @@ export class User {
   created_at: Date;
 
   @BeforeInsert()
+  @BeforeUpdate()
+  normalizeFields() {
+    if (this.email) {
+      this.email = this.email.trim().toLowerCase();
+      if (this.email === '') {
+        this.email = null;
+      }
+    }
+
+    if (this.name) {
+      // Split name into words (ignoring extra spaces)
+      const parts = this.name.split(/\s+/).filter(Boolean);
+      if (parts.length > 0) {
+        // Use the first word as first name.
+        const firstName =
+          parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+
+        // Use the last word as last name (if provided).
+        if (parts.length > 1) {
+          const lastName =
+            parts[parts.length - 1].charAt(0).toUpperCase() +
+            parts[parts.length - 1].slice(1).toLowerCase();
+          this.name = `${firstName} ${lastName}`;
+        } else {
+          this.name = firstName;
+        }
+      }
+    }
+  }
+
+  @BeforeInsert()
   generatePublicIdentifier() {
     // Remove non-alphabet characters and extract the first word of the name
-    const firstName = this.name.replace(/[^A-Za-z\s]/g, '').trim().split(' ')[0];
-  
+    const firstName = this.name
+      .replace(/[^A-Za-z\s]/g, '')
+      .trim()
+      .split(' ')[0];
+
     // Extract up to 4 letters from the first name, convert to uppercase
     let prefix = firstName.toUpperCase().slice(0, 4);
   
@@ -107,7 +142,7 @@ export class User {
     // Final identifier
     this.publicIdentifier = `${prefix}${digitPart}`;
   }
-  
+
   private generateRandomLetters(length: number): string {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';

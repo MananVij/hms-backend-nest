@@ -33,7 +33,10 @@ export class AuthController {
     @Body('password') password: string,
   ) {
     try {
-      return await this.authService.login({ email, password });
+      return await this.authService.login({
+        email: email.toLowerCase(),
+        password,
+      });
     } catch (error) {
       throw error;
     }

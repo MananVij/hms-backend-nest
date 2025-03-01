@@ -177,6 +177,7 @@ export class UserClinicService {
             name: true,
             email: true,
             phoneNumber: true,
+            publicIdentifier: true,
             address: {
               line1: true,
               line2: true,
