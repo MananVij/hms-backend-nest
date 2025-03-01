@@ -75,7 +75,7 @@ export class PatientController {
     patientData: {
       patient: CreateUserDto;
       metaData: CreateMetaDataDto;
-      time: Date,
+      time: Date;
       visitType: VisitType;
       clinicId: number;
     },
@@ -105,7 +105,7 @@ export class PatientController {
         finalAppointmentData,
         queryRunner,
       );
-      return newAppointment
+      return newAppointment;
     } catch (error) {
       throw error;
     }
