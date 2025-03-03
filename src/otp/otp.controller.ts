@@ -1,5 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Req } from '@nestjs/common';
 import { OtpService } from './otp.service';
+import { QueryRunnerParam } from 'src/transactions/query_runner_param';
+import { QueryRunner } from 'typeorm';
+import { Request } from 'src/interfaces/request.interface';
 
 @Controller('otp')
 export class OtpController {
@@ -16,11 +19,21 @@ export class OtpController {
 
   @Post('verify')
   async verifyOtp(
+    @QueryRunnerParam() queryRunner: QueryRunner,
+    @Req() req: Request,
     @Body('phoneNumber') phoneNumber: string,
+    @Body('clinicId') clinicId: number,
     @Body('otp') otp: string,
   ): Promise<object> {
     try {
-      return this.otpService.verifyOtp(phoneNumber, otp);
+      const userId = req?.user?.uid;
+      return this.otpService.verifyOtp(
+        queryRunner,
+        userId,
+        phoneNumber,
+        clinicId,
+        otp,
+      );
     } catch (error) {
       throw error;
     }

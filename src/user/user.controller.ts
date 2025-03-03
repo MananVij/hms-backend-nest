@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { User } from './entity/user.enitiy';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { Request } from 'src/interfaces/request.interface';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
@@ -24,15 +23,15 @@ export class UserController {
     @Req() req: Request,
     @Query('phoneNo') phoneNo: string,
     @Query('role') role: string,
-  ): Promise<User> {
+  ): Promise<any> {
     try {
       const userId = req?.user?.uid;
       if (role === UserRole.PATIENT) {
-        return this.userService.findUserByPhoneNumber(userId, phoneNo, {
+        return this.userService.findUsersByPhoneNumber(userId, phoneNo, {
           isPatient: true,
         });
       } else {
-        return this.userService.findUserByPhoneNumber(userId, phoneNo, {
+        return this.userService.findUsersByPhoneNumber(userId, phoneNo, {
           isPatient: false,
         });
       }

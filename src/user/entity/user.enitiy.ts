@@ -100,22 +100,15 @@ export class User {
     }
 
     if (this.name) {
-      // Split name into words (ignoring extra spaces)
       const parts = this.name.split(/\s+/).filter(Boolean);
       if (parts.length > 0) {
-        // Use the first word as first name.
-        const firstName =
-          parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-
-        // Use the last word as last name (if provided).
-        if (parts.length > 1) {
-          const lastName =
-            parts[parts.length - 1].charAt(0).toUpperCase() +
-            parts[parts.length - 1].slice(1).toLowerCase();
-          this.name = `${firstName} ${lastName}`;
-        } else {
-          this.name = firstName;
-        }
+        // Capitalize each word
+        this.name = parts
+          .map(
+            (word) =>
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+          )
+          .join(' ');
       }
     }
   }
@@ -127,19 +120,11 @@ export class User {
       .replace(/[^A-Za-z\s]/g, '')
       .trim()
       .split(' ')[0];
-
-    // Extract up to 4 letters from the first name, convert to uppercase
     let prefix = firstName.toUpperCase().slice(0, 4);
-  
-    // If the prefix has fewer than 4 letters, pad it with random uppercase letters.
     if (prefix.length < 4) {
       prefix += this.generateRandomLetters(4 - prefix.length);
     }
-  
-    // Generate 10 random digits
     const digitPart = this.generateRandomDigits(10);
-  
-    // Final identifier
     this.publicIdentifier = `${prefix}${digitPart}`;
   }
 
@@ -151,7 +136,7 @@ export class User {
     }
     return result;
   }
-  
+
   private generateRandomDigits(length: number): string {
     const digits = '0123456789';
     let result = '';
@@ -160,5 +145,4 @@ export class User {
     }
     return result;
   }
-  
 }

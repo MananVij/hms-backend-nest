@@ -3,13 +3,15 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { PatientService } from 'src/patient/patient.service';
 import { Twilio } from 'twilio';
+import { QueryRunner } from 'typeorm';
 
 @Injectable()
 export class OtpService {
   private client: Twilio;
 
-  constructor() {
+  constructor(private readonly patientService: PatientService) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     this.client = new Twilio(accountSid, authToken);
@@ -40,7 +42,13 @@ export class OtpService {
     }
   }
 
-  async verifyOtp(phoneNumber: string, otp: string): Promise<object> {
+  async verifyOtp(
+    queryRunner: QueryRunner,
+    userId: string,
+    phoneNumber: string,
+    clinicId: number,
+    otp: string,
+  ): Promise<object> {
     try {
       const serviceSid = process.env.TWILIO_SERVICE_SID;
 
@@ -53,14 +61,20 @@ export class OtpService {
 
       if (verificationCheck.status !== 'approved') {
         throw new BadRequestException('Invalid or expired otp');
-      }
+      // }
+      const users = await this.patientService.findPatientsByPhoneNumber(
+        queryRunner,
+        userId,
+        clinicId,
+        phoneNumber,
+      );
 
       return {
-        status: 'success',
+        users,
         message: 'OTP verified successfully',
+        isVerified: true,
       };
     } catch (error) {
-        console.log(error)
       throw error instanceof BadRequestException
         ? error
         : new InternalServerErrorException(
