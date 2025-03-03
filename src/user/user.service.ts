@@ -182,23 +182,19 @@ export class UserService {
     }
   }
 
-  async findUserByPhoneNumber(
+  async findUsersByPhoneNumber(
     userId: string,
     phoneNumber: string,
     patientCondition: object,
-  ): Promise<User> {
+  ): Promise<any> {
     try {
-      const user = await this.userRepository.findOne({
+      return await this.userRepository.find({
         where: { phoneNumber, ...patientCondition },
         select: {
           uid: true,
           name: true,
         },
       });
-      if (!user) {
-        throw new NotFoundException('No User Found');
-      }
-      return user;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
