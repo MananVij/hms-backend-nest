@@ -3,7 +3,13 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { PatientService } from 'src/patient/patient.service';
+import { User } from 'src/user/entity/user.enitiy';
+import {
+  UserClinic,
+  UserRole,
+} from 'src/user_clinic/entity/user_clinic.entity';
 import { Twilio } from 'twilio';
 import { QueryRunner } from 'typeorm';
 
@@ -48,6 +54,7 @@ export class OtpService {
     phoneNumber: string,
     clinicId: number,
     otp: string,
+    role: string,
   ): Promise<object> {
     try {
       const serviceSid = process.env.TWILIO_SERVICE_SID;
@@ -62,17 +69,62 @@ export class OtpService {
       if (verificationCheck.status !== 'approved') {
         throw new BadRequestException('Invalid or expired otp');
       // }
-      const users = await this.patientService.findPatientsByPhoneNumber(
-        queryRunner,
-        userId,
-        clinicId,
-        phoneNumber,
-      );
+      if (role === UserRole.PATIENT) {
+        const users = await this.patientService.findPatientsByPhoneNumber(
+          queryRunner,
+          userId,
+          clinicId,
+          phoneNumber,
+        );
+        return {
+          users,
+          message: 'OTP verified successfully',
+          isVerified: true,
+        };
+      }
+      const users = await queryRunner.manager.find(User, {
+        where: { phoneNumber },
+        relations: ['metaData'],
+        select: {
+          name: true,
+          uid: true,
+          publicIdentifier: true,
+          phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true,
+          },
+        },
+      });
+      if (!users) {
+        return {
+          users,
+          message: 'OTP verified successfully',
+          isVerified: true,
+        };
+      }
 
+      const userClinic = await queryRunner.manager.findOne(UserClinic, {
+        where: {
+          user: { phoneNumber },
+          clinic: { id: clinicId },
+        },
+      });
+      if (userClinic) {
+        throw new BadRequestException('User already associated with clinic');
+      }
+      const userDetails = await queryRunner.manager.findOne(Doctor, {
+        where: {
+          user: { phoneNumber },
+        },
+      });
+      const showQualificationComponent = userDetails ? false : true;
+      // TODO: - Handle case of showQualificationComponent from frontend
       return {
         users,
         message: 'OTP verified successfully',
         isVerified: true,
+        showQualificationComponent,
       };
     } catch (error) {
       throw error instanceof BadRequestException
