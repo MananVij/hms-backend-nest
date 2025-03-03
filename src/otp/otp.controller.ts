@@ -24,6 +24,7 @@ export class OtpController {
     @Body('phoneNumber') phoneNumber: string,
     @Body('clinicId') clinicId: number,
     @Body('otp') otp: string,
+    @Body('role') role: string,
   ): Promise<object> {
     try {
       const userId = req?.user?.uid;
@@ -33,6 +34,7 @@ export class OtpController {
         phoneNumber,
         clinicId,
         otp,
+        role,
       );
     } catch (error) {
       throw error;
