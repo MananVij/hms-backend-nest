@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryRunner, Repository } from 'typeorm';
+import { In, Not, QueryRunner, Repository } from 'typeorm';
 import { User } from 'src/user/entity/user.enitiy';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
@@ -16,6 +16,9 @@ import { CreateMetaDataDto } from 'src/metadata/dto/create-meta-data.dto';
 import { MetaDataService } from 'src/metadata/meta-data.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { PatientClinicService } from 'src/patient_clinic/patient_clinic.service';
+import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+import { UserClinicService } from 'src/user_clinic/user_clinic.service';
+import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 
 @Injectable()
 export class PatientService {
@@ -32,6 +35,7 @@ export class PatientService {
     private readonly metaDataService: MetaDataService,
     private readonly errorLogService: ErrorLogService,
     private readonly patientClinicService: PatientClinicService,
+    private readonly userClinicService: UserClinicService,
   ) {}
 
   async addNewPatientByDoctor(
@@ -42,11 +46,13 @@ export class PatientService {
     queryRunner: QueryRunner,
   ): Promise<any> {
     try {
-      const checkPatient = await queryRunner.manager.findOne(User, {
+      const users = await queryRunner.manager.count(User, {
         where: { phoneNumber: createPatientDto.phoneNumber },
       });
-      if (checkPatient) {
-        throw new ConflictException('User with phone number exists.');
+      if (users >= 4) {
+        throw new ConflictException(
+          'A phone number can be linked to a maximum of four users.',
+        );
       }
 
       const doctor = await queryRunner.manager.findOne(Doctor, {
@@ -58,6 +64,7 @@ export class PatientService {
 
       const newPatient = queryRunner.manager.create(User, {
         isPatient: true,
+        email: null,
         ...createPatientDto,
       });
       const patient = await queryRunner.manager.save(newPatient);
@@ -198,7 +205,7 @@ export class PatientService {
           },
         }),
       ]);
-      
+
       const relationship = queryRunner.manager.create(DoctorPatient, {
         doctor,
         patient,
@@ -213,6 +220,113 @@ export class PatientService {
         patientId,
       );
       throw new InternalServerErrorException('Something Went Wrong.');
+    }
+  }
+
+  async findPatientsByPhoneNumber(
+    queryRunner: QueryRunner,
+    userId: string,
+    clinicId: number,
+    phoneNumber: string,
+  ): Promise<any> {
+    try {
+      const roles = await this.userClinicService.findUserRolesInClinic(
+        queryRunner,
+        userId,
+        clinicId,
+      );
+      let associatedPatientIds = new Set<string>();
+
+      if (roles.length === 1 && roles?.includes(UserRole.DOCTOR)) {
+        const doctorPatients = await queryRunner.manager.find(DoctorPatient, {
+          where: {
+            doctor: { user: { uid: userId } },
+            patient: { phoneNumber },
+          },
+          select: { patient: { uid: true } },
+        });
+        if (doctorPatients.length === 4) {
+          throw new InternalServerErrorException(
+            'Phone number already linked with 4 patients',
+          );
+        }
+        associatedPatientIds = new Set(
+          doctorPatients.map((dp) => dp.patient.uid),
+        );
+      } else if (roles?.includes(UserRole.ADMIN)) {
+        const doctorPatients = await queryRunner.manager.find(DoctorPatient, {
+          where: {
+            doctor: { user: { uid: userId } },
+            patient: { phoneNumber },
+          },
+          select: { patient: { uid: true } },
+        });
+        if (doctorPatients.length === 4) {
+          throw new InternalServerErrorException(
+            'Phone number already linked with 4 patients',
+          );
+        }
+        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
+          where: { patient: { phoneNumber }, clinic: { id: clinicId } },
+          select: { patient: { uid: true } },
+        });
+        if (clinicPatients.length === 4) {
+          throw new InternalServerErrorException(
+            'Phone number already linked with 4 patients',
+          );
+        }
+        associatedPatientIds = new Set([
+          ...doctorPatients.map((dp) => dp.patient.uid),
+          ...clinicPatients.map((pc) => pc.patient.uid),
+        ]);
+      } else if (roles?.includes(UserRole.RECEPTIONIST)) {
+        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
+          where: { patient: { phoneNumber }, clinic: { id: clinicId } },
+          select: {
+            patient: { uid: true },
+          },
+        });
+        if (clinicPatients.length === 4) {
+          throw new InternalServerErrorException(
+            'Phone number already linked with 4 patients',
+          );
+        }
+        associatedPatientIds = new Set(
+          clinicPatients.map((pc) => pc.patient.uid),
+        );
+      }
+      const unassociatedPatients = await queryRunner.manager.find(User, {
+        where: {
+          phoneNumber,
+          uid: Not(In([...associatedPatientIds])),
+        },
+        relations: ['metaData'],
+        select: {
+          uid: true,
+          name: true,
+          publicIdentifier: true,
+          phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true,
+          },
+        },
+      });
+      return unassociatedPatients;
+    } catch (error) {
+      if (
+        error instanceof InternalServerErrorException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Error while fetching patients by phone number: ${error?.message}`,
+        error?.stack,
+        null,
+        userId,
+        phoneNumber,
+      );
     }
   }
 

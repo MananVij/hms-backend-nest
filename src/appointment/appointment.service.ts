@@ -121,6 +121,7 @@ export class AppointmentService {
           uid: savedAppointment.patient.uid,
           name: savedAppointment.patient.name,
           phoneNumber: savedAppointment.patient.phoneNumber,
+          publicIdentifier: savedAppointment.patient.publicIdentifier,
           address: {
             line1: savedAppointment.patient.address?.line1,
             line2: savedAppointment.patient.address?.line2,
@@ -179,12 +180,12 @@ export class AppointmentService {
         }
       }
 
-      delete filteredUserClinic?.user
-      delete filteredUserClinic?.clinic
-      delete filteredUserClinic?.usesOwnLetterPad
-      delete appointment?.doctor?.userClinics
-
-        appointment.doctor.letterPadStyle  = filteredUserClinic
+      delete filteredUserClinic?.user;
+      delete filteredUserClinic?.clinic;
+      delete filteredUserClinic?.usesOwnLetterPad;
+      delete appointment?.doctor?.userClinics;
+      
+      appointment.doctor.letterPadStyle = filteredUserClinic
         ? filteredUserClinic
         : null;
 
