@@ -11,10 +11,13 @@ import { PatientClinicModule } from 'src/patient_clinic/patient_clinic.module';
 import { DoctorPatientModule } from 'src/doctor_patient/doctor_patient.module';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
 import { AppointmentModule } from 'src/appointment/appointment.module';
+import { PublicIdentifierService } from 'src/user/public-identifier.service';
+import { User } from 'src/user/entity/user.enitiy';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      User,
       DoctorPatient,
       Appointment,
       Prescription,
@@ -27,7 +30,7 @@ import { AppointmentModule } from 'src/appointment/appointment.module';
     AppointmentModule
   ],
   controllers: [PatientController],
-  providers: [PatientService],
+  providers: [PatientService, PublicIdentifierService],
   exports: [PatientService],
 })
 export class PatientModule {}
