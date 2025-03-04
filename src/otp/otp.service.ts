@@ -1,9 +1,12 @@
+import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { PatientService } from 'src/patient/patient.service';
 import { User } from 'src/user/entity/user.enitiy';
 import {
@@ -17,34 +20,108 @@ import { QueryRunner } from 'typeorm';
 export class OtpService {
   private client: Twilio;
 
-  constructor(private readonly patientService: PatientService) {
+  constructor(
+    private readonly patientService: PatientService,
+    private readonly httpService: HttpService,
+    private readonly errorLogService: ErrorLogService,
+  ) {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     this.client = new Twilio(accountSid, authToken);
   }
 
   async sendOtp(phoneNumber: string): Promise<object> {
+    if (!phoneNumber) {
+      throw new InternalServerErrorException(
+        'Recipient phone number is required.',
+      );
+    }
+
+    if (!/^\d{10}$/.test(phoneNumber)) {
+      throw new Error('Invalid recipient phone number format.');
+    }
+
+    const baseUrl = process.env.SMS_BASE_URL;
+    const authToken = process.env.SMS_AUTH_TOKEN;
+    if (!baseUrl || !authToken) {
+      throw new Error('Missing SMS configuration in environment variables.');
+    }
     try {
-      const serviceSid = process.env.TWILIO_SERVICE_SID;
-      const verification = await this.client.verify.v2
-        .services(serviceSid)
-        .verifications.create({
-          to: `+91${phoneNumber}`,
-          channel: 'sms',
-        });
-
-      if (verification.status !== 'pending') {
-        throw new Error('Failed to send OTP. Please try again!');
+      const response = await firstValueFrom(
+        this.httpService.post(`${baseUrl}/send`, null, {
+          headers: {
+            authToken: authToken,
+          },
+          params: {
+            flowType: 'SMS',
+            countryCode: '91',
+            mobileNumber: phoneNumber,
+          },
+        }),
+      );
+      if (response?.data?.responseCode === 200) {
+        const verificationId = response?.data?.data?.verificationId;
+        return {
+          verificationId,
+          status: 'succeess',
+          message: 'Otp sent successfully.',
+        };
+      } else {
+        throw new InternalServerErrorException(
+          'Unable to Send SMS at the moment. Please try later.',
+        );
       }
-
-      return {
-        status: 'succeess',
-        message: 'Otp sent successfully.',
-      };
     } catch (error) {
-      throw error instanceof Error
-        ? error
-        : new BadRequestException('An unexpected error occurred');
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Unable to send SMS: ${error?.message}`,
+        error?.stack,
+      );
+      throw new InternalServerErrorException(
+        'Unable to Send SMS at the moment. Please try later.',
+      );
+    }
+  }
+
+  private async verifyOtpService(otp: string, verificationId: string) {
+    const baseUrl = process.env.SMS_BASE_URL;
+    const authToken = process.env.SMS_AUTH_TOKEN;
+    if (!baseUrl || !authToken) {
+      throw new Error('Missing SMS configuration in environment variables.');
+    }
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${baseUrl}/validateOtp`, {
+          headers: {
+            authToken: authToken,
+          },
+          params: {
+            code: otp,
+            verificationId,
+          },
+        }),
+      );
+      if (response?.data.responseCode !== 200) {
+        throw new InternalServerErrorException('Incorrect Otp');
+      }
+      return response;
+    } catch (error) {
+      const responseCode = error?.response?.data?.responseCode;
+      let msg = 'Something went wrong. Unable to verify at moment.';
+      if (responseCode === 702) {
+        msg = 'Invalid Otp';
+      } else if (responseCode === 700) {
+        msg = 'Verification Failed';
+      } else if (responseCode === 703) {
+        msg = 'Otp Already Verified';
+      } else if (responseCode === 705) {
+        msg = 'Otp Exipred';
+      } else if (responseCode === 800) {
+        msg = 'Maximum Limit Reached.';
+      }
+      throw new InternalServerErrorException(msg);
     }
   }
 
@@ -54,21 +131,31 @@ export class OtpService {
     phoneNumber: string,
     clinicId: number,
     otp: string,
+    verificationId: string,
     role: string,
   ): Promise<object> {
+    if (!phoneNumber) {
+      throw new InternalServerErrorException(
+        'Recipient phone number is required.',
+      );
+    }
+    if (!/^\d{10}$/.test(`${phoneNumber}`)) {
+      throw new Error('Invalid recipient phone number format.');
+    }
+    if (!otp) {
+      throw new InternalServerErrorException('Otp is required.');
+    }
+    if (!/^\d{4}$/.test(`${otp}`)) {
+      throw new Error('Invalid otp format.');
+    }
+
     try {
-      const serviceSid = process.env.TWILIO_SERVICE_SID;
+      const response = await this.verifyOtpService(otp, verificationId);
 
-      const verificationCheck = await this.client.verify.v2
-        .services(serviceSid)
-        .verificationChecks.create({
-          to: `+91${phoneNumber}`,
-          code: otp,
-        });
+      if (response?.data.responseCode !== 200) {
+        throw new InternalServerErrorException('Incorrect Otp');
+      }
 
-      if (verificationCheck.status !== 'approved') {
-        throw new BadRequestException('Invalid or expired otp');
-      // }
       if (role === UserRole.PATIENT) {
         const users = await this.patientService.findPatientsByPhoneNumber(
           queryRunner,
@@ -127,11 +214,19 @@ export class OtpService {
         showQualificationComponent,
       };
     } catch (error) {
-      throw error instanceof BadRequestException
-        ? error
-        : new InternalServerErrorException(
-            error?.message ?? 'Something Went Wrong. Please try again!',
-          );
+      if (
+        error instanceof InternalServerErrorException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Unable to send SMS: ${error?.message}`,
+        error?.stack,
+      );
+      throw new InternalServerErrorException(
+        'Something Went Wrong. Please try again!',
+      );
     }
   }
 }
