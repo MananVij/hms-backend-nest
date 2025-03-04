@@ -235,65 +235,51 @@ export class PatientService {
         userId,
         clinicId,
       );
-      let associatedPatientIds = new Set<string>();
-
+      let associatedPatientIds = [];
       if (roles.length === 1 && roles?.includes(UserRole.DOCTOR)) {
         const doctorPatients = await queryRunner.manager.find(DoctorPatient, {
           where: {
             doctor: { user: { uid: userId } },
             patient: { phoneNumber },
           },
-          select: { patient: { uid: true } },
+          select: { patient: { uid: true, phoneNumber: true } },
+          relations: ['doctor', 'patient'],
         });
-        if (doctorPatients.length === 4) {
-          throw new InternalServerErrorException(
-            'Phone number already linked with 4 patients',
-          );
-        }
-        associatedPatientIds = new Set(
-          doctorPatients.map((dp) => dp.patient.uid),
-        );
-      } else if (roles?.includes(UserRole.ADMIN)) {
-        const doctorPatients = await queryRunner.manager.find(DoctorPatient, {
+
+        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
           where: {
-            doctor: { user: { uid: userId } },
+            clinic: { id: clinicId },
             patient: { phoneNumber },
           },
-          select: { patient: { uid: true } },
+          relations: ['clinic', 'patient'],
+          select: { patient: { uid: true, phoneNumber: true } },
         });
-        if (doctorPatients.length === 4) {
-          throw new InternalServerErrorException(
-            'Phone number already linked with 4 patients',
-          );
-        }
-        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
-          where: { patient: { phoneNumber }, clinic: { id: clinicId } },
-          select: { patient: { uid: true } },
-        });
-        if (clinicPatients.length === 4) {
-          throw new InternalServerErrorException(
-            'Phone number already linked with 4 patients',
-          );
-        }
-        associatedPatientIds = new Set([
-          ...doctorPatients.map((dp) => dp.patient.uid),
-          ...clinicPatients.map((pc) => pc.patient.uid),
-        ]);
-      } else if (roles?.includes(UserRole.RECEPTIONIST)) {
-        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
-          where: { patient: { phoneNumber }, clinic: { id: clinicId } },
-          select: {
-            patient: { uid: true },
-          },
-        });
-        if (clinicPatients.length === 4) {
-          throw new InternalServerErrorException(
-            'Phone number already linked with 4 patients',
-          );
-        }
-        associatedPatientIds = new Set(
-          clinicPatients.map((pc) => pc.patient.uid),
+
+        const doctorPatientSet = new Set(
+          doctorPatients.map((dp) => dp.patient.uid),
         );
+        const clinicPatientSet = new Set(
+          clinicPatients.map((cp) => cp.patient.uid),
+        );
+
+        associatedPatientIds = [...doctorPatientSet].filter((uid) =>
+          clinicPatientSet.has(uid),
+        );
+      } else if (
+        roles?.includes(UserRole.ADMIN) ||
+        roles?.includes(UserRole.RECEPTIONIST)
+      ) {
+        const clinicPatients = await queryRunner.manager.find(PatientClinic, {
+          where: { patient: { phoneNumber }, clinic: { id: clinicId } },
+          select: { patient: { uid: true } },
+          relations: ['patient', 'clinic'],
+        });
+        if (clinicPatients.length === 4) {
+          throw new InternalServerErrorException(
+            "Phone number already linked with 4 patients! Can't associate phone number with more than 4 users.",
+          );
+        }
+        associatedPatientIds = clinicPatients.map((pc) => pc.patient.uid);
       }
       const unassociatedPatients = await queryRunner.manager.find(User, {
         where: {
