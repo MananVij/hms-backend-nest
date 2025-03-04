@@ -25,6 +25,7 @@ import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { MedicalReport } from 'src/medical-reports/entity/medical-reports.entity';
+import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
 import { NotificationService } from 'src/notification/notification.service';
 import {
   NotificationSubTypeEnum,
@@ -98,6 +99,18 @@ export class AppointmentService {
         clinic,
         ...otherEntites,
       } as DeepPartial<Appointment>);
+
+      const clinicPatientExists = await queryRunner.manager.findOne(
+        PatientClinic,
+        { where: { patient: {uid: patient}, clinic: {id: clinic_id} } },
+      );
+      if (!clinicPatientExists) {
+        const clinicPatient = queryRunner.manager.create(PatientClinic, {
+          patient: patientFound,
+          clinic,
+        });
+        await queryRunner.manager.save(clinicPatient);
+      }
 
       const doctorPatientExists = await queryRunner.manager.findOne(
         DoctorPatient,
@@ -198,7 +211,7 @@ export class AppointmentService {
       delete filteredUserClinic?.clinic;
       delete filteredUserClinic?.usesOwnLetterPad;
       delete appointment?.doctor?.userClinics;
-      
+
       appointment.doctor.letterPadStyle = filteredUserClinic
         ? filteredUserClinic
         : null;

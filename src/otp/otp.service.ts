@@ -130,7 +130,7 @@ export class OtpService {
       throw error instanceof BadRequestException
         ? error
         : new InternalServerErrorException(
-            'Something Went Wrong. Please try again!',
+            error?.message ?? 'Something Went Wrong. Please try again!',
           );
     }
   }
