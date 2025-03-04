@@ -1,8 +1,17 @@
-import { Controller, Post, Body, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  UseInterceptors,
+  UseGuards,
+} from '@nestjs/common';
 import { OtpService } from './otp.service';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { QueryRunner } from 'typeorm';
 import { Request } from 'src/interfaces/request.interface';
+import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('otp')
 export class OtpController {
@@ -18,6 +27,8 @@ export class OtpController {
   }
 
   @Post('verify')
+  @UseInterceptors(TransactionInterceptor)
+  @UseGuards(JwtAuthGuard)
   async verifyOtp(
     @QueryRunnerParam() queryRunner: QueryRunner,
     @Req() req: Request,
