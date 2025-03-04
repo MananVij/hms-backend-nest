@@ -112,37 +112,4 @@ export class User {
       }
     }
   }
-
-  @BeforeInsert()
-  generatePublicIdentifier() {
-    // Remove non-alphabet characters and extract the first word of the name
-    const firstName = this.name
-      .replace(/[^A-Za-z\s]/g, '')
-      .trim()
-      .split(' ')[0];
-    let prefix = firstName.toUpperCase().slice(0, 4);
-    if (prefix.length < 4) {
-      prefix += this.generateRandomLetters(4 - prefix.length);
-    }
-    const digitPart = this.generateRandomDigits(10);
-    this.publicIdentifier = `${prefix}${digitPart}`;
-  }
-
-  private generateRandomLetters(length: number): string {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += letters.charAt(Math.floor(Math.random() * letters.length));
-    }
-    return result;
-  }
-
-  private generateRandomDigits(length: number): string {
-    const digits = '0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += digits.charAt(Math.floor(Math.random() * digits.length));
-    }
-    return result;
-  }
 }

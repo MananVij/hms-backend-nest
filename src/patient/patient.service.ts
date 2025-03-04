@@ -19,6 +19,7 @@ import { PatientClinicService } from 'src/patient_clinic/patient_clinic.service'
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
+import { PublicIdentifierService } from 'src/user/public-identifier.service';
 
 @Injectable()
 export class PatientService {
@@ -32,6 +33,7 @@ export class PatientService {
     @InjectRepository(Prescription)
     private readonly prescriptionRepository: Repository<Prescription>,
 
+    private readonly publicIdentifierService: PublicIdentifierService,
     private readonly metaDataService: MetaDataService,
     private readonly errorLogService: ErrorLogService,
     private readonly patientClinicService: PatientClinicService,
@@ -62,9 +64,11 @@ export class PatientService {
         throw new NotFoundException('Doctor not found');
       }
 
+      const publicIdentifier = await this.publicIdentifierService.generateUniquePublicIdentifier()
       const newPatient = queryRunner.manager.create(User, {
         isPatient: true,
         email: null,
+        publicIdentifier,
         ...createPatientDto,
       });
       const patient = await queryRunner.manager.save(newPatient);
