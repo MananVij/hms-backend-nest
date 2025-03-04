@@ -13,11 +13,13 @@ import * as bcrypt from 'bcrypt';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { PublicIdentifierService } from './public-identifier.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly publicIdentifierService: PublicIdentifierService,
     private readonly userClinicService: UserClinicService,
     private readonly errorLogService: ErrorLogService,
   ) {}
@@ -33,7 +35,7 @@ export class UserService {
       if (existingUser) {
         throw new ConflictException('Credentials already exist');
       }
-      
+
       const phoneUserCount = await queryRunner.manager.count(User, {
         where: { phoneNumber: createUserDto.phoneNumber },
       });
@@ -49,6 +51,8 @@ export class UserService {
       }
 
       const hashedPassword = await this.hashPassword(createUserDto.password);
+      const publicIdentifier =
+        await this.publicIdentifierService.generateUniquePublicIdentifier();
       const user = queryRunner.manager.create(User, {
         name: createUserDto.name,
         phoneNumber: createUserDto.phoneNumber,
@@ -56,6 +60,7 @@ export class UserService {
         email: createUserDto.email,
         is_verified: createUserDto.is_verified || false,
         password: hashedPassword,
+        publicIdentifier,
       });
       return await queryRunner.manager.save(user);
     } catch (error) {

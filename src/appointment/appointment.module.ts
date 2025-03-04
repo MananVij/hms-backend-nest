@@ -8,6 +8,7 @@ import { User } from 'src/user/entity/user.enitiy';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { UserService } from 'src/user/user.service';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
+import { PublicIdentifierService } from 'src/user/public-identifier.service';
 import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
@@ -19,7 +20,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     NotificationModule,
   ],
   controllers: [AppointmentController],
-  providers: [AppointmentService, UserService],
+  providers: [AppointmentService, UserService, PublicIdentifierService],
   exports: [AppointmentService],
 })
 export class AppointmentModule {}
