@@ -31,32 +31,50 @@ export class ComprehendPrescriptionService {
     appointmentId: string,
     queryRunner: QueryRunner,
   ): Promise<any> {
-    let audio_url: string | null = null;
+    let file_url: string | null = null;
     try {
-      // uploading the audio first
-      const fileName = `${Date.now()}_${file.originalname}`;
-      const filePath = `audio_files/${doctor}/${patient}/${fileName}`;
-      audio_url = await this.firebaseService.uploadSingleFile(file, filePath);
-
       // Convert file buffer to base64
-      const base64AudioFile = file.buffer.toString('base64');
+      const base64File = file.buffer.toString('base64');
       // Set up model configuration
       const model = this.genAI.getGenerativeModel({
         model: process.env.GEMINI_MODEL,
         generationConfig: { maxOutputTokens: 8192, temperature: 0, topP: 0.95 },
       });
 
-      // Generate content with audio data
-      const result = await model.generateContent([
-        {
+      // Create input object for Gemini
+      const fileName = `${Date.now()}_${file.originalname}`;
+      let filePath = '';
+      let fileData;
+      if (
+        file.mimetype.startsWith('image/') ||
+        file.mimetype === 'application/pdf'
+      ) {
+        fileData = {
           inlineData: {
-            mimeType: file.mimetype, // Use the uploaded file's MIME type
-            data: base64AudioFile,
+            mimeType: file.mimetype,
+            data: base64File,
           },
-        },
-        {
-          text: this.prompt,
-        },
+        };
+        filePath = `image_prescription/${doctor}/${patient}/${fileName}`;
+      } else if (file.mimetype.startsWith('audio/')) {
+        fileData = {
+          inlineData: {
+            mimeType: file.mimetype,
+            data: base64File,
+          },
+        };
+        filePath = `audio_files/${doctor}/${patient}/${fileName}`;
+      } else {
+        throw new Error('Unsupported file type');
+      }
+      if (filePath !== '') {
+        file_url = await this.firebaseService.uploadSingleFile(file, filePath);
+      }
+
+      // Send file data directly to Gemini
+      const result = await model.generateContent([
+        fileData,
+        { text: this.prompt },
       ]);
       const response = result.response.text();
       const jsonString = response
@@ -68,14 +86,17 @@ export class ComprehendPrescriptionService {
         PrescriptionValidator.validatePrescriptionData(parsedJson);
 
       const updatedDjangoMedicationData =
-        await this.djangoService.validateMedicines(validatedData?.medication, clinic);
+        await this.djangoService.validateMedicines(
+          validatedData?.medication,
+          clinic,
+        );
       if (updatedDjangoMedicationData && updatedDjangoMedicationData !== null) {
         validatedData['medication'] = updatedDjangoMedicationData;
       }
 
       const presDbData = {
         ...updatedDjangoMedicationData,
-        audio_url,
+        file_url,
         appointmentId,
         patientId: patient,
         is_gemini_data: true,
@@ -92,7 +113,7 @@ export class ComprehendPrescriptionService {
       await this.errorLogService.logError(
         `Error while comprehending audio prescription: ${error.message}`,
         error.stack || '',
-        audio_url,
+        file_url,
         doctor,
         patient,
       );
