@@ -13,6 +13,7 @@ import { ErrorLog } from './errorlog/error-log.entity';
 import { User } from './user/entity/user.enitiy';
 import { ReportAccess } from './report-access/entity/report-access.entity';
 import { MedicalReport } from './medical-reports/entity/medical-reports.entity';
+import { Notification } from './notification/notification.entity';
 
 export const AppDataSourceConfig: DataSourceOptions = {
   type: 'postgres',
@@ -36,6 +37,7 @@ export const AppDataSourceConfig: DataSourceOptions = {
     ErrorLog,
     MedicalReport,
     ReportAccess,
+    Notification,
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsRun: false,

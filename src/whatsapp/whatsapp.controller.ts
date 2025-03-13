@@ -1,4 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+} from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappTemplate } from './whatsapp-template.enum';
 
@@ -13,6 +17,8 @@ export class WhatsappController {
       to: string;
       templateName: WhatsappTemplate;
       variables: string[];
+      headerText?: string;
+      fileLink?: string;
     },
   ) {
     try {
@@ -20,6 +26,8 @@ export class WhatsappController {
         body.to,
         body.templateName,
         body.variables,
+        body.headerText,
+        body.fileLink,
       );
     } catch (error) {
       throw error;

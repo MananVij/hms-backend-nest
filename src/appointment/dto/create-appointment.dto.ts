@@ -45,6 +45,10 @@ export class CreateAppointmentDto {
   @IsOptional()
   notes?: string;
 
+  @IsDateString()
+  @IsOptional()
+  followUp?: Date;
+
   @IsOptional()
   prescriptionId?: string; // Reference to associated prescription (optional)
 }

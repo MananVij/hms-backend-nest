@@ -25,6 +25,11 @@ import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { MedicalReport } from 'src/medical-reports/entity/medical-reports.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import {
+  NotificationSubTypeEnum,
+  NotificationTypeEnum,
+} from 'src/notification/notification.enum';
 
 @Injectable()
 export class AppointmentService {
@@ -34,6 +39,7 @@ export class AppointmentService {
     private readonly userService: UserService,
     private readonly userClinicService: UserClinicService,
     private readonly errorLogService: ErrorLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(
@@ -109,6 +115,14 @@ export class AppointmentService {
           patient: patientFound,
         });
         await queryRunner.manager.save(doctorPatient);
+      }
+      if (createAppointmentDto?.followUp) {
+        await this.notificationService.createNotification(queryRunner, {
+          type: NotificationTypeEnum.WHATSAPP,
+          subType: NotificationSubTypeEnum.REMINDER,
+          appointmentId: 0,
+          isSent: false,
+        });
       }
       const savedAppointment = await queryRunner.manager.save(appointment);
       const formattedData = {
@@ -251,7 +265,7 @@ export class AppointmentService {
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },
-          medicalReports
+          medicalReports,
         };
       } else if (userRole?.includes(UserRole.RECEPTIONIST)) {
         const clinicAppointments = await queryRunner.manager.find(Appointment, {

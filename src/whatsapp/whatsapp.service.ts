@@ -1,4 +1,9 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { WhatsappTemplate } from './whatsapp-template.enum';
@@ -19,39 +24,59 @@ export class WhatsappService {
     to: string,
     templateName: WhatsappTemplate,
     variables: string[],
+    headerText?: string,
+    fileLink?: string,
   ) {
     try {
       const url = `${this.apiUrl}/${this.phoneNumberId}/messages`;
+      const components: any[] = [];
 
-      const headerComponent =
-        variables && variables.length > 0
-          ? {
-              type: 'header',
-              parameters: [{ type: 'text', text: variables[0] }],
-            }
-          : null;
-      const bodyComponent =
-        variables && variables.length > 1
-          ? {
-              type: 'body',
-              parameters: variables
-                .slice(1)
-                .map((v) => ({ type: 'text', text: v })),
-            }
-          : null;
+      if (fileLink) {
+        components.push({
+          type: 'header',
+          parameters: [
+            {
+              type: 'document',
+              document: {
+                link: fileLink,
+                filename: 'Download Prescription',
+              },
+            },
+          ],
+        });
+      } else if (headerText) {
+        components.push({
+          type: 'header',
+          parameters: [
+            {
+              type: 'text',
+              text: headerText,
+            },
+          ],
+        });
+      }
 
-      const components = [];
-      if (headerComponent) components.push(headerComponent);
-      if (bodyComponent) components.push(bodyComponent);
+      if (variables && variables?.length) {
+        const bodyComponent = {
+          type: 'body',
+          parameters: variables.map((value) => ({
+            type: 'text',
+            text: value,
+          })),
+        };
+        components.push(bodyComponent);
+      }
 
+      const languageCode =
+        templateName === WhatsappTemplate.APPOINTMENT_REMINDER ? 'en_US' : 'en';
       const payload = {
         messaging_product: 'whatsapp',
-        to,
+        to: `91${to}`,
         type: 'template',
         template: {
           name: templateName,
-          language: { code: 'en' },
-          ...(components.length > 0 && { components }),
+          language: { code: languageCode },
+          components,
         },
       };
 
@@ -63,16 +88,18 @@ export class WhatsappService {
       const response = await firstValueFrom(
         this.httpService.post(url, payload, { headers }),
       );
-
-      return response.data;
+      const msgResponse = response?.data?.messages[0];
+      if (msgResponse && msgResponse?.message_status === 'accepted') {
+        return `${msgResponse?.id ?? ''}`;
+      }
+      return null;
     } catch (error) {
       this.errorLogService.logError(
         `Unable to send message on whatsapp: ${error?.message}`,
         error?.stack,
       );
-      throw new HttpException(
-        error.response?.data || 'Failed to send message',
-        HttpStatus.BAD_REQUEST,
+      throw new InternalServerErrorException(
+        error.response?.data || 'Failed to send whatsapp message.',
       );
     }
   }

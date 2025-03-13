@@ -4,8 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ArrayContains, IsNull, QueryRunner, Repository } from 'typeorm';
+import { ArrayContains, IsNull, QueryRunner } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import {
   CreatePrescriptionDto,
@@ -20,11 +19,19 @@ import {
 } from 'src/user_clinic/entity/user_clinic.entity';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { DjangoService } from 'src/django/django.service';
+import { WhatsappService } from 'src/whatsapp/whatsapp.service';
+import { WhatsappTemplate } from 'src/whatsapp/whatsapp-template.enum';
+import { NotificationService } from 'src/notification/notification.service';
+import {
+  NotificationSubTypeEnum,
+  NotificationTypeEnum,
+} from 'src/notification/notification.enum';
 
 @Injectable()
 export class PrescriptionService {
   constructor(
-    @InjectRepository(Prescription)
+    private readonly notificationService: NotificationService,
+    private readonly whatsappService: WhatsappService,
     private readonly errorLogService: ErrorLogService,
     private readonly djangoService: DjangoService,
   ) {}
@@ -84,6 +91,29 @@ export class PrescriptionService {
           appointment,
           doctor,
           patient,
+        });
+
+        const date = new Date();
+        const whatsappNotificationId = await this.whatsappService.sendMessage(
+          patient.phoneNumber,
+          WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
+          [
+            patient.name,
+            doctor.name,
+            clinic.name,
+            `${clinic.line1}, ${clinic.line2}`,
+            clinic.contactNumber,
+          ],
+          null,
+          prescription.pres_url,
+        );
+        await this.notificationService.createNotification(queryRunner, {
+          notificationId: whatsappNotificationId,
+          type: NotificationTypeEnum.WHATSAPP,
+          subType: NotificationSubTypeEnum.PRESCRIPTIION,
+          appointmentId,
+          isSent: true,
+          timeSent: date,
         });
         const savedPrescription = await queryRunner.manager.save(prescription);
         const formattedData = {
@@ -149,7 +179,10 @@ export class PrescriptionService {
     }
   }
 
-  async postFeeback(medications: MedicationDto[], clinicId: number): Promise<any> {
+  async postFeeback(
+    medications: MedicationDto[],
+    clinicId: number,
+  ): Promise<any> {
     const finalMedicationData = medications.map((med) => ({
       original_name: med.original_name,
       medicine_name: med.medicine_name,
@@ -157,8 +190,10 @@ export class PrescriptionService {
       no_match_found: med.no_match_found || false,
     }));
     try {
-      const response =
-        await this.djangoService.recordMedicineFeedback(finalMedicationData, clinicId);
+      const response = await this.djangoService.recordMedicineFeedback(
+        finalMedicationData,
+        clinicId,
+      );
       return response;
     } catch (error) {
       return null;

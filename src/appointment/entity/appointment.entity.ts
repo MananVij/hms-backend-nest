@@ -1,4 +1,5 @@
 import { Clinic } from 'src/clininc/entity/clininc.entity';
+import { Notification } from 'src/notification/notification.entity';
 import { Prescription } from 'src/prescription/entity/prescription.entity';
 import { User } from 'src/user/entity/user.enitiy';
 import { Vitals } from 'src/vitals/entity/vitals.entity';
@@ -10,6 +11,7 @@ import {
   OneToOne,
   JoinColumn,
   CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 export enum PaymnetMode {
@@ -75,6 +77,9 @@ export class Appointment {
   @Column({ nullable: true })
   notes: string;
 
+  @Column({ type: 'date', nullable: true, default: null })
+  followUp: Date;
+
   @OneToOne(() => Prescription, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'prescription' })
   prescription: Prescription; // Reference to the associated prescription (optional)
@@ -87,6 +92,9 @@ export class Appointment {
   @ManyToOne(() => Clinic, { nullable: false }) // Relationship to Clinic
   @JoinColumn({ name: 'clinic_id' }) // Foreign key reference
   clinic: Clinic; // Reference to the Clinic entity
+
+  @OneToMany(() => Notification, (notification) => notification.appointment)
+  notifications: Notification[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

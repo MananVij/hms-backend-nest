@@ -3,6 +3,12 @@ import * as admin from 'firebase-admin';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { promisify } from 'util';
+import * as muhammara from 'muhammara';
+import { Readable } from 'stream';
+import { QueryRunner } from 'typeorm';
+import { User } from 'src/user/entity/user.enitiy';
+const writeFile = promisify(fs.writeFile);
 
 @Injectable()
 export class FirebaseService {
@@ -26,6 +32,7 @@ export class FirebaseService {
   }
 
   async uploadFiles(
+    queryRunner: QueryRunner,
     files: Express.Multer.File[],
     doctor: string,
     patient: string,
@@ -49,8 +56,28 @@ export class FirebaseService {
         );
       }
       if (pdfFile) {
+        const password = await this.generatePrescriptionPassword(
+          queryRunner,
+          patient,
+        );
+        const encryptedPdfBuffer = await this.encryptPdf(
+          password,
+          pdfFile.buffer,
+        );
+        const encryptedPdfFile: Express.Multer.File = {
+          buffer: encryptedPdfBuffer,
+          originalname: `encrypted_${pdfFile.originalname}`,
+          mimetype: 'application/pdf',
+          size: encryptedPdfBuffer.length,
+          encoding: '7bit',
+          fieldname: 'files',
+          stream: Readable.from(encryptedPdfBuffer),
+          destination: '',
+          filename: '',
+          path: '',
+        };
         pres_url = await this.uploadSingleFile(
-          pdfFile,
+          encryptedPdfFile,
           `${folderPath}/${pdfFile.originalname}`,
         );
       }
@@ -188,5 +215,57 @@ export class FirebaseService {
       const readStream = fs.createReadStream(filePath);
       readStream.pipe(stream);
     });
+  }
+
+  private async encryptPdf(
+    password: string,
+    fileBuffer: Buffer,
+  ): Promise<Buffer> {
+    const inputPath = '/tmp/input.pdf';
+    const outputPath = '/tmp/output.pdf';
+
+    await writeFile(inputPath, fileBuffer);
+
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = muhammara.createReader(inputPath);
+        const writer = muhammara.createWriter(outputPath, {
+          userPassword: password,
+          ownerPassword: password,
+          userProtectionFlag: 4,
+        });
+        const copyingContext = writer.createPDFCopyingContext(inputPath);
+        const pageCount = copyingContext
+          .getSourceDocumentParser(inputPath)
+          .getPagesCount();
+
+        for (let i = 0; i < pageCount; i++) {
+          copyingContext.appendPDFPageFromPDF(i);
+        }
+        writer.end();
+        const encryptedBuffer = fs.readFileSync(outputPath);
+        resolve(encryptedBuffer);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async generatePrescriptionPassword(
+    queryRunner: QueryRunner,
+    patientId: string,
+  ) {
+    const patient = await queryRunner.manager.findOne(User, {
+      where: { uid: patientId },
+    });
+    const fullName = patient.name.toUpperCase();
+    const phoneNumber = patient.phoneNumber;
+
+    const firstName = fullName.split(' ')[0];
+
+    const firstFour = firstName.slice(0, 4);
+    const lastFourDigits = phoneNumber.slice(-4);
+
+    return firstFour + lastFourDigits;
   }
 }

@@ -29,6 +29,7 @@ import { IpLocationMiddleware } from './middleware/ip_location.middleware';
 import { MedicalReportModule } from './medical-reports/medical-report.module';
 import { ReportAccessModule } from './report-access/report-access.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -54,20 +55,21 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     OtpModule,
     MedicalReportModule,
     ReportAccessModule,
-    WhatsappModule
+    WhatsappModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    BackupService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: TransactionInterceptor,
-    },
+    // BackupService,
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: TransactionInterceptor,
+    // },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(IpLocationMiddleware).forRoutes('*');
+    // consumer.apply(IpLocationMiddleware).forRoutes('*');
   }
 }
