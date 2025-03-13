@@ -61,15 +61,15 @@ import { NotificationModule } from './notification/notification.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // BackupService,
-    // {
-    //   provide: APP_INTERCEPTOR,
-    //   useClass: TransactionInterceptor,
-    // },
+    BackupService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransactionInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // consumer.apply(IpLocationMiddleware).forRoutes('*');
+    consumer.apply(IpLocationMiddleware).forRoutes('*');
   }
 }
