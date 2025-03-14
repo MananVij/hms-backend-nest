@@ -41,7 +41,7 @@ export class FirebaseService {
     clinicId: number,
   ): Promise<{ pres_url: string; audio_url: string }> {
     try {
-      const folderPath = `test/prescription_data/${doctor}/${patient}`;
+      const folderPath = `prescription_data/${doctor}/${patient}`;
       const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
       const audioFile = files.find(
         (file) =>
