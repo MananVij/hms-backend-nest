@@ -8,6 +8,8 @@ import * as muhammara from 'muhammara';
 import { Readable } from 'stream';
 import { QueryRunner } from 'typeorm';
 import { User } from 'src/user/entity/user.enitiy';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 const writeFile = promisify(fs.writeFile);
 
 @Injectable()
@@ -36,9 +38,10 @@ export class FirebaseService {
     files: Express.Multer.File[],
     doctor: string,
     patient: string,
+    clinicId: number,
   ): Promise<{ pres_url: string; audio_url: string }> {
     try {
-      const folderPath = `prescription_data/${doctor}/${patient}`;
+      const folderPath = `test/prescription_data/${doctor}/${patient}`;
       const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
       const audioFile = files.find(
         (file) =>
@@ -56,30 +59,55 @@ export class FirebaseService {
         );
       }
       if (pdfFile) {
+        const doctorClinic = await queryRunner.manager.findOne(UserClinic, {
+          where: { clinic: { id: clinicId }, user: { uid: doctor } },
+        });
+
+        const headerImageBuffer =
+          doctorClinic.headerImage && doctorClinic.headerImage.length > 0
+            ? Buffer.from(
+                `${doctorClinic.headerImage}`.replace(
+                  /^data:image\/png;base64,/,
+                  '',
+                ),
+                'base64',
+              )
+            : null;
+        const modifiedPdfBuffer = await this.modifyPdf(
+          pdfFile.buffer,
+          headerImageBuffer,
+          doctorClinic?.footerText ?? '',
+        );
         const password = await this.generatePrescriptionPassword(
           queryRunner,
           patient,
         );
         const encryptedPdfBuffer = await this.encryptPdf(
           password,
-          pdfFile.buffer,
+          modifiedPdfBuffer,
         );
-        const encryptedPdfFile: Express.Multer.File = {
-          buffer: encryptedPdfBuffer,
-          originalname: `encrypted_${pdfFile.originalname}`,
-          mimetype: 'application/pdf',
-          size: encryptedPdfBuffer.length,
-          encoding: '7bit',
-          fieldname: 'files',
-          stream: Readable.from(encryptedPdfBuffer),
-          destination: '',
-          filename: '',
-          path: '',
-        };
-        pres_url = await this.uploadSingleFile(
-          encryptedPdfFile,
-          `${folderPath}/${pdfFile.originalname}`,
+        const localFilePath = path.join(
+          __dirname,
+          `encrypted_${pdfFile.originalname}`,
         );
+        console.log(localFilePath);
+        fs.writeFileSync(localFilePath, encryptedPdfBuffer);
+        // const encryptedPdfFile: Express.Multer.File = {
+        //   buffer: encryptedPdfBuffer,
+        //   originalname: `encrypted_${pdfFile.originalname}`,
+        //   mimetype: 'application/pdf',
+        //   size: encryptedPdfBuffer.length,
+        //   encoding: '7bit',
+        //   fieldname: 'files',
+        //   stream: Readable.from(encryptedPdfBuffer),
+        //   destination: '',
+        //   filename: '',
+        //   path: '',
+        // };
+        // pres_url = await this.uploadSingleFile(
+        //   encryptedPdfFile,
+        //   `${folderPath}/${pdfFile.originalname}`,
+        // );
       }
       return { pres_url, audio_url };
     } catch (error) {
@@ -215,6 +243,78 @@ export class FirebaseService {
       const readStream = fs.createReadStream(filePath);
       readStream.pipe(stream);
     });
+  }
+
+  async modifyPdf(
+    buffer: Buffer,
+    headerImageBuffer: Buffer | null,
+    footerText: string,
+  ): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.load(buffer);
+    const newPdfDoc = await PDFDocument.create();
+
+    const copiedPages = await newPdfDoc.copyPages(
+      pdfDoc,
+      pdfDoc.getPageIndices(),
+    );
+
+    for (const copiedPage of copiedPages) {
+      const { width: pageWidth, height: pageHeight } = copiedPage.getSize();
+
+      const newPage = newPdfDoc.addPage([pageWidth, pageHeight]);
+      let contentStartY = pageHeight;
+
+      if (headerImageBuffer) {
+        try {
+          const headerImage = await newPdfDoc.embedPng(headerImageBuffer);
+          const imageScale = pageWidth / headerImage.width;
+          const scaledHeight = headerImage.height * imageScale;
+
+          newPage.drawImage(headerImage, {
+            x: 0,
+            y: pageHeight - scaledHeight,
+            width: pageWidth,
+            height: scaledHeight,
+          });
+
+          contentStartY = pageHeight - scaledHeight - 10;
+        } catch (error) {
+          console.warn(`Failed to embed header image: ${error.message}`);
+        }
+      }
+
+      const embeddedPage = await newPdfDoc.embedPage(copiedPage);
+
+      newPage.drawPage(embeddedPage, {
+        x: 0,
+        y: contentStartY - copiedPage.getHeight(),
+        width: copiedPage.getWidth(),
+        height: copiedPage.getHeight(),
+      });
+
+      const font = await newPdfDoc.embedFont(StandardFonts.Helvetica);
+      const textWidth = font.widthOfTextAtSize(footerText, 12);
+      const footerX = (pageWidth - textWidth) / 2;
+
+      newPage.drawText(footerText, {
+        x: footerX,
+        y: 10,
+        size: 12,
+        font,
+        color: rgb(0, 0, 0),
+      });
+
+      // ✅ Draw footer line
+      newPage.drawLine({
+        start: { x: 0, y: 24 },
+        end: { x: pageWidth, y: 24 },
+        thickness: 1,
+        color: rgb(0, 0, 0),
+      });
+    }
+
+    const modifiedPdfBytes = await newPdfDoc.save();
+    return Buffer.from(modifiedPdfBytes);
   }
 
   private async encryptPdf(

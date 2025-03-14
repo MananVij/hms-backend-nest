@@ -69,7 +69,7 @@ export class NotificationScheduler {
             WhatsappTemplate.APPOINTMENT_REMINDER,
             [
               appointment.patient.name,
-              appointment.doctor.name,
+              `Dr. ${appointment.doctor.name}`,
               formattedScheduleDate,
               `${appointment.clinic.line1}, ${appointment.clinic.line2}`,
               appointment.clinic.contactNumber,

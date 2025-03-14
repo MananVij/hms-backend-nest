@@ -27,6 +27,7 @@ export class FirebaseController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body('doctor') doctor: string,
     @Body('patient') patient: string,
+    @Body('clinicId') clinic: number,
   ) {
     try {
       if (!Array.isArray(files) || files.length === 0) {
@@ -51,6 +52,7 @@ export class FirebaseController {
         uploadFileDto.files,
         uploadFileDto.doctor,
         uploadFileDto.patient,
+        clinic,
       );
     } catch (error) {
       throw error;

@@ -110,7 +110,7 @@ export class PrescriptionService {
           WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
           [
             patient.name,
-            doctor.name,
+            `Dr. ${doctor.name}`,
             clinic.name,
             `${clinic.line1}, ${clinic.line2}`,
             clinic.contactNumber,
