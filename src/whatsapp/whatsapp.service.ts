@@ -67,15 +67,13 @@ export class WhatsappService {
         components.push(bodyComponent);
       }
 
-      const languageCode =
-        templateName === WhatsappTemplate.APPOINTMENT_REMINDER ? 'en_US' : 'en';
       const payload = {
         messaging_product: 'whatsapp',
         to: `91${to}`,
         type: 'template',
         template: {
           name: templateName,
-          language: { code: languageCode },
+          language: { code: 'en' },
           components,
         },
       };

@@ -76,7 +76,7 @@ export class NotificationService {
             followUp: Between(startOfDay, endOfDay),
           },
         },
-        relations: ['appointment'],
+        relations: ['appointment', 'appointment.patient', 'appointment.doctor', 'appointment.clinic'],
       });
     } catch (error) {
       await this.errorLogService.logError(

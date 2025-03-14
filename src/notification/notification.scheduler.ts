@@ -39,17 +39,6 @@ export class NotificationScheduler {
     return `${day} ${month}, ${year}`;
   }
 
-  private formatTime(date: Date): string {
-    let hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-
-    return `${hours}:${minutes} ${ampm}`;
-  }
-
   @Cron('30 4 * * *')
   async handleScheduledNotifications() {
     this.logger.log('Checking for scheduled notifications...');
@@ -73,12 +62,8 @@ export class NotificationScheduler {
       for (const notification of notifications) {
         try {
           const appointment = notification.appointment;
-          const formattedScheduleDate = this.formatDate(
-            notification.appointment.followUp,
-          );
-          const formattedScheduleTime = this.formatTime(
-            notification.appointment.followUp,
-          );
+          const followUpDate = new Date(notification.appointment.followUp);
+          const formattedScheduleDate = this.formatDate(followUpDate);
           const whatsappNotificationId = await this.whatsappService.sendMessage(
             appointment.patient.phoneNumber,
             WhatsappTemplate.APPOINTMENT_REMINDER,
@@ -86,7 +71,6 @@ export class NotificationScheduler {
               appointment.patient.name,
               appointment.doctor.name,
               formattedScheduleDate,
-              formattedScheduleTime,
               `${appointment.clinic.line1}, ${appointment.clinic.line2}`,
               appointment.clinic.contactNumber,
             ],

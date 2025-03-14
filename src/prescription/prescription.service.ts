@@ -93,6 +93,17 @@ export class PrescriptionService {
           patient,
         });
 
+        if (createPrescriptionDto?.followUp) {
+          appointment.followUp = createPrescriptionDto.followUp;
+          await queryRunner.manager.save(appointment);
+          await this.notificationService.createNotification(queryRunner, {
+            type: NotificationTypeEnum.WHATSAPP,
+            subType: NotificationSubTypeEnum.REMINDER,
+            appointmentId,
+            isSent: false,
+          });
+        }
+        
         const date = new Date();
         const whatsappNotificationId = await this.whatsappService.sendMessage(
           patient.phoneNumber,

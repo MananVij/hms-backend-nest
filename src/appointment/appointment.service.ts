@@ -102,7 +102,7 @@ export class AppointmentService {
 
       const clinicPatientExists = await queryRunner.manager.findOne(
         PatientClinic,
-        { where: { patient: {uid: patient}, clinic: {id: clinic_id} } },
+        { where: { patient: { uid: patient }, clinic: { id: clinic_id } } },
       );
       if (!clinicPatientExists) {
         const clinicPatient = queryRunner.manager.create(PatientClinic, {
@@ -259,6 +259,7 @@ export class AppointmentService {
       isPaid: true,
       visitType: true,
       status: true,
+      followUp: true,
     };
     try {
       const [patient, reqUser, clinic, userRole] = await Promise.all([
