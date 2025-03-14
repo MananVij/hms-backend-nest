@@ -41,7 +41,7 @@ export class FirebaseService {
     clinicId: number,
   ): Promise<{ pres_url: string; audio_url: string }> {
     try {
-      const folderPath = `prescription_data/${doctor}/${patient}`;
+      const folderPath = `test/prescription_data/${doctor}/${patient}`;
       const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
       const audioFile = files.find(
         (file) =>
@@ -86,28 +86,22 @@ export class FirebaseService {
           password,
           modifiedPdfBuffer,
         );
-        const localFilePath = path.join(
-          __dirname,
-          `encrypted_${pdfFile.originalname}`,
+        const encryptedPdfFile: Express.Multer.File = {
+          buffer: encryptedPdfBuffer,
+          originalname: `encrypted_${pdfFile.originalname}`,
+          mimetype: 'application/pdf',
+          size: encryptedPdfBuffer.length,
+          encoding: '7bit',
+          fieldname: 'files',
+          stream: Readable.from(encryptedPdfBuffer),
+          destination: '',
+          filename: '',
+          path: '',
+        };
+        pres_url = await this.uploadSingleFile(
+          encryptedPdfFile,
+          `${folderPath}/${pdfFile.originalname}`,
         );
-        console.log(localFilePath);
-        fs.writeFileSync(localFilePath, encryptedPdfBuffer);
-        // const encryptedPdfFile: Express.Multer.File = {
-        //   buffer: encryptedPdfBuffer,
-        //   originalname: `encrypted_${pdfFile.originalname}`,
-        //   mimetype: 'application/pdf',
-        //   size: encryptedPdfBuffer.length,
-        //   encoding: '7bit',
-        //   fieldname: 'files',
-        //   stream: Readable.from(encryptedPdfBuffer),
-        //   destination: '',
-        //   filename: '',
-        //   path: '',
-        // };
-        // pres_url = await this.uploadSingleFile(
-        //   encryptedPdfFile,
-        //   `${folderPath}/${pdfFile.originalname}`,
-        // );
       }
       return { pres_url, audio_url };
     } catch (error) {
