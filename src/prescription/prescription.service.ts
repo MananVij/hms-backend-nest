@@ -102,7 +102,10 @@ export class PrescriptionService {
             id: savedPrescription?.appointment?.id,
           },
         };
-        if (prescriptionData?.is_gemini_data ?? false) {
+        if (
+          (prescriptionData?.is_voice_rx ?? false) &&
+          (prescriptionData?.is_gemini_data ?? false)
+        ) {
           await this.postFeeback(prescriptionData?.medication, clinicId);
         }
         return formattedData;
@@ -149,7 +152,10 @@ export class PrescriptionService {
     }
   }
 
-  async postFeeback(medications: MedicationDto[], clinicId: number): Promise<any> {
+  async postFeeback(
+    medications: MedicationDto[],
+    clinicId: number,
+  ): Promise<any> {
     const finalMedicationData = medications.map((med) => ({
       original_name: med.original_name,
       medicine_name: med.medicine_name,
@@ -157,8 +163,10 @@ export class PrescriptionService {
       no_match_found: med.no_match_found || false,
     }));
     try {
-      const response =
-        await this.djangoService.recordMedicineFeedback(finalMedicationData, clinicId);
+      const response = await this.djangoService.recordMedicineFeedback(
+        finalMedicationData,
+        clinicId,
+      );
       return response;
     } catch (error) {
       return null;

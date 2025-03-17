@@ -45,10 +45,13 @@ export class ComprehendPrescriptionService {
       const fileName = `${Date.now()}_${file.originalname}`;
       let filePath = '';
       let fileData;
+      let is_handwritten_rx = false;
+      let is_voice_rx = false;
       if (
         file.mimetype.startsWith('image/') ||
         file.mimetype === 'application/pdf'
       ) {
+        is_handwritten_rx = true;
         fileData = {
           inlineData: {
             mimeType: file.mimetype,
@@ -57,6 +60,7 @@ export class ComprehendPrescriptionService {
         };
         filePath = `image_prescription/${doctor}/${patient}/${fileName}`;
       } else if (file.mimetype.startsWith('audio/')) {
+        is_voice_rx = true;
         fileData = {
           inlineData: {
             mimeType: file.mimetype,
@@ -85,21 +89,30 @@ export class ComprehendPrescriptionService {
       const validatedData =
         PrescriptionValidator.validatePrescriptionData(parsedJson);
 
-      const updatedDjangoMedicationData =
-        await this.djangoService.validateMedicines(
-          validatedData?.medication,
-          clinic,
-        );
-      if (updatedDjangoMedicationData && updatedDjangoMedicationData !== null) {
-        validatedData['medication'] = updatedDjangoMedicationData;
+      let updatedDjangoMedicationData = validatedData;
+
+      if (is_voice_rx) {
+        updatedDjangoMedicationData =
+          await this.djangoService.validateMedicines(
+            validatedData?.medication,
+            clinic,
+          );
+        if (
+          updatedDjangoMedicationData &&
+          updatedDjangoMedicationData !== null
+        ) {
+          validatedData['medication'] = updatedDjangoMedicationData;
+        }
       }
 
       const presDbData = {
         ...updatedDjangoMedicationData,
-        file_url,
+        audio_url: file_url,
         appointmentId,
         patientId: patient,
         is_gemini_data: true,
+        is_handwritten_rx,
+        is_voice_rx,
       };
       await this.prescriptionService.create(
         presDbData,

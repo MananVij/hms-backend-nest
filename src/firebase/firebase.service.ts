@@ -35,7 +35,9 @@ export class FirebaseService {
       const pdfFile = files.find((file) => file.mimetype === 'application/pdf');
       const audioFile = files.find(
         (file) =>
-          file.mimetype.startsWith('audio/') || file.mimetype === 'video/mp4',
+          file.mimetype.startsWith('audio/') ||
+          file.mimetype === 'video/mp4' ||
+          file.mimetype.startsWith('image/'),
       );
       if (!pdfFile && !audioFile)
         throw new Error('PDF and audio files are required');
