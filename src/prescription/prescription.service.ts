@@ -143,7 +143,10 @@ export class PrescriptionService {
             id: savedPrescription?.appointment?.id,
           },
         };
-        if (prescriptionData?.is_gemini_data ?? false) {
+        if (
+          (prescriptionData?.is_voice_rx ?? false) &&
+          (prescriptionData?.is_gemini_data ?? false)
+        ) {
           await this.postFeeback(prescriptionData?.medication, clinicId);
         }
         return formattedData;

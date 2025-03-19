@@ -24,6 +24,7 @@ export class Prescription {
   @Column({ nullable: true })
   diagnosis: string;
 
+  // stores both image & voice rx data
   @Column({ nullable: true })
   audio_url?: string;
 
@@ -78,6 +79,12 @@ export class Prescription {
 
   @Column({ type: 'boolean', default: true })
   is_gemini_data: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_handwritten_rx: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  is_voice_rx: boolean;
 
   @Column({ type: 'boolean', default: false })
   is_edited: boolean;

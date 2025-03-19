@@ -108,6 +108,12 @@ export class CreatePrescriptionDto {
   is_gemini_data: boolean;
 
   @IsBoolean()
+  is_voice_rx: boolean;
+
+  @IsBoolean()
+  is_handwritten_rx: boolean;
+
+  @IsBoolean()
   is_edited: boolean;
 
   @IsBoolean()
