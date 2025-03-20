@@ -91,8 +91,8 @@ export class WhatsappService {
       return null;
     } catch (error) {
       this.errorLogService.logError(
-        `Unable to send message on whatsapp: ${error?.message}`,
-        error?.stack,
+        `Unable to send message on whatsapp: ${error?.response?.statusText}`,
+        error?.response?.headers,
       );
       throw new InternalServerErrorException(
         error.response?.data || 'Failed to send whatsapp message.',
