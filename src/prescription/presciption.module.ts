@@ -5,9 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Prescription } from './entity/prescription.entity';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { DjangoService } from 'src/django/django.service';
+import { WhatsappModule } from 'src/whatsapp/whatsapp.module';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Prescription]), ErrorLogModule],
+  imports: [
+    TypeOrmModule.forFeature([Prescription]),
+    ErrorLogModule,
+    WhatsappModule,
+    NotificationModule,
+  ],
   controllers: [PrescriptionController],
   providers: [PrescriptionService, DjangoService],
   exports: [PrescriptionService],

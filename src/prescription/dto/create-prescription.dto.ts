@@ -7,17 +7,18 @@ import {
   IsNumber,
   ValidateNested,
   IsEnum,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum FrequencyEnum {
-  OD = "Once Daily",
-  BID = "Twice Daily",
-  TID = "Three Times Daily",
-  QID = "Four Times Daily",
-  HS = "At Bedtime",
-  AC = "Before Meals",
-  PC = "After Meals",
+  OD = 'Once Daily',
+  BID = 'Twice Daily',
+  TID = 'Three Times Daily',
+  QID = 'Four Times Daily',
+  HS = 'At Bedtime',
+  AC = 'Before Meals',
+  PC = 'After Meals',
 }
 
 export class FoodDto {
@@ -117,6 +118,10 @@ export class CreatePrescriptionDto {
 
   @IsBoolean()
   is_final_prescription: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  followUp?: Date;
 }
 
 class TaperingDto {

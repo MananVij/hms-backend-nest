@@ -26,6 +26,11 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { MedicalReport } from 'src/medical-reports/entity/medical-reports.entity';
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import {
+  NotificationSubTypeEnum,
+  NotificationTypeEnum,
+} from 'src/notification/notification.enum';
 
 @Injectable()
 export class AppointmentService {
@@ -35,6 +40,7 @@ export class AppointmentService {
     private readonly userService: UserService,
     private readonly userClinicService: UserClinicService,
     private readonly errorLogService: ErrorLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(
@@ -96,7 +102,7 @@ export class AppointmentService {
 
       const clinicPatientExists = await queryRunner.manager.findOne(
         PatientClinic,
-        { where: { patient: {uid: patient}, clinic: {id: clinic_id} } },
+        { where: { patient: { uid: patient }, clinic: { id: clinic_id } } },
       );
       if (!clinicPatientExists) {
         const clinicPatient = queryRunner.manager.create(PatientClinic, {
@@ -122,6 +128,14 @@ export class AppointmentService {
           patient: patientFound,
         });
         await queryRunner.manager.save(doctorPatient);
+      }
+      if (createAppointmentDto?.followUp) {
+        await this.notificationService.createNotification(queryRunner, {
+          type: NotificationTypeEnum.WHATSAPP,
+          subType: NotificationSubTypeEnum.REMINDER,
+          appointmentId: 0,
+          isSent: false,
+        });
       }
       const savedAppointment = await queryRunner.manager.save(appointment);
       const formattedData = {
@@ -245,6 +259,7 @@ export class AppointmentService {
       isPaid: true,
       visitType: true,
       status: true,
+      followUp: true,
     };
     try {
       const [patient, reqUser, clinic, userRole] = await Promise.all([

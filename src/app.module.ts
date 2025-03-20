@@ -28,6 +28,8 @@ import { BackupService } from './backup/backup.service';
 import { IpLocationMiddleware } from './middleware/ip_location.middleware';
 import { MedicalReportModule } from './medical-reports/medical-report.module';
 import { ReportAccessModule } from './report-access/report-access.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { ReportAccessModule } from './report-access/report-access.module';
     OtpModule,
     MedicalReportModule,
     ReportAccessModule,
+    WhatsappModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
