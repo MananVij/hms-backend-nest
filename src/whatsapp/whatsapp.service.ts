@@ -1,7 +1,5 @@
 import {
   Injectable,
-  HttpException,
-  HttpStatus,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';

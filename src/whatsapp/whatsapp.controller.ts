@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-} from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappTemplate } from './whatsapp-template.enum';
 

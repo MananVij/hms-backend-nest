@@ -13,22 +13,15 @@ import {
   UserClinic,
   UserRole,
 } from 'src/user_clinic/entity/user_clinic.entity';
-import { Twilio } from 'twilio';
 import { QueryRunner } from 'typeorm';
 
 @Injectable()
 export class OtpService {
-  private client: Twilio;
-
   constructor(
     private readonly patientService: PatientService,
     private readonly httpService: HttpService,
     private readonly errorLogService: ErrorLogService,
-  ) {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    this.client = new Twilio(accountSid, authToken);
-  }
+  ) {}
 
   async sendOtp(phoneNumber: string): Promise<object> {
     if (!phoneNumber) {
