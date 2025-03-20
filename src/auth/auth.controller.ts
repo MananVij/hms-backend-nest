@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -21,6 +22,9 @@ export class AuthController {
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
   ) {
     try {
+      throw new ForbiddenException(
+        'Only admins can sign up new users. Contact admin at hello@caresphere.in',
+      );
       return await this.authService.signup(createUserDto, queryRunner);
     } catch (error) {
       throw error;
