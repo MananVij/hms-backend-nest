@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ArrayContains, IsNull, QueryRunner } from 'typeorm';
+import { ArrayContains, Between, IsNull, QueryRunner } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import {
   CreatePrescriptionDto,
@@ -26,6 +26,7 @@ import {
   NotificationSubTypeEnum,
   NotificationTypeEnum,
 } from 'src/notification/notification.enum';
+import { subMinutes } from 'date-fns';
 
 @Injectable()
 export class PrescriptionService {
@@ -211,6 +212,90 @@ export class PrescriptionService {
       return response;
     } catch (error) {
       return null;
+    }
+  }
+
+  async findRecentPrescriptions(
+    queryRunner: QueryRunner,
+    userId: string,
+    clincId: number,
+    role: string[],
+  ): Promise<any> {
+    try {
+      const time = new Date();
+      
+      // last 15 minutes prescriptions
+      const fifteenMinutesAgo = subMinutes(time, 15);
+      const selectCondition = {
+        patient: {
+          uid: true,
+          name: true,
+          phoneNumber: true,
+        },
+        doctor: {
+          name: true,
+        },
+        appointment: {
+          visitType: true,
+          time: true,
+        },
+      };
+      if (
+        role?.includes(UserRole.ADMIN) ||
+        role.includes(UserRole.RECEPTIONIST)
+      ) {
+        return await queryRunner.manager.find(Prescription, {
+          where: {
+            created_at: Between(fifteenMinutesAgo, time),
+            doctor: { clinics: { id: clincId } },
+          },
+          select: {
+            ...selectCondition,
+          },
+          relations: ['doctor', 'doctor.clinics', 'patient', 'appointment'],
+        });
+      } else if (role?.length === 1 && role?.includes(UserRole.DOCTOR)) {
+        return await queryRunner.manager.find(Appointment, {
+          where: {
+            doctor: { uid: userId },
+            clinic: { id: clincId },
+            prescription: { created_at: Between(fifteenMinutesAgo, time) },
+          },
+          select: {
+            patient: {
+              name: true,
+              uid: true,
+              publicIdentifier: true,
+              phoneNumber: true,
+            },
+            doctor: {
+              name: true,
+            },
+            prescription: {
+              created_at: true,
+            },
+            clinic: {
+              id: true,
+            },
+            id: true,
+          },
+          relations: ['prescription', 'doctor', 'clinic', 'patient'],
+          loadRelationIds: {
+            relations: ['clinic'],
+          },
+        });
+      }
+    } catch (error) {
+      await this.errorLogService.logError(
+        `Error in finding recent prescriptions: ${error?.message}`,
+        error?.stack ?? '',
+        null,
+        userId,
+        null,
+      );
+      throw new InternalServerErrorException(
+        'Somthing Went Wrong. Unable to find recent prescriptions at the moment.',
+      );
     }
   }
 }

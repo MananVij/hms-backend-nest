@@ -6,6 +6,7 @@ import {
   UseInterceptors,
   Req,
   Query,
+  Get,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -15,11 +16,15 @@ import { QueryRunner } from 'typeorm';
 import { TransactionInterceptor } from 'src/transactions/transaction.interceptor';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { Request } from 'src/interfaces/request.interface';
+import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 
 @Controller('prescriptions')
 @UseGuards(JwtAuthGuard)
 export class PrescriptionController {
-  constructor(private readonly prescriptionService: PrescriptionService) {}
+  constructor(
+    private readonly prescriptionService: PrescriptionService,
+    private readonly userClinicService: UserClinicService,
+  ) {}
 
   @Post('create')
   @UseInterceptors(TransactionInterceptor)
@@ -36,6 +41,31 @@ export class PrescriptionController {
         queryRunner,
         doctorId,
         clinicId,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Get('recent')
+  @UseInterceptors(TransactionInterceptor)
+  async findRecentPrescriptions(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Query('clinicId') clinicId: number,
+  ): Promise<any> {
+    try {
+      const userId = req.user?.uid;
+      const role = await this.userClinicService.findUserRolesInClinic(
+        queryRunner,
+        userId,
+        clinicId,
+      );
+      return await this.prescriptionService.findRecentPrescriptions(
+        queryRunner,
+        userId,
+        clinicId,
+        role,
       );
     } catch (error) {
       throw error;
