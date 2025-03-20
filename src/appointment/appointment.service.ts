@@ -22,7 +22,7 @@ import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { UserService } from 'src/user/user.service';
 import { UserRole } from 'src/user_clinic/entity/user_clinic.entity';
 import { UserClinicService } from 'src/user_clinic/user_clinic.service';
-import { endOfDay, startOfDay } from 'date-fns';
+import { addMinutes, endOfDay, startOfDay, subDays } from 'date-fns';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { MedicalReport } from 'src/medical-reports/entity/medical-reports.entity';
 import { PatientClinic } from 'src/patient_clinic/entity/patient_clinic.entity';
@@ -418,7 +418,12 @@ export class AppointmentService {
     upcoming: boolean,
     isToday: boolean = false,
   ) {
-    const today = new Date();
+    const today = addMinutes(new Date(), 5 * 60 + 30); // Adjust to IST
+
+    const startOfToday = startOfDay(today);
+    const endOfToday = endOfDay(today);
+
+    const startOfYesterday = startOfDay(subDays(today, 1));
     try {
       const userRoles = await this.userClinicService.findUserRolesInClinic(
         queryRunner,
@@ -431,8 +436,8 @@ export class AppointmentService {
         : { prescription: Not(IsNull()) };
 
       const timeCondition = isToday
-        ? { time: Between(startOfDay(today), endOfDay(today)) }
-        : {};
+        ? { time: Between(startOfToday, endOfToday) }
+        : { time: Between(startOfYesterday, endOfToday) };
 
       const selectCondition = {
         doctor: {

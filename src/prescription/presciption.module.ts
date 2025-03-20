@@ -7,6 +7,7 @@ import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { DjangoService } from 'src/django/django.service';
 import { WhatsappModule } from 'src/whatsapp/whatsapp.module';
 import { NotificationModule } from 'src/notification/notification.module';
+import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     ErrorLogModule,
     WhatsappModule,
     NotificationModule,
-  ],
+  , UserClinicModule],
   controllers: [PrescriptionController],
   providers: [PrescriptionService, DjangoService],
   exports: [PrescriptionService],
