@@ -254,7 +254,7 @@ export class PrescriptionService {
       ) {
         return await queryRunner.manager.find(Appointment, {
           where: {
-            created_at: Between(fifteenMinutesAgo, time),
+            prescription: { created_at: Between(fifteenMinutesAgo, time) },
             doctor: { clinics: { id: clincId } },
           },
           select: {
