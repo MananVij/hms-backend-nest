@@ -232,23 +232,27 @@ export class PrescriptionService {
       const fifteenMinutesAgo = subMinutes(time, 15);
       const selectCondition = {
         patient: {
-          uid: true,
           name: true,
+          uid: true,
+          publicIdentifier: true,
           phoneNumber: true,
         },
         doctor: {
           name: true,
         },
-        appointment: {
-          visitType: true,
-          time: true,
+        prescription: {
+          created_at: true,
         },
+        clinic: {
+          id: true,
+        },
+        id: true,
       };
       if (
         role?.includes(UserRole.ADMIN) ||
         role.includes(UserRole.RECEPTIONIST)
       ) {
-        return await queryRunner.manager.find(Prescription, {
+        return await queryRunner.manager.find(Appointment, {
           where: {
             created_at: Between(fifteenMinutesAgo, time),
             doctor: { clinics: { id: clincId } },
@@ -256,7 +260,10 @@ export class PrescriptionService {
           select: {
             ...selectCondition,
           },
-          relations: ['doctor', 'doctor.clinics', 'patient', 'appointment'],
+          relations: ['prescription', 'doctor', 'clinic', 'patient'],
+          loadRelationIds: {
+            relations: ['clinic'],
+          },
         });
       } else if (role?.length === 1 && role?.includes(UserRole.DOCTOR)) {
         return await queryRunner.manager.find(Appointment, {
@@ -266,22 +273,7 @@ export class PrescriptionService {
             prescription: { created_at: Between(fifteenMinutesAgo, time) },
           },
           select: {
-            patient: {
-              name: true,
-              uid: true,
-              publicIdentifier: true,
-              phoneNumber: true,
-            },
-            doctor: {
-              name: true,
-            },
-            prescription: {
-              created_at: true,
-            },
-            clinic: {
-              id: true,
-            },
-            id: true,
+            ...selectCondition,
           },
           relations: ['prescription', 'doctor', 'clinic', 'patient'],
           loadRelationIds: {
