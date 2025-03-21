@@ -104,29 +104,33 @@ export class PrescriptionService {
             isSent: false,
           });
         }
-        
+
         const date = new Date();
-        const whatsappNotificationId = await this.whatsappService.sendMessage(
-          patient.phoneNumber,
-          WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
-          [
-            patient.name,
-            `Dr. ${doctor.name}`,
-            clinic.name,
-            `${clinic.line1}, ${clinic.line2}`,
-            clinic.contactNumber,
-          ],
-          null,
-          prescription.pres_url,
-        );
-        await this.notificationService.createNotification(queryRunner, {
-          notificationId: whatsappNotificationId,
-          type: NotificationTypeEnum.WHATSAPP,
-          subType: NotificationSubTypeEnum.PRESCRIPTIION,
-          appointmentId,
-          isSent: true,
-          timeSent: date,
-        });
+        try {
+          const whatsappNotificationId = await this.whatsappService.sendMessage(
+            patient.phoneNumber,
+            WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
+            [
+              patient.name,
+              `Dr. ${doctor.name}`,
+              clinic.name,
+              `${clinic.line1}, ${clinic.line2}`,
+              clinic.contactNumber,
+            ],
+            null,
+            prescription.pres_url,
+          );
+          await this.notificationService.createNotification(queryRunner, {
+            notificationId: whatsappNotificationId,
+            type: NotificationTypeEnum.WHATSAPP,
+            subType: NotificationSubTypeEnum.PRESCRIPTIION,
+            appointmentId,
+            isSent: true,
+            timeSent: date,
+          });
+        } catch (whatsappError) {
+          // Error is logged in sendMessage & createNotification, so no need to log it again
+        }
         const savedPrescription = await queryRunner.manager.save(prescription);
         const formattedData = {
           ...savedPrescription,
@@ -223,7 +227,7 @@ export class PrescriptionService {
   ): Promise<any> {
     try {
       const time = new Date();
-      
+
       // last 15 minutes prescriptions
       const fifteenMinutesAgo = subMinutes(time, 15);
       const selectCondition = {
