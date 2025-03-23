@@ -53,7 +53,7 @@ export class Clinic {
   isTrialPeriodActive: boolean;
 
   @Column({ type: 'boolean', nullable: false, default: true })
-  isTriaUsed: boolean;
+  isTrialUsed: boolean;
 
   @Column({ type: 'date', nullable: false, default: () => 'CURRENT_DATE' }) // defualt as todays date
   subscriptionStartDate: Date;
