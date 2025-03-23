@@ -56,7 +56,7 @@ export class ClinicController {
   }
 
   @Get('')
-  async findClinic(@Query('id') clinicId: number): Promise<Clinic> {
+  async findClinic(@Query('clinicId') clinicId: number): Promise<Clinic> {
     try {
       return await this.clinicService.findOne(clinicId);
     } catch (error) {

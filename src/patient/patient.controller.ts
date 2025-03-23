@@ -68,49 +68,6 @@ export class PatientController {
     }
   }
 
-  @Post('/register-by-doctor')
-  @UseInterceptors(TransactionInterceptor)
-  async addNewPatientByDoctor(
-    @Body()
-    patientData: {
-      patient: CreateUserDto;
-      metaData: CreateMetaDataDto;
-      time: Date;
-      visitType: VisitType;
-      clinicId: number;
-    },
-    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
-    @Req() req: Request,
-  ): Promise<any> {
-    try {
-      const userId = req?.user?.uid;
-      const { patient, metaData, visitType, time, clinicId } = patientData;
-      const newPatient = await this.patientService.addNewPatientByDoctor(
-        patient,
-        metaData,
-        userId,
-        clinicId,
-        queryRunner,
-      );
-      const finalAppointmentData: CreateAppointmentDto = {
-        patient: newPatient.uid,
-        visitType,
-        time,
-        isPaid: true,
-        paymentMode: PaymnetMode.OFFLINE,
-        doctor: userId,
-        clinic_id: clinicId,
-      };
-      const newAppointment = await this.appointmentService.create(
-        finalAppointmentData,
-        queryRunner,
-      );
-      return newAppointment;
-    } catch (error) {
-      throw error;
-    }
-  }
-
   @Post('onboard')
   @UseInterceptors(TransactionInterceptor)
   async addOldPatient(

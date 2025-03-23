@@ -5,6 +5,7 @@ import {
   Req,
   UseInterceptors,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { OtpService } from './otp.service';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
@@ -33,7 +34,7 @@ export class OtpController {
     @QueryRunnerParam() queryRunner: QueryRunner,
     @Req() req: Request,
     @Body('phoneNumber') phoneNumber: string,
-    @Body('clinicId') clinicId: number,
+    @Query('clinicId') clinicId: number,
     @Body('otp') otp: string,
     @Body('verificationId') verificationId: string,
     @Body('role') role: string,

@@ -1,4 +1,9 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import {
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
@@ -30,6 +35,7 @@ import { MedicalReportModule } from './medical-reports/medical-report.module';
 import { ReportAccessModule } from './report-access/report-access.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { NotificationModule } from './notification/notification.module';
+import { SubscriptionMiddleware } from './middleware/subscription.middleware';
 
 @Module({
   imports: [
@@ -70,6 +76,12 @@ import { NotificationModule } from './notification/notification.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SubscriptionMiddleware)
+      .exclude({ path: '/login', method: RequestMethod.POST })
+      .exclude({ path: '/signup', method: RequestMethod.POST })
+      .exclude({ path: '/clinic/get', method: RequestMethod.GET })
+      .forRoutes('*');
     consumer.apply(IpLocationMiddleware).forRoutes('*');
   }
 }

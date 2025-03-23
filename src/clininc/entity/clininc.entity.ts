@@ -43,6 +43,24 @@ export class Clinic {
   @Column({ nullable: false, length: 10 })
   contactNumber: string;
 
+  @Column({ type: 'boolean', nullable: false, default: false })
+  isSubscriptionActive: boolean;
+
+  @Column({ type: 'boolean', nullable: false, default: false })
+  isWhatsappEnabled: boolean;
+
+  @Column({ type: 'boolean', nullable: false, default: false })
+  isTrialPeriodActive: boolean;
+
+  @Column({ type: 'boolean', nullable: false, default: true })
+  isTriaUsed: boolean;
+
+  @Column({ type: 'date', nullable: false, default: () => 'CURRENT_DATE' }) // defualt as todays date
+  subscriptionStartDate: Date;
+
+  @Column({ type: 'date', nullable: false, default: () => 'CURRENT_DATE' }) // defualt as todays date
+  subscriptionEndDate: Date;
+
   @OneToMany(() => UserClinic, (userClinic) => userClinic.clinic, {
     onDelete: 'CASCADE',
   })

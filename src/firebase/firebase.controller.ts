@@ -6,6 +6,7 @@ import {
   UseInterceptors,
   BadRequestException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { FirebaseService } from './firebase.service';
@@ -27,7 +28,7 @@ export class FirebaseController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body('doctor') doctor: string,
     @Body('patient') patient: string,
-    @Body('clinicId') clinic: number,
+    @Query('clinicId') clinic: number,
   ) {
     try {
       if (!Array.isArray(files) || files.length === 0) {

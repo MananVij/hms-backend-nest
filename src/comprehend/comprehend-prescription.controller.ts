@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ComprehendPrescriptionService } from './comprehend-prescription.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -32,7 +33,7 @@ export class ComprehendPrescriptionController {
     @UploadedFile() file: Express.Multer.File,
     @Body('patient') patient: string,
     @Body('appointmentId') appointmentId: string,
-    @Body('clinicId') clinicId: number,
+    @Query('clinicId') clinicId: number,
   ): Promise<any> {
     try {
       const doctor = req?.user?.uid;

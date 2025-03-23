@@ -97,4 +97,14 @@ export class ClinicService {
       );
     }
   }
+
+  async checkSubscriptionStatus(id: number): Promise<any> {
+    const clinic = await this.clinicRepository.findOne({ where: { id } });
+    const isActive = clinic.isSubscriptionActive || clinic.isTrialPeriodActive;
+    const expiryDate = clinic.subscriptionEndDate;
+    return {
+      isActive,
+      expiryDate,
+    };
+  }
 }

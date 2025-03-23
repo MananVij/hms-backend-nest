@@ -27,11 +27,16 @@ export class DashboardController {
   ): Promise<any> {
     try {
       const userId = req?.user?.uid;
-      return await this.dashboardService.getDashboard(
+      const subscriptionResponse = req['subscription'];
+      const dashboardResponse = await this.dashboardService.getDashboard(
         queryRunner,
         userId,
         clinicId,
       );
+      return {
+        ...dashboardResponse,
+        ...subscriptionResponse,
+      };
     } catch (error) {
       throw error;
     }
