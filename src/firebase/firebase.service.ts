@@ -289,21 +289,28 @@ export class FirebaseService {
       });
 
       const font = await newPdfDoc.embedFont(StandardFonts.Helvetica);
-      const textWidth = font.widthOfTextAtSize(footerText, 12);
-      const footerX = (pageWidth - textWidth) / 2;
+      const fontSize = 12;
+      const lineHeight = fontSize + 2;
 
-      newPage.drawText(footerText, {
-        x: footerX,
-        y: 10,
-        size: 12,
-        font,
-        color: rgb(0, 0, 0),
+      const footerLines = footerText.split(/\r?\n/);
+      const totalHeight = footerLines.length * lineHeight;
+
+      footerLines.forEach((line, index) => {
+        const textWidth = font.widthOfTextAtSize(line, fontSize);
+        const footerX = (pageWidth - textWidth) / 2;
+
+        newPage.drawText(line, {
+          x: footerX,
+          y: 10 + index * lineHeight,
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
       });
 
-      // ✅ Draw footer line
       newPage.drawLine({
-        start: { x: 0, y: 24 },
-        end: { x: pageWidth, y: 24 },
+        start: { x: 0, y: totalHeight + 10 },
+        end: { x: pageWidth, y: totalHeight + 10 },
         thickness: 1,
         color: rgb(0, 0, 0),
       });
