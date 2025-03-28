@@ -3,8 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { QueryRunner, Repository } from 'typeorm';
+import { QueryRunner } from 'typeorm';
 import { MetaData } from './entity/metadata.entity';
 import { CreateMetaDataDto } from './dto/create-meta-data.dto';
 import { UpdateMetaDataDto } from './dto/update-meta-data.dto';
@@ -68,18 +67,29 @@ export class MetaDataService {
     try {
       const metaData = await queryRunner.manager.findOne(MetaData, {
         where: { user: { uid: id } },
+        relations: ['user'],
+        select: {
+          user: {
+            name: true,
+          },
+        },
       });
       if (!metaData) {
-        throw new NotFoundException('Meta data of user not found');
+        throw new InternalServerErrorException('Meta data of user not found');
       }
-      if (!metaData) {
-        return null;
+      if (updateMetaDataDto.name) {
+        metaData.user.name = updateMetaDataDto.name;
+        await queryRunner.manager.update(
+          User,
+          { uid: id },
+          { name: updateMetaDataDto.name },
+        );
       }
       Object.assign(metaData, updateMetaDataDto);
 
       return await queryRunner.manager.save(metaData);
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof InternalServerErrorException) {
         throw error;
       }
       await this.errorLogService.logError(

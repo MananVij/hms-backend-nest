@@ -78,6 +78,10 @@ export class CreatePrescriptionDto {
   pres_url?: string;
 
   @IsOptional()
+  @IsString()
+  edited_pres_url?: string;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   test_suggested?: string[];
@@ -114,7 +118,8 @@ export class CreatePrescriptionDto {
   is_handwritten_rx: boolean;
 
   @IsBoolean()
-  is_edited: boolean;
+  @IsOptional()
+  is_edited?: boolean;
 
   @IsBoolean()
   is_final_prescription: boolean;

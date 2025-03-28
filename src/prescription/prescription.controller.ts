@@ -7,6 +7,7 @@ import {
   Req,
   Query,
   Get,
+  Patch,
 } from '@nestjs/common';
 import { PrescriptionService } from './prescription.service';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
@@ -66,6 +67,29 @@ export class PrescriptionController {
         userId,
         clinicId,
         role,
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Patch('')
+  @UseInterceptors(TransactionInterceptor)
+  async editRecentPrescription(
+    @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Req() req: Request,
+    @Query('clinicId') clinicId: number,
+    @Query('prescriptionId') prescriptionId: number,
+    @Body() updatePrescriptionDto: CreatePrescriptionDto,
+  ): Promise<any> {
+    try {
+      const userId = req.user?.uid;
+      return await this.prescriptionService.editPrescription(
+        queryRunner,
+        prescriptionId,
+        updatePrescriptionDto,
+        userId,
+        clinicId,
       );
     } catch (error) {
       throw error;
