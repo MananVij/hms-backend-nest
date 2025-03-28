@@ -94,6 +94,9 @@ export class Prescription {
   is_edited: boolean;
 
   @Column({ type: 'boolean', default: false })
+  is_pres_edited: boolean;
+
+  @Column({ type: 'boolean', default: false })
   is_final_prescription: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })

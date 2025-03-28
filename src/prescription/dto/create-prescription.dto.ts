@@ -119,7 +119,7 @@ export class CreatePrescriptionDto {
 
   @IsBoolean()
   @IsOptional()
-  is_edited?: boolean;
+  is_pres_edited?: boolean;
 
   @IsBoolean()
   is_final_prescription: boolean;

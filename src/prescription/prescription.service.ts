@@ -91,7 +91,7 @@ export class PrescriptionService {
         const prescription = queryRunner.manager.create(Prescription, {
           ...prescriptionData,
           appointment,
-          is_edited: false,
+          is_pres_edited: false,
           doctor,
           patient,
         });
@@ -355,7 +355,7 @@ export class PrescriptionService {
       const validatedPrescriptionData =
         PrescriptionValidator.validatePrescriptionData(updatePrescriptionDto);
       Object.assign(prescription, validatedPrescriptionData);
-      prescription.is_edited = true;
+      prescription.is_pres_edited = true;
       prescription.edited_at = new Date();
 
       await this.sendPrescriptionViaWhatsapp(
