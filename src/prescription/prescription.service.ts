@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ArrayContains, Between, IsNull, QueryRunner } from 'typeorm';
+import { ArrayContains, Between, IsNull, Not, QueryRunner } from 'typeorm';
 import { Prescription } from './entity/prescription.entity';
 import {
   CreatePrescriptionDto,
@@ -27,6 +27,7 @@ import {
   NotificationTypeEnum,
 } from 'src/notification/notification.enum';
 import { subMinutes } from 'date-fns';
+import { PrescriptionValidator } from 'src/validation/validation-util';
 
 @Injectable()
 export class PrescriptionService {
@@ -90,6 +91,7 @@ export class PrescriptionService {
         const prescription = queryRunner.manager.create(Prescription, {
           ...prescriptionData,
           appointment,
+          is_edited: false,
           doctor,
           patient,
         });
@@ -105,32 +107,19 @@ export class PrescriptionService {
           });
         }
 
-        const date = new Date();
-        try {
-          const whatsappNotificationId = await this.whatsappService.sendMessage(
-            patient.phoneNumber,
-            WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
-            [
-              patient.name,
-              `Dr. ${doctor.name}`,
-              clinic.name,
-              `${clinic.line1}, ${clinic.line2}`,
-              clinic.contactNumber,
-            ],
-            null,
-            prescription.pres_url,
-          );
-          await this.notificationService.createNotification(queryRunner, {
-            notificationId: whatsappNotificationId,
-            type: NotificationTypeEnum.WHATSAPP,
-            subType: NotificationSubTypeEnum.PRESCRIPTIION,
-            appointmentId,
-            isSent: true,
-            timeSent: date,
-          });
-        } catch (whatsappError) {
-          // Error is logged in sendMessage & createNotification, so no need to log it again
-        }
+        await this.sendPrescriptionViaWhatsapp(
+          queryRunner,
+          patient,
+          doctor,
+          clinic,
+          prescription,
+          appointmentId,
+        ).catch((error) => {});
+
+        const validatedPrescriptionData =
+          PrescriptionValidator.validatePrescriptionData(prescription);
+        Object.assign(prescription, validatedPrescriptionData);
+
         const savedPrescription = await queryRunner.manager.save(prescription);
         const formattedData = {
           ...savedPrescription,
@@ -293,5 +282,146 @@ export class PrescriptionService {
         'Somthing Went Wrong. Unable to find recent prescriptions at the moment.',
       );
     }
+  }
+
+  async editPrescription(
+    queryRunner: QueryRunner,
+    prescriptionId: number,
+    updatePrescriptionDto: CreatePrescriptionDto,
+    doctorId: string,
+    clinicId: number,
+  ): Promise<any> {
+    try {
+      const { patientId, appointmentId } = updatePrescriptionDto;
+      const [doctor, patient, clinic, appointment, doctorClinic] =
+        await Promise.all([
+          queryRunner.manager.findOne(User, {
+            where: { uid: doctorId },
+          }),
+          queryRunner.manager.findOne(User, {
+            where: { uid: patientId, isPatient: true },
+          }),
+          queryRunner.manager.findOne(Clinic, {
+            where: { id: clinicId },
+          }),
+          queryRunner.manager.findOne(Appointment, {
+            where: { id: appointmentId, prescription: Not(IsNull()) },
+            relations: ['doctor'],
+          }),
+          queryRunner.manager.findOne(UserClinic, {
+            where: {
+              user: { uid: doctorId },
+              clinic: { id: clinicId },
+              role: ArrayContains([UserRole.DOCTOR]),
+            },
+          }),
+        ]);
+
+      const prescription = await queryRunner.manager.findOne(Prescription, {
+        where: { id: prescriptionId },
+        relations: ['doctor', 'appointment', 'appointment.clinic'],
+      });
+
+      if (!doctor || !patient || !clinic || !appointment || !prescription) {
+        throw new NotFoundException(
+          'Credentials not found. Something Went Wrong.',
+        );
+      }
+
+      if (!doctorClinic) {
+        throw new ForbiddenException('Doctor clinic relationship not found.');
+      }
+
+      if (appointment.doctor.uid !== doctorId) {
+        throw new ForbiddenException(
+          'You are not authorised to add prescription for this appointment',
+        );
+      }
+
+      if (prescription.appointment.clinic.id !== Number(clinicId)) {
+        throw new ForbiddenException('Clinic mismatch. Unauthorized action.');
+      }
+
+      const createdAt = new Date(prescription.created_at);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - createdAt.getTime()) / 60000;
+
+      if (diffMinutes > 15) {
+        throw new ForbiddenException(
+          'Prescription can only be edited within 15 minutes of creation.',
+        );
+      }
+
+      const validatedPrescriptionData =
+        PrescriptionValidator.validatePrescriptionData(updatePrescriptionDto);
+      Object.assign(prescription, validatedPrescriptionData);
+      prescription.is_edited = true;
+      prescription.edited_at = new Date();
+
+      await this.sendPrescriptionViaWhatsapp(
+        queryRunner,
+        patient,
+        doctor,
+        clinic,
+        prescription,
+        appointmentId,
+      ).catch((error) => {});
+      const updatedPrescription = await queryRunner.manager.save(prescription);
+      return updatedPrescription;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      await this.errorLogService.logError(
+        `Error in updating prescription: ${error?.message}`,
+        error?.stack,
+        null,
+        doctorId,
+        updatePrescriptionDto?.patientId,
+      );
+      throw new InternalServerErrorException('Unable to edit prescription.');
+    }
+  }
+
+  private async sendPrescriptionViaWhatsapp(
+    queryRunner: QueryRunner,
+    patient: User,
+    doctor: User,
+    clinic: Clinic,
+    prescription: Prescription,
+    appointmentId: number,
+  ) {
+    const date = new Date();
+    try {
+      if (!prescription.pres_url) {
+        throw new Error('Prescription URL is missing');
+      }
+
+      const whatsappNotificationId = await this.whatsappService.sendMessage(
+        patient.phoneNumber,
+        WhatsappTemplate.APPOINTMENT_PRESCRIPTION_TEMPLATE,
+        [
+          patient.name,
+          `Dr. ${doctor.name}`,
+          clinic.name,
+          `${clinic.line1}, ${clinic.line2}`,
+          clinic.contactNumber,
+        ],
+        null,
+        prescription.pres_url,
+      );
+
+      await this.notificationService.createNotification(queryRunner, {
+        notificationId: whatsappNotificationId,
+        type: NotificationTypeEnum.WHATSAPP,
+        subType: NotificationSubTypeEnum.PRESCRIPTIION,
+        appointmentId,
+        isSent: true,
+        timeSent: date,
+      });
+    } catch (error) {}
   }
 }

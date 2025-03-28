@@ -1,7 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsOptional, IsDate, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateMetaDataDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
   @IsOptional()
   @IsString()
   height?: string;

@@ -31,6 +31,9 @@ export class Prescription {
   @Column({ nullable: true })
   pres_url?: string;
 
+  @CreateDateColumn({ nullable: true })
+  edited_pres_url: string;
+
   @Column('jsonb', { nullable: true })
   test_suggested?: string[];
 
@@ -59,6 +62,7 @@ export class Prescription {
       days: number;
       comments: string
     }[] | null,
+
     frequency?: {
       od: boolean; // Once daily
       bid: boolean; // Twice daily
@@ -68,7 +72,7 @@ export class Prescription {
       ac: boolean; // Before meals
       pc: boolean; // After meals
     };
-    is_chip_selected: boolean;  
+    is_chip_selected: boolean;
     is_name_manually_edited: boolean;
   }[];
 
@@ -94,4 +98,7 @@ export class Prescription {
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date; // Timestamp for when the object is created
+
+  @CreateDateColumn({ type: 'timestamptz', nullable: true })
+  edited_at: Date | null;
 }
