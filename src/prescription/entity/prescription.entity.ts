@@ -51,6 +51,8 @@ export class Prescription {
     medicine_name: string;
     days: number;
     is_sos: boolean;
+    as_directed: boolean;
+    directed_comments?: string;
     food?: {
       before_breakfast: boolean;
       after_breakfast: boolean;
@@ -71,6 +73,17 @@ export class Prescription {
       hs: boolean; // At bedtime
       ac: boolean; // Before meals
       pc: boolean; // After meals
+      qam: boolean; // Every morning
+      qpm: boolean; // Every evening
+      bs: boolean; // Before sleep
+      q6h: boolean; // Every 6 hours
+      q8h: boolean; // Every 8 hours
+      q12h: boolean; // Every 12 hours
+      qod: boolean; // Every other day
+      q1w: boolean; // Once a week
+      q2w: boolean; // Twice a week
+      q3w: boolean; // Thrice a week
+      q1m: boolean; // Once a month
     };
     is_chip_selected: boolean;
     is_name_manually_edited: boolean;

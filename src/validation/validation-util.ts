@@ -31,6 +31,17 @@ export class PrescriptionValidator {
         hs: false,
         ac: false,
         pc: false,
+        qam: false, // Every morning
+        qpm: false, // Every evening
+        bs: false, // Before sleep
+        q6h: false, // Every 6 hours
+        q8h: false, // Every 8 hours
+        q12h: false, // Every 12 hours
+        qod: false, // Every other day
+        q1w: false, // Once a week
+        q2w: false, // Twice a week
+        q3w: false, // Thrice a week
+        q1m: false, // Once a month
       },
       tapering: null,
     };
