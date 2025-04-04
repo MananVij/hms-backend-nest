@@ -56,6 +56,39 @@ export class FrequencyDto {
 
   @IsBoolean()
   pc: boolean;
+
+  @IsBoolean()
+  qam: boolean; // Every Morning
+
+  @IsBoolean()
+  qpm: boolean; // Every Evening
+
+  @IsBoolean()
+  bs: boolean; // Before Sleep
+
+  @IsBoolean()
+  q6h: boolean; // Every 6 Hours
+
+  @IsBoolean()
+  q8h: boolean; // Every 8 Hours
+
+  @IsBoolean()
+  q12h: boolean; // Every 12 Hours
+
+  @IsBoolean()
+  qod: boolean; // Every Other Day
+
+  @IsBoolean()
+  q1w: boolean; // Once a Week
+
+  @IsBoolean()
+  q2w: boolean; // Twice a Week
+
+  @IsBoolean()
+  q3w: boolean; // Thrice a Week
+
+  @IsBoolean()
+  q1m: boolean; // Once a Month
 }
 
 export class CreatePrescriptionDto {
@@ -161,6 +194,13 @@ export class MedicationDto {
 
   @IsBoolean()
   is_sos: boolean;
+
+  @IsBoolean()
+  as_directed: boolean;
+
+  @IsOptional()
+  @IsString()
+  directed_comments?: string;
 
   @IsOptional()
   @ValidateNested()
