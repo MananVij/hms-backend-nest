@@ -7,6 +7,9 @@ import {
   Body,
   UseGuards,
   Req,
+  PayloadTooLargeException,
+  BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ComprehendPrescriptionService } from './comprehend-prescription.service';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -36,6 +39,20 @@ export class ComprehendPrescriptionController {
   ): Promise<any> {
     try {
       const doctor = req?.user?.uid;
+      if (!file) {
+        throw new BadRequestException('File is missing.');
+      }
+
+      const fileSizeMB = file.size / (1024 * 1024);
+      Logger.log(`Uploaded file size: ${fileSizeMB.toFixed(2)} MB`);
+
+      const MAX_FILE_SIZE_MB = 10;
+      if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        throw new PayloadTooLargeException(
+          `File size exceeds ${MAX_FILE_SIZE_MB}MB limit.`,
+        );
+      }
+
       const result =
         await this.googleGenerativeAiService.comprehendPrescription(
           file,
@@ -47,6 +64,9 @@ export class ComprehendPrescriptionController {
         );
       return result;
     } catch (error) {
+      if(error instanceof PayloadTooLargeException) {
+        throw error
+      }
       throw new InternalServerErrorException(
         'There was an issue processing the prescription. Please try submitting the prescription voice again. If the issue persists, contact support.',
       );
