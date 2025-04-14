@@ -44,12 +44,11 @@ export class ComprehendPrescriptionController {
       }
 
       const fileSizeMB = file.size / (1024 * 1024);
-      Logger.log(`Uploaded file size: ${fileSizeMB.toFixed(2)} MB`);
-
       const MAX_FILE_SIZE_MB = 10;
       if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        Logger.error(`Uploaded file size is: ${fileSizeMB.toFixed(2)} MB, which exceeds the maximum capacity.`);
         throw new PayloadTooLargeException(
-          `File size exceeds ${MAX_FILE_SIZE_MB}MB limit.`,
+          `File size exceeds maximum limit of 10MB. Please reduce the file size by limiting number of medicines, else contact support.`,
         );
       }
 
