@@ -70,6 +70,6 @@ import { NotificationModule } from './notification/notification.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(IpLocationMiddleware).forRoutes('*');
+    // consumer.apply(IpLocationMiddleware).forRoutes('*');
   }
 }
