@@ -30,6 +30,8 @@ import { MedicalReportModule } from './medical-reports/medical-report.module';
 import { ReportAccessModule } from './report-access/report-access.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { NotificationModule } from './notification/notification.module';
+import { ReportModule } from './report/report.module';
+import { ReportTemplateModule } from './report_template/report-template.module';
 
 @Module({
   imports: [
@@ -57,6 +59,8 @@ import { NotificationModule } from './notification/notification.module';
     ReportAccessModule,
     WhatsappModule,
     NotificationModule,
+    ReportModule,
+    ReportTemplateModule
   ],
   controllers: [AppController],
   providers: [

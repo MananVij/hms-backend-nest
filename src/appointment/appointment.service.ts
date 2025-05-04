@@ -31,6 +31,7 @@ import {
   NotificationSubTypeEnum,
   NotificationTypeEnum,
 } from 'src/notification/notification.enum';
+import { Report } from 'src/report/report.entity';
 
 @Injectable()
 export class AppointmentService {
@@ -359,10 +360,17 @@ export class AppointmentService {
           },
         });
         clinicAppointments = this.processAppointments(clinicAppointments);
-        const medicalReports = await queryRunner.manager.find(MedicalReport, {
-          where: { patient, doctor: { user: { uid: userId } } },
-          order: { createdAt: 'DESC' },
-        });
+        const [report1, report2] = await Promise.all([
+          queryRunner.manager.find(MedicalReport, {
+            where: { patient, doctor: { user: { uid: userId } } },
+            order: { createdAt: 'DESC' },
+          }),
+          queryRunner.manager.find(Report, {
+            where: { patient, doctor: {user: {uid: userId}}},
+            order: { createdAt: 'DESC' },
+          }),
+        ]);
+        const medicalReports = [...report1, ...report2];
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },
