@@ -10,8 +10,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-@Entity('report')
 
+@Entity('report')
 export class Report {
   @PrimaryGeneratedColumn('uuid')
   id: string;

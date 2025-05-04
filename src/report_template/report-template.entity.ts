@@ -28,5 +28,5 @@ export class ReportTemplate {
   variables: VariableDto[];
 
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at: Date;
+  createdAt: Date;
 }
