@@ -6,23 +6,20 @@ import {
   Param,
   UseGuards,
   ForbiddenException,
-  Req,
   NotFoundException,
   InternalServerErrorException,
+  Query,
 } from '@nestjs/common';
 import { ReportTemplateService } from './report-template.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { QueryRunner } from 'typeorm';
 import { QueryRunnerParam } from 'src/transactions/query_runner_param';
 import { CreateReportTemplateDto } from './create-report-template.dto';
-import { Request } from 'src/interfaces/request.interface';
 
 @Controller('report-templates')
 @UseGuards(JwtAuthGuard)
 export class ReportTemplateController {
-  constructor(
-    private readonly reportTemplateService: ReportTemplateService,
-  ) {}
+  constructor(private readonly reportTemplateService: ReportTemplateService) {}
 
   @Post()
   async createTemplate(
@@ -38,15 +35,12 @@ export class ReportTemplateController {
   @Get()
   async getTemplates(
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
-    @Req() req: Request,
-    @Param('clinicId') clinicId: number
+    @Query('doctorId') doctorId: string,
   ) {
     try {
-      const userId = req.user.uid;
-      return await this.reportTemplateService.getTemplatesByUserRole(
-        userId, 
-        clinicId, 
-        queryRunner
+      return await this.reportTemplateService.getTemplatesByDoctor(
+        doctorId,
+        queryRunner,
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -60,7 +54,14 @@ export class ReportTemplateController {
   async getTemplate(
     @Param('id') id: string,
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
+    @Query('doctorId') doctorId: string,
+    @Query('clinicId') clinicId: number,
   ) {
-    return this.reportTemplateService.findOne(id, queryRunner);
+    return this.reportTemplateService.findOneWithPadding(
+      id,
+      doctorId,
+      clinicId,
+      queryRunner,
+    );
   }
 }

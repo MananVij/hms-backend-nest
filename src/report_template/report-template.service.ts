@@ -46,70 +46,31 @@ export class ReportTemplateService {
     }
   }
 
-  async findOne(id: string, queryRunner: QueryRunner): Promise<ReportTemplate> {
-    const template = await queryRunner.manager.findOne(ReportTemplate, {
-      where: { id },
+  async findOneWithPadding(templateId: string, doctorId: string, clinicId: number, queryRunner: QueryRunner) {
+    const template = await queryRunner.manager.findOne(ReportTemplate, { where: { id: templateId } });
+    const userClinic = await queryRunner.manager.findOne(UserClinic, {
+      where: { user: { uid: doctorId }, clinic: { id: clinicId } }
     });
-    if (!template) {
-      throw new NotFoundException('Template not found');
-    }
-    return template;
+    return {
+      ...template,
+      reportPadding: userClinic?.reportPadding || null,
+    };
   }
 
-  async getTemplatesByUserRole(
+  async getTemplatesByDoctor(
     userId: string,
-    clinicId: number,
     queryRunner: QueryRunner,
   ): Promise<ReportTemplate[]> {
     try {
-      const userClinic = await queryRunner.manager.findOne(UserClinic, {
-        where: { user: { uid: userId }, clinic: { id: clinicId } },
-        relations: ['user', 'clinic'],
+
+      const doctor = await queryRunner.manager.findOne(Doctor, {
+        where: { user: { uid: userId } },
       });
 
-      if (!userClinic) {
-        throw new NotFoundException('User not associated with this clinic');
-      }
-
-      // Check if user is a doctor or receptionist
-      const isDoctor = userClinic.role.includes(UserRole.DOCTOR);
-      const isReceptionist = userClinic.role.includes(UserRole.RECEPTIONIST);
-
-      // If user is a doctor, filter templates by their specialization
-      if (isDoctor) {
-        const doctor = await queryRunner.manager.findOne(Doctor, {
-          where: { user: { uid: userId } },
+      if (doctor && doctor.specialization.toLowerCase() === 'cardiologist') {
+        return await queryRunner.manager.find(ReportTemplate, {
+          where: { type: ReportType.HEART },
         });
-
-        if (doctor && doctor.specialization.toLowerCase() === 'cardiologist') {
-          return await queryRunner.manager.find(ReportTemplate, {
-            where: { type: ReportType.HEART },
-          });
-        }
-      }
-
-      // If user is a receptionist, check if clinic has cardiologists
-      if (isReceptionist) {
-        const doctorClinicRelations = await queryRunner.manager.find(
-          UserClinic,
-          {
-            where: {
-              clinic: { id: clinicId },
-              role: ArrayContains([UserRole.DOCTOR]),
-            },
-            relations: ['user', 'user.doctor'],
-          },
-        );
-
-        const doctorSpecializations = doctorClinicRelations
-          .map((rel) => rel.user?.doctor?.specialization?.toLowerCase())
-          .filter((spec) => spec); // Remove nulls/undefined
-
-        if (doctorSpecializations.includes('cardiologist')) {
-          return await queryRunner.manager.find(ReportTemplate, {
-            where: { type: ReportType.HEART },
-          });
-        }
       }
 
       return [];
