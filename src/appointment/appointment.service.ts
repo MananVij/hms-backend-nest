@@ -370,7 +370,13 @@ export class AppointmentService {
             order: { createdAt: 'DESC' },
           }),
         ]);
-        const medicalReports = [...report1, ...report2];
+        const mappedReport2 = report2.map(r => ({
+          createdAt: r.createdAt,
+          fileUrl: r.pdfUrl,
+          recordType: r.template.type,
+          comments: r.template.subtype,
+        }));
+        const medicalReports = [...report1, ...mappedReport2];
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },

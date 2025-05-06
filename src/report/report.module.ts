@@ -13,6 +13,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { ErrorLog } from 'src/errorlog/error-log.entity';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { ErrorLog } from 'src/errorlog/error-log.entity';
       Clinic,
       PatientClinic,
       User,
-      ErrorLog
+      ErrorLog,
+      UserClinic
     ]),
     AuthModule,
     ErrorLogModule

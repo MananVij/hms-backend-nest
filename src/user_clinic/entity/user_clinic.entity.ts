@@ -16,6 +16,11 @@ export enum UserRole {
   RECEPTIONIST = 'receptionist',
 }
 
+export enum FooterType {
+  IMAGE = 'image',
+  TEXT = 'text',
+}
+
 @Entity('user_clinic')
 export class UserClinic {
   @PrimaryGeneratedColumn()
@@ -60,4 +65,25 @@ export class UserClinic {
 
   @Column({ type: 'text', nullable: true })
   headerImage: Buffer | '';
+
+  @Column({ type: 'text', nullable: true })
+  reportHeaderImage: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: FooterType,
+    nullable: true,
+  })
+  reportFooterType: FooterType | null;
+
+  @Column({ type: 'text', nullable: true })
+  reportFooterContent: string | null;
+
+  @Column({ type: 'json', nullable: true })
+  reportPadding: {
+    paddingTop?: number;
+    paddingRight?: number;
+    paddingBottom?: number;
+    paddingLeft?: number;
+  };
 }

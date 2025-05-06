@@ -15,6 +15,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { Report } from './report.entity';
 import { renderHandlebarsTemplate } from '../utils/handlebars-util';
+import { FooterType, UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 
 function getAgeFromDOB(dob: Date | string): string {
   const birthDate = new Date(dob);
@@ -44,6 +45,7 @@ export class ReportService {
     @InjectRepository(Doctor) private doctorRepo: Repository<Doctor>,
     @InjectRepository(Clinic) private clinicRepo: Repository<Clinic>,
     @InjectRepository(User) private userRepo: Repository<User>,
+    @InjectRepository(UserClinic) private userClinicRepo: Repository<UserClinic>,
     private readonly firebaseService: FirebaseService,
     private readonly errorLogService: ErrorLogService,
   ) {}
@@ -53,15 +55,31 @@ export class ReportService {
       // 1. Fetch all required entities
       const { template, doctor, clinic, patient } = await this.fetchEntities(dto);
 
+      // Fetch UserClinic for header/footer images
+      const userClinic = await this.userClinicRepo.findOne({
+        where: { user: { uid: dto.doctorId }, clinic: { id: dto.clinicId } },
+      });
+      const headerImage = userClinic?.reportHeaderImage;
+      const footerType = userClinic?.reportFooterType;
+      const footerContent = userClinic?.reportFooterContent;
+
       // 2. Prepare values for the template
       const filteredValues = this.filterIgnoredVariables(template.variables, dto.values);
       const templateValues = this.prepareTemplateValues(patient, filteredValues);
 
       // 3. Render HTML
-      const html = renderHandlebarsTemplate(template.content, templateValues);
+      const padding = userClinic?.reportPadding;
+      const paddingStyle = `
+        padding-top: ${padding?.paddingTop || 0}px;
+        padding-right: ${padding?.paddingRight || 0}px;
+        padding-bottom: ${padding?.paddingBottom || 0}px;
+        padding-left: ${padding?.paddingLeft || 0}px;
+      `;
+      const renderedContent = renderHandlebarsTemplate(template.content, templateValues);
+      const html = `<div style="${paddingStyle}">${renderedContent}</div>`;
 
-      // 4. Generate PDF
-      const pdfBuffer = await this.generatePdf(html);
+      // 4. Generate PDF (pass header/footer images)
+      const pdfBuffer = await this.generatePdf(html, headerImage, footerType, footerContent);
 
       // 5. Upload PDF
       const pdfUrl = await this.uploadPdfToFirebase(pdfBuffer, template, dto);
@@ -132,17 +150,30 @@ export class ReportService {
     };
   }
 
-  private async generatePdf(html: string): Promise<Buffer> {
+  private async generatePdf(html: string, headerImage?: string | null, footerType?: FooterType | null, footerContent?: string | null): Promise<Buffer> {
     try {
       const browser = await puppeteer.launch({ headless: true });
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
+      const headerHtml = headerImage
+        ? `<div style="margin:0;padding:0;width:100%;">
+            <img src="${headerImage}" alt="Header Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
+          </div>`
+        : '';
+      let footerHtml = '';
+      if (footerType === FooterType.IMAGE && footerContent) {
+        footerHtml = `<div style="margin:0;padding:0;width:100%;">
+            <img src="${footerContent}" alt="Footer Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
+          </div>`;
+      } else if (footerType === FooterType.TEXT && footerContent) {
+        footerHtml = `<div style="width:100%;border-top:1px solid #888;padding-top:6px;text-align:center;font-size:12px;margin:0;margin-bottom:0;padding-bottom:0;">${footerContent}</div>`;
+      }
       const pdfUint8Array = await page.pdf({
         format: 'A4',
         printBackground: true,
         displayHeaderFooter: true,
-        headerTemplate: `<div style='width:100%;text-align:center;'><img alt='Header Image' style='height:40px;'/></div>`,
-        footerTemplate: `<div style='width:100%;text-align:center;'><img alt='Footer Image' style='height:40px;'/></div>`,
+        headerTemplate: headerHtml,
+        footerTemplate: footerHtml,
         margin: { top: '60px', bottom: '60px' },
       });
       await browser.close();
@@ -165,7 +196,7 @@ export class ReportService {
     dto: CreateReportDto
   ): Promise<string> {
     try {
-      const fileName = `reports/${dto.clinicId}/${dto.doctorId}/${dto.patientId}/${Date.now()}.pdf`;
+      const fileName = `reports/${dto.patientId}/${template.subtype}/$${Date.now()}.pdf`;
       const file: Express.Multer.File = {
         buffer: pdfBuffer,
         originalname: `${template.title || 'report'}-${Date.now()}.pdf`,
@@ -244,5 +275,16 @@ export class ReportService {
       if (!v.ignore) filtered[v.key] = values[v.key] ?? null;
     });
     return filtered;
+  }
+
+  async findOneWithPadding(templateId: string, doctorId: string, clinicId: number, queryRunner: QueryRunner) {
+    const template = await queryRunner.manager.findOne(ReportTemplate, { where: { id: templateId } });
+    const userClinic = await queryRunner.manager.findOne(UserClinic, {
+      where: { user: { uid: doctorId }, clinic: { id: clinicId } }
+    });
+    return {
+      ...template,
+      reportPadding: userClinic?.reportPadding || null,
+    };
   }
 }
