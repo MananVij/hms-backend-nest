@@ -267,6 +267,7 @@ export class AppointmentService {
         this.userService.findUserByUserId(patientId),
         queryRunner.manager.findOne(User, {
           where: { uid: userId },
+          relations: ['metaData'],
         }),
         queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
         this.userClinicService.findUserRolesInClinic(
@@ -366,11 +367,11 @@ export class AppointmentService {
             order: { createdAt: 'DESC' },
           }),
           queryRunner.manager.find(Report, {
-            where: { patient, doctor: {user: {uid: userId}}},
+            where: { patient, doctor: { user: { uid: userId } } },
             order: { createdAt: 'DESC' },
           }),
         ]);
-        const mappedReport2 = report2.map(r => ({
+        const mappedReport2 = report2.map((r) => ({
           createdAt: r.createdAt,
           fileUrl: r.pdfUrl,
           recordType: r.template.type,
@@ -462,6 +463,10 @@ export class AppointmentService {
           uid: true,
           name: true,
           phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true,
+          },
           publicIdentifier: true,
           address: {
             line1: true,
@@ -487,7 +492,13 @@ export class AppointmentService {
             ...prescriptionCondition,
             ...timeCondition,
           },
-          relations: ['patient', 'doctor', 'vitals', 'clinic'],
+          relations: [
+            'patient',
+            'patient.metaData',
+            'doctor',
+            'vitals',
+            'clinic',
+          ],
           order: {
             time: 'DESC',
           },
@@ -503,7 +514,13 @@ export class AppointmentService {
             ...prescriptionCondition,
             ...timeCondition,
           },
-          relations: ['patient', 'doctor', 'clinic', 'vitals'],
+          relations: [
+            'patient',
+            'patient.metaData',
+            'doctor',
+            'clinic',
+            'vitals',
+          ],
           select: {
             ...selectCondition,
           },
