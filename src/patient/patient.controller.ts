@@ -183,9 +183,26 @@ export class PatientController {
     @QueryRunnerParam('queryRunner') queryRunner: QueryRunner,
     @Req() req: Request,
     @Query('clinicId') clinicId: number,
-  ): Promise<User[]> {
+    @Query('ageMin') ageMin?: number,
+    @Query('ageMax') ageMax?: number,
+    @Query('sex') sex?: string,
+    @Query('appointmentStart') appointmentStart?: string,
+    @Query('appointmentEnd') appointmentEnd?: string,
+    @Query('search') search?: string,
+    @Query('page') pageParam: string = '1',
+    @Query('pageSize') pageSizeParam: string = '50',
+  ): Promise<{ data: any[]; totalCount: number }> {
     try {
       const userId = req?.user?.uid;
+
+      // Validate clinicId
+      if (!clinicId || isNaN(Number(clinicId))) {
+        throw new Error('Valid clinic ID is required');
+      }
+
+      // Parse pagination parameters to numbers
+      const page = parseInt(pageParam, 10) || 1;
+      const pageSize = parseInt(pageSizeParam, 10) || 50;
       const userRoles = await this.userClinicService.findUserRolesInClinic(
         queryRunner,
         userId,
@@ -197,11 +214,27 @@ export class PatientController {
       ) {
         return await this.patientClinicService.findAllPatientsByClinicIdOfAdmin(
           clinicId,
+          ageMin,
+          ageMax,
+          sex,
+          appointmentStart,
+          appointmentEnd,
+          page,
+          pageSize,
+          search,
         );
       } else {
         return await this.doctorPatientService.findAllPatientsOfDoctorByClinicId(
           userId,
           clinicId,
+          ageMin,
+          ageMax,
+          sex,
+          appointmentStart,
+          appointmentEnd,
+          page,
+          pageSize,
+          search,
         );
       }
     } catch (error) {
