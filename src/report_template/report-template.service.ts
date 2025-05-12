@@ -38,23 +38,32 @@ export class ReportTemplateService {
     }
   }
 
-  async findAll(queryRunner: QueryRunner): Promise<ReportTemplate[]> {
-    try {
-      return await queryRunner.manager.find(ReportTemplate);
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to retrieve templates.');
-    }
-  }
-
   async findOneWithPadding(templateId: string, doctorId: string, clinicId: number, queryRunner: QueryRunner) {
-    const template = await queryRunner.manager.findOne(ReportTemplate, { where: { id: templateId } });
+    try {
+      const template = await queryRunner.manager.findOne(ReportTemplate, { where: { id: templateId } });
+      if (!template) {
+        throw new NotFoundException('Template not found.');
+    }
     const userClinic = await queryRunner.manager.findOne(UserClinic, {
-      where: { user: { uid: doctorId }, clinic: { id: clinicId } }
+      where: { user: { uid: doctorId }, clinic: { id: clinicId }, role: ArrayContains([UserRole.DOCTOR]) }
     });
+    if (!userClinic) {
+      throw new NotFoundException('Doctor not found in clinic.');
+    }
     return {
       ...template,
-      reportPadding: userClinic?.reportPadding || null,
-    };
+        reportPadding: userClinic?.reportPadding || null,
+      };
+    } catch (error) {
+      await this.errorLogService.logError(
+        `Error fetching template: ${error.message}`,
+        error.stack || '',
+        null,
+        doctorId,
+        null,
+      );
+      throw new InternalServerErrorException('Failed to retrieve template.');
+    }
   }
 
   async getTemplatesByDoctor(
@@ -79,9 +88,9 @@ export class ReportTemplateService {
       await this.errorLogService.logError(
         `Error fetching templates by user role: ${error.message}`,
         error.stack || '',
-        undefined, // No audio URL
-        undefined, // No doctor context
-        userId, // Patient/user context
+        null,
+        userId,
+        null,
       );
 
       // Handle different types of errors
