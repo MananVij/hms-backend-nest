@@ -69,14 +69,25 @@ export class ReportService {
 
       // 3. Render HTML
       const padding = userClinic?.reportPadding;
-      const paddingStyle = `
-        padding-top: ${padding?.paddingTop || 0}px;
-        padding-right: ${padding?.paddingRight || 0}px;
-        padding-bottom: ${padding?.paddingBottom || 0}px;
-        padding-left: ${padding?.paddingLeft || 0}px;
-      `;
       const renderedContent = renderHandlebarsTemplate(template.content, templateValues);
-      const html = `<div style="${paddingStyle}">${renderedContent}</div>`;
+      const html = `
+        <html>
+        <head>
+          <style>
+            @page {
+              margin: ${padding?.paddingTop || 0}px ${padding?.paddingRight || 0}px ${padding?.paddingBottom || 0}px ${padding?.paddingLeft || 0}px;
+            }
+            body {
+              margin: 0;
+              font-family: Arial, sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          ${renderedContent}
+        </body>
+        </html>
+      `;
 
       // 4. Generate PDF (pass header/footer images)
       const pdfBuffer = await this.generatePdf(html, headerImage, footerType, footerContent);
@@ -134,8 +145,8 @@ export class ReportService {
     filteredValues: Record<string, string | null>
   ): Record<string, any> {
     const patientDetails = {
-      patientId: patient.publicIdentifier,
-      name: patient.name,
+      patientId: patient.publicIdentifier || '',
+      name: patient.name || '',
       age: patient.metaData?.dob ? getAgeFromDOB(patient.metaData.dob) : '',
       sex: patient.metaData?.sex || '',
     };
@@ -154,7 +165,7 @@ export class ReportService {
     try {
       const browser = await puppeteer.launch({ headless: true });
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+
       const headerHtml = headerImage
         ? `<div style="margin:0;padding:0;width:100%;">
             <img src="${headerImage}" alt="Header Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
@@ -168,14 +179,45 @@ export class ReportService {
       } else if (footerType === FooterType.TEXT && footerContent) {
         footerHtml = `<div style="width:100%;border-top:1px solid #888;padding-top:6px;text-align:center;font-size:12px;margin:0;margin-bottom:0;padding-bottom:0;">${footerContent}</div>`;
       }
+      
+      const fullHtml = `
+        <html>
+        <head>
+          <style>
+            @page {
+              margin-top: ${headerImage ? '60px' : '0px'};
+              margin-bottom: ${(footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0px'};
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+        </html>
+      `;
+      
+      await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+      
+      // Generate PDF with the same configuration as frontend
       const pdfUint8Array = await page.pdf({
         format: 'A4',
         printBackground: true,
         displayHeaderFooter: true,
         headerTemplate: headerHtml,
         footerTemplate: footerHtml,
-        margin: { top: '60px', bottom: '60px' },
+        margin: { 
+          top: headerImage ? '60px' : '0', 
+          bottom: (footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0',
+          left: '0',
+          right: '0'
+        }
       });
+      
       await browser.close();
       return Buffer.isBuffer(pdfUint8Array) ? pdfUint8Array : Buffer.from(pdfUint8Array);
     } catch (error) {

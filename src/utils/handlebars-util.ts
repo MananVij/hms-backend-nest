@@ -64,7 +64,17 @@ Handlebars.registerHelper('or', function () {
   return args.some(Boolean);
 });
 
+// Add isArray helper from frontend
+Handlebars.registerHelper('isArray', function(value) {
+  return Array.isArray(value);
+});
+
 export function renderHandlebarsTemplate(template: string, values: any): string {
-  const compiled = Handlebars.compile(template);
-  return compiled(values);
+  try {
+    const compiled = Handlebars.compile(template);
+    return compiled(values);
+  } catch (error) {
+    console.error("Error rendering template:", error);
+    return `<div>Error rendering report: ${error.message}</div>`;
+  }
 } 
