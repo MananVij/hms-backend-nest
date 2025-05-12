@@ -31,6 +31,7 @@ import {
   NotificationSubTypeEnum,
   NotificationTypeEnum,
 } from 'src/notification/notification.enum';
+import { Report } from 'src/report/report.entity';
 
 @Injectable()
 export class AppointmentService {
@@ -266,6 +267,7 @@ export class AppointmentService {
         this.userService.findUserByUserId(patientId),
         queryRunner.manager.findOne(User, {
           where: { uid: userId },
+          relations: ['metaData'],
         }),
         queryRunner.manager.findOne(Clinic, { where: { id: clinicId } }),
         this.userClinicService.findUserRolesInClinic(
@@ -359,10 +361,23 @@ export class AppointmentService {
           },
         });
         clinicAppointments = this.processAppointments(clinicAppointments);
-        const medicalReports = await queryRunner.manager.find(MedicalReport, {
-          where: { patient, doctor: { user: { uid: userId } } },
-          order: { createdAt: 'DESC' },
-        });
+        const [report1, report2] = await Promise.all([
+          queryRunner.manager.find(MedicalReport, {
+            where: { patient, doctor: { user: { uid: userId } } },
+            order: { createdAt: 'DESC' },
+          }),
+          queryRunner.manager.find(Report, {
+            where: { patient, doctor: { user: { uid: userId } } },
+            order: { createdAt: 'DESC' },
+          }),
+        ]);
+        const mappedReport2 = report2.map((r) => ({
+          createdAt: r.createdAt,
+          fileUrl: r.pdfUrl,
+          recordType: r.template.type,
+          comments: r.template.subtype,
+        }));
+        const medicalReports = [...report1, ...mappedReport2];
         return {
           patient,
           appointments: { doctorAppointments, clinicAppointments },
@@ -448,6 +463,10 @@ export class AppointmentService {
           uid: true,
           name: true,
           phoneNumber: true,
+          metaData: {
+            dob: true,
+            sex: true,
+          },
           publicIdentifier: true,
           address: {
             line1: true,
@@ -473,7 +492,13 @@ export class AppointmentService {
             ...prescriptionCondition,
             ...timeCondition,
           },
-          relations: ['patient', 'doctor', 'vitals', 'clinic'],
+          relations: [
+            'patient',
+            'patient.metaData',
+            'doctor',
+            'vitals',
+            'clinic',
+          ],
           order: {
             time: 'DESC',
           },
@@ -489,7 +514,13 @@ export class AppointmentService {
             ...prescriptionCondition,
             ...timeCondition,
           },
-          relations: ['patient', 'doctor', 'clinic', 'vitals'],
+          relations: [
+            'patient',
+            'patient.metaData',
+            'doctor',
+            'clinic',
+            'vitals',
+          ],
           select: {
             ...selectCondition,
           },
