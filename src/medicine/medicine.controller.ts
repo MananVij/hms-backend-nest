@@ -1,4 +1,3 @@
-// src/medicine/medicine.controller.ts
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { MedicineService } from './medicine.service';
 import { SearchMedicineDto } from './dto/search-medicine.dto';
