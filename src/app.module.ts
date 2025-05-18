@@ -32,6 +32,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { ReportTemplateModule } from './report_template/report-template.module';
+import { MedicineModule } from './medicine/medicine.module';
+import { FavoriteMedicineModule } from './favourite-medicines/favorite-medicine.module';
 
 @Module({
   imports: [
@@ -60,7 +62,9 @@ import { ReportTemplateModule } from './report_template/report-template.module';
     WhatsappModule,
     NotificationModule,
     ReportModule,
-    ReportTemplateModule
+    ReportTemplateModule,
+    MedicineModule,
+    FavoriteMedicineModule
   ],
   controllers: [AppController],
   providers: [

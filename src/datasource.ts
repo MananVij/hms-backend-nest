@@ -16,6 +16,8 @@ import { MedicalReport } from './medical-reports/entity/medical-reports.entity';
 import { Notification } from './notification/notification.entity';
 import { Report } from './report/report.entity';
 import { ReportTemplate } from './report_template/report-template.entity';
+import { Medicine } from './medicine/entity/medicine.entity';
+import { FavoriteMedicine } from './favourite-medicines/entity/favorite-medicine.entity';
 
 export const AppDataSourceConfig: DataSourceOptions = {
   type: 'postgres',
@@ -41,7 +43,9 @@ export const AppDataSourceConfig: DataSourceOptions = {
     ReportAccess,
     Notification,
     Report,
-    ReportTemplate
+    ReportTemplate,
+    Medicine,
+    FavoriteMedicine
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsRun: false,
