@@ -160,6 +160,10 @@ export class CreatePrescriptionDto {
   @IsDateString()
   @IsOptional()
   followUp?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  time_seconds?: number;
 }
 
 class TaperingDto {

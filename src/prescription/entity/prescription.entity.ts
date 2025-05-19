@@ -117,4 +117,7 @@ export class Prescription {
 
   @CreateDateColumn({ type: 'timestamptz', nullable: true })
   edited_at: Date | null;
+
+  @Column({ type: 'float', nullable: true })
+  time_seconds?: number;
 }
