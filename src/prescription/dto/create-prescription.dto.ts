@@ -164,6 +164,10 @@ export class CreatePrescriptionDto {
   @IsOptional()
   @IsNumber()
   time_seconds?: number;
+
+  @IsOptional()
+  @IsString()
+  chief_complaints?: string;
 }
 
 class TaperingDto {

@@ -120,4 +120,7 @@ export class Prescription {
 
   @Column({ type: 'float', nullable: true })
   time_seconds?: number;
+
+  @Column({ nullable: true })
+  chief_complaints?: string;
 }
