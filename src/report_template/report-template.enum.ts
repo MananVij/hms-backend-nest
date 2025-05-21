@@ -4,6 +4,7 @@ export enum ReportType {
 
 export enum ReportSubType {
   TWO_D_ECHOCARDIOGRAPHY = '2D Echocardiography',
+  ECHOCARDIOGRAPHY = 'Echocardiography',
   CAROTID_DOPPLER = 'Carotid Doppler',
   TREADMILL_TEST = 'Treadmill Test',
   STRESS_ECHO = 'Stress Echo',
