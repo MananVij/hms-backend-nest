@@ -344,13 +344,13 @@ export class PrescriptionService {
 
       const createdAt = new Date(prescription.created_at);
       const now = new Date();
-      const diffMinutes = (now.getTime() - createdAt.getTime()) / 60000;
+      // const diffMinutes = (now.getTime() - createdAt.getTime()) / 60000;
 
-      if (diffMinutes > 15) {
-        throw new ForbiddenException(
-          'Prescription can only be edited within 15 minutes of creation.',
-        );
-      }
+      // if (diffMinutes > 15) {
+      //   throw new ForbiddenException(
+      //     'Prescription can only be edited within 15 minutes of creation.',
+      //   );
+      // }
 
       const validatedPrescriptionData =
         PrescriptionValidator.validatePrescriptionData(updatePrescriptionDto);
