@@ -10,7 +10,8 @@ import { VariableDto } from 'src/report_template/variable.dto';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import * as puppeteer from 'puppeteer';
+import * as puppeteer from 'puppeteer-core';
+const chromium = require('@sparticuz/chromium');
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { Report } from './report.entity';
@@ -163,7 +164,12 @@ export class ReportService {
 
   private async generatePdf(html: string, headerImage?: string | null, footerType?: FooterType | null, footerContent?: string | null): Promise<Buffer> {
     try {
-      const browser = await puppeteer.launch({ headless: true });
+      const browser = await puppeteer.launch({
+        executablePath: await chromium.executablePath(),
+        args: chromium.args,
+        headless: chromium.headless,
+        defaultViewport: chromium.defaultViewport,
+      });
       const page = await browser.newPage();
 
       const headerHtml = headerImage
