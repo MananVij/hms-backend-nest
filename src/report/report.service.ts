@@ -74,13 +74,30 @@ export class ReportService {
       const html = `
         <html>
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
           <style>
             @page {
               margin: ${padding?.paddingTop || 0}px ${padding?.paddingRight || 0}px ${padding?.paddingBottom || 0}px ${padding?.paddingLeft || 0}px;
             }
+            * {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+            }
             body {
               margin: 0;
-              font-family: Arial, sans-serif;
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+              font-size: 14px;
+              line-height: 1.4;
+              color: #000;
+            }
+            table {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+            }
+            td, th, p, div, span {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
             }
           </style>
         </head>
@@ -166,11 +183,25 @@ export class ReportService {
     try {
       const browser = await puppeteer.launch({
         executablePath: await chromium.executablePath(),
-        args: chromium.args,
+        args: [
+          ...chromium.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--font-render-hinting=none',
+          '--disable-font-subpixel-positioning',
+        ],
         headless: chromium.headless,
         defaultViewport: chromium.defaultViewport,
       });
       const page = await browser.newPage();
+
+      // Set proper encoding and fonts
+      await page.setExtraHTTPHeaders({
+        'Accept-Charset': 'utf-8',
+      });
 
       const headerHtml = headerImage
         ? `<div style="margin:0;padding:0;width:100%;">
@@ -183,21 +214,38 @@ export class ReportService {
             <img src="${footerContent}" alt="Footer Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
           </div>`;
       } else if (footerType === FooterType.TEXT && footerContent) {
-        footerHtml = `<div style="width:100%;border-top:1px solid #888;padding-top:6px;text-align:center;font-size:12px;margin:0;margin-bottom:0;padding-bottom:0;">${footerContent}</div>`;
+        footerHtml = `<div style="width:100%;border-top:1px solid #888;padding-top:6px;text-align:center;font-size:12px;margin:0;margin-bottom:0;padding-bottom:0;font-family: 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif;">${footerContent}</div>`;
       }
       
       const fullHtml = `
         <html>
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
           <style>
             @page {
               margin-top: ${headerImage ? '60px' : '0px'};
               margin-bottom: ${(footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0px'};
             }
+            * {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+              -webkit-font-smoothing: antialiased;
+              -moz-osx-font-smoothing: grayscale;
+            }
             body {
               margin: 0;
               padding: 0;
-              font-family: Arial, sans-serif;
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+              font-size: 14px;
+              line-height: 1.4;
+              color: #000;
+            }
+            table {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
+            }
+            td, th, p, div, span {
+              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
             }
           </style>
         </head>
@@ -207,7 +255,13 @@ export class ReportService {
         </html>
       `;
       
-      await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(fullHtml, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+      
+      // Wait for fonts to load
+      await page.evaluateHandle('document.fonts.ready');
       
       // Generate PDF with the same configuration as frontend
       const pdfUint8Array = await page.pdf({
@@ -221,7 +275,8 @@ export class ReportService {
           bottom: (footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0',
           left: '0',
           right: '0'
-        }
+        },
+        preferCSSPageSize: true,
       });
       
       await browser.close();
