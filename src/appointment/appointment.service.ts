@@ -458,6 +458,17 @@ export class AppointmentService {
         doctor: {
           name: true,
           phoneNumber: true,
+          userClinics: {
+            clinic: {
+              id: true,
+            },
+            padding: {
+              paddingTop: true,
+              paddingBottom: true,
+              paddingLeft: true,
+              paddingRight: true,
+            },
+          },
         },
         patient: {
           uid: true,
@@ -486,7 +497,7 @@ export class AppointmentService {
         userRoles.includes(UserRole.ADMIN) ||
         userRoles.includes(UserRole.RECEPTIONIST)
       ) {
-        return await this.appointmentRepository.find({
+        const result = await this.appointmentRepository.find({
           where: {
             clinic: { id: clinicId },
             ...prescriptionCondition,
@@ -496,6 +507,8 @@ export class AppointmentService {
             'patient',
             'patient.metaData',
             'doctor',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
             'vitals',
             'clinic',
           ],
@@ -506,8 +519,41 @@ export class AppointmentService {
             ...selectCondition,
           },
         });
+        return result.map((appointment) => {
+          const userClinics = appointment.doctor.userClinics;
+          const matchingUserClinic = userClinics?.find(
+            (userClinic) => userClinic.clinic.id == clinicId,
+          );
+
+          if (matchingUserClinic) {
+            // Extract padding and other properties for this specific clinic
+            let letterPadStyle = {
+              padding: matchingUserClinic.padding || {
+                paddingTop: 0,
+                paddingLeft: 40,
+                paddingBottom: 0,
+                paddingRight: 40,
+              },
+            };
+            (appointment.doctor as any).letterPadStyle = letterPadStyle;
+          } else {
+            // Default padding if no matching userClinic found
+            (appointment.doctor as any).letterPadStyle = {
+              padding: {
+                paddingTop: 0,
+                paddingLeft: 40,
+                paddingBottom: 0,
+                paddingRight: 40,
+              },
+            };
+          }
+
+          // Remove the userClinics array from the response
+          delete appointment.doctor.userClinics;
+          return appointment;
+        });
       } else if (userRoles.includes(UserRole.DOCTOR)) {
-        return await this.appointmentRepository.find({
+        const result = await this.appointmentRepository.find({
           where: {
             clinic: { id: clinicId },
             doctor: { uid: userId },
@@ -518,6 +564,8 @@ export class AppointmentService {
             'patient',
             'patient.metaData',
             'doctor',
+            'doctor.userClinics',
+            'doctor.userClinics.clinic',
             'clinic',
             'vitals',
           ],
@@ -527,6 +575,40 @@ export class AppointmentService {
           order: {
             time: 'DESC',
           },
+        });
+
+        return result.map((appointment) => {
+          const userClinics = appointment.doctor.userClinics;
+
+          // Find the userClinic that matches the clinicId
+          const matchingUserClinic = userClinics?.find(
+            (userClinic) => userClinic.clinic.id == clinicId,
+          );
+
+          if (matchingUserClinic) {
+            // Extract padding and other properties for this specific clinic
+            let letterPadStyle = {
+              padding: matchingUserClinic.padding || {
+                paddingTop: 0,
+                paddingLeft: 40,
+                paddingBottom: 0,
+                paddingRight: 40,
+              },
+            };
+            (appointment.doctor as any).letterPadStyle = letterPadStyle;
+          } else {
+            // Default padding if no matching userClinic found
+            (appointment.doctor as any).letterPadStyle = {
+              padding: {
+                paddingTop: 0,
+                paddingLeft: 40,
+                paddingBottom: 0,
+                paddingRight: 40,
+              },
+            };
+          }
+          delete appointment.doctor.userClinics;
+          return appointment;
         });
       }
     } catch (error) {

@@ -123,8 +123,6 @@ export class OtpService {
     userId: string,
     phoneNumber: string,
     clinicId: number,
-    otp: string,
-    verificationId: string,
     role: string,
   ): Promise<object> {
     if (!phoneNumber) {
@@ -135,20 +133,7 @@ export class OtpService {
     if (!/^\d{10}$/.test(`${phoneNumber}`)) {
       throw new Error('Invalid recipient phone number format.');
     }
-    if (!otp) {
-      throw new InternalServerErrorException('Otp is required.');
-    }
-    if (!/^\d{4}$/.test(`${otp}`)) {
-      throw new Error('Invalid otp format.');
-    }
-
     try {
-      const response = await this.verifyOtpService(otp, verificationId);
-
-      if (response?.data.responseCode !== 200) {
-        throw new InternalServerErrorException('Incorrect Otp');
-      }
-
       if (role === UserRole.PATIENT) {
         const users = await this.patientService.findPatientsByPhoneNumber(
           queryRunner,

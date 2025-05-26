@@ -34,8 +34,6 @@ export class OtpController {
     @Req() req: Request,
     @Body('phoneNumber') phoneNumber: string,
     @Body('clinicId') clinicId: number,
-    @Body('otp') otp: string,
-    @Body('verificationId') verificationId: string,
     @Body('role') role: string,
   ): Promise<object> {
     try {
@@ -45,8 +43,6 @@ export class OtpController {
         userId,
         phoneNumber,
         clinicId,
-        otp,
-        verificationId,
         role,
       );
     } catch (error) {
