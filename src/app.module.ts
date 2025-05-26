@@ -34,6 +34,7 @@ import { ReportModule } from './report/report.module';
 import { ReportTemplateModule } from './report_template/report-template.module';
 import { MedicineModule } from './medicine/medicine.module';
 import { FavoriteMedicineModule } from './favourite-medicines/favorite-medicine.module';
+import { PrescriptionTemplateModule } from './prescription-template/prescription-template.module';
 
 @Module({
   imports: [
@@ -64,7 +65,8 @@ import { FavoriteMedicineModule } from './favourite-medicines/favorite-medicine.
     ReportModule,
     ReportTemplateModule,
     MedicineModule,
-    FavoriteMedicineModule
+    FavoriteMedicineModule,
+    PrescriptionTemplateModule
   ],
   controllers: [AppController],
   providers: [
