@@ -15,6 +15,7 @@ import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { AddRoleToAdminDto } from 'src/doctor/dto/add-role.dto';
 import { MetaData } from 'src/metadata/entity/metadata.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
+import { MedicalSpecialization } from 'src/doctor/entity/specialization.enum';
 
 @Injectable()
 export class UserClinicService {
@@ -314,10 +315,14 @@ export class UserClinicService {
 
       const [savedMetaData, savedStaff, savedUserClinic, updatedUser] =
         await Promise.all([
-          await queryRunner.manager.save(MetaData, metaData),
-          await queryRunner.manager.save(Doctor, { ...staffData, user: admin }),
-          await queryRunner.manager.save(UserClinic, existingRelationship),
-          await queryRunner.manager.save(User, admin),
+          queryRunner.manager.save(MetaData, metaData),
+          queryRunner.manager.save(Doctor, { 
+            ...staffData, 
+            specialization: staffData.specialization as MedicalSpecialization,
+            user: admin 
+          }),
+          queryRunner.manager.save(UserClinic, existingRelationship),
+          queryRunner.manager.save(User, admin),
         ]);
 
       const formattedData = {
@@ -329,11 +334,11 @@ export class UserClinicService {
           phoneNumber: updatedUser.phoneNumber,
           address: updatedUser.address,
           doctor: {
-            id: savedStaff?.id,
-            qualification: savedStaff?.qualification,
-            fee: savedStaff?.fee,
-            licenseNumber: savedStaff?.licenseNumber,
-            specialization: savedStaff?.specialization,
+            id: (savedStaff as Doctor)?.id,
+            qualification: (savedStaff as Doctor)?.qualification,
+            fee: (savedStaff as Doctor)?.fee,
+            licenseNumber: (savedStaff as Doctor)?.licenseNumber,
+            specialization: (savedStaff as Doctor)?.specialization,
           },
         },
       };

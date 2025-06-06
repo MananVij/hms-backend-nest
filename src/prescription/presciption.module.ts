@@ -8,6 +8,7 @@ import { DjangoService } from 'src/django/django.service';
 import { WhatsappModule } from 'src/whatsapp/whatsapp.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
+import { MedicineRecommendationAIModule } from 'src/medicine-recommendation-ai-service/medicine-recommendation-ai.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UserClinicModule } from 'src/user_clinic/user_clinic.module';
     WhatsappModule,
     NotificationModule,
     UserClinicModule,
+    MedicineRecommendationAIModule,
   ],
   controllers: [PrescriptionController],
   providers: [PrescriptionService, DjangoService],

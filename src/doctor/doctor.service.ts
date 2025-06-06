@@ -11,6 +11,7 @@ import { UserClinicService } from 'src/user_clinic/user_clinic.service';
 import { UserService } from 'src/user/user.service';
 import { MetaDataService } from 'src/metadata/meta-data.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { MedicalSpecialization } from './entity/specialization.enum';
 
 @Injectable()
 export class DoctorService {
@@ -50,6 +51,7 @@ export class DoctorService {
       );
       const doctor = queryRunner.manager.create(Doctor, {
         ...staffData,
+        specialization: staffData.specialization as MedicalSpecialization,
         user,
       });
       await queryRunner.manager.save(doctor);
