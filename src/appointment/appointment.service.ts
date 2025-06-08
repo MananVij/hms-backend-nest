@@ -212,7 +212,7 @@ export class AppointmentService {
       delete filteredUserClinic?.clinic;
       delete filteredUserClinic?.usesOwnLetterPad;
       delete appointment?.doctor?.userClinics;
-
+      delete appointment?.doctor?.doctor?.specialization;
       appointment.doctor.letterPadStyle = filteredUserClinic
         ? filteredUserClinic
         : null;
@@ -248,6 +248,9 @@ export class AppointmentService {
           clinic: {
             id: true,
           },
+        },
+        doctor: {
+          specialization: true
         },
       },
       clinic: {
@@ -288,6 +291,7 @@ export class AppointmentService {
           },
           relations: [
             'doctor',
+            'doctor.doctor',
             'prescription',
             'vitals',
             'clinic',
@@ -302,6 +306,7 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        const specialization = doctorAppointments[0]?.doctor?.doctor?.specialization;
         doctorAppointments = this.processAppointments(doctorAppointments);
         const medicalReports = await queryRunner.manager.find(MedicalReport, {
           where: { patient, doctor: { user: { uid: userId } } },
@@ -309,6 +314,7 @@ export class AppointmentService {
         });
         return {
           appointments: { doctorAppointments },
+          specialization,
           patient,
           medicalReports,
         };
@@ -320,6 +326,7 @@ export class AppointmentService {
           },
           relations: [
             'doctor',
+            'doctor.doctor',
             'prescription',
             'vitals',
             'clinic',
@@ -334,6 +341,7 @@ export class AppointmentService {
             time: 'DESC',
           },
         });
+        const specialization = doctorAppointments[0]?.doctor?.doctor?.specialization;
         doctorAppointments = this.processAppointments(doctorAppointments);
         let clinicAppointments = await queryRunner.manager.find(Appointment, {
           where: {
@@ -380,6 +388,7 @@ export class AppointmentService {
         const medicalReports = [...report1, ...mappedReport2];
         return {
           patient,
+          specialization,
           appointments: { doctorAppointments, clinicAppointments },
           medicalReports,
         };

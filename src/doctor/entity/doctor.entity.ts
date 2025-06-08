@@ -1,6 +1,7 @@
 import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
 import { DoctorPatient } from 'src/doctor_patient/entity/doctor_patient.entity';
 import { User } from 'src/user/entity/user.enitiy';
+import { MedicalSpecialization } from './specialization.enum';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -27,8 +28,12 @@ export class Doctor {
   @Column({ unique: true, nullable: true }) // Unique license number
   licenseNumber: string;
 
-  @Column({ nullable: false }) // Specialization is required
-  specialization: string;
+  @Column({ 
+    type: 'enum', 
+    enum: MedicalSpecialization,
+    nullable: false 
+  }) // Specialization is required and uses enum
+  specialization: MedicalSpecialization;
 
   @Column({ type: 'date', nullable: true }) // Date of practice start
   startYearOfPractice: Date;

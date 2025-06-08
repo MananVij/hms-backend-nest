@@ -19,6 +19,10 @@ import { ReportTemplate } from './report_template/report-template.entity';
 import { Medicine } from './medicine/entity/medicine.entity';
 import { FavoriteMedicine } from './favourite-medicines/entity/favorite-medicine.entity';
 import { PrescriptionTemplate } from './prescription-template/entity/prescription-template.entity';
+import { NormalizedPrescription } from './medicine-recommendation-ai-service/entity/normalized-prescription.entity';
+import { AIChiefComplaint } from './medicine-recommendation-ai-service/entity/ai-chief-complaint.entity';
+import { AIMedicineDiagnosis } from './medicine-recommendation-ai-service/entity/ai-medicine-diagnosis.entity';
+import { AIDiagnosisNotes } from './medicine-recommendation-ai-service/entity/ai-diagnosis-notes.entity';
 
 export const AppDataSourceConfig: DataSourceOptions = {
   type: 'postgres',
@@ -47,7 +51,11 @@ export const AppDataSourceConfig: DataSourceOptions = {
     ReportTemplate,
     Medicine,
     FavoriteMedicine,
-    PrescriptionTemplate
+    PrescriptionTemplate,
+    NormalizedPrescription,
+    AIChiefComplaint,
+    AIMedicineDiagnosis,
+    AIDiagnosisNotes
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsRun: false,
