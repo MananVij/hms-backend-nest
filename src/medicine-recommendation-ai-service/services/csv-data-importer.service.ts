@@ -12,15 +12,43 @@ import {
   NormalizationMethod,
   ValidationStatus 
 } from '../entity/normalized-prescription.entity';
+import { MedicalSpecialization } from '../../doctor/entity/specialization.enum';
 
 @Injectable()
 export class CSVDataImporterService {
   private readonly logger = new Logger(CSVDataImporterService.name);
-  private readonly drGambhirId = '0820ca6e-94bd-4210-8311-75906ae82e99';
   
-  // Configuration for specialty and data folder
-  private readonly defaultSpecialty = 'dermatology';
-  private readonly dataFolder = 'dermat_data'; // Could be made configurable per specialty
+  // Configuration for data folder
+  private readonly dataFolder = 'all_data';
+
+  // Specialization mapping from CSV to enum
+  private readonly specializationMapping: Record<string, string> = {
+    'General Practice': MedicalSpecialization.GENERAL_PRACTICE,
+    'Cardiology': MedicalSpecialization.CARDIOLOGY,
+    'Neurology': MedicalSpecialization.NEUROLOGY,
+    'Gastroenterology': MedicalSpecialization.GASTROENTEROLOGY,
+    'Pulmonology': MedicalSpecialization.PULMONOLOGY,
+    'Nephrology': MedicalSpecialization.NEPHROLOGY,
+    'Endocrinology': MedicalSpecialization.ENDOCRINOLOGY,
+    'Rheumatology': MedicalSpecialization.RHEUMATOLOGY,
+    'Hematology': MedicalSpecialization.HEMATOLOGY,
+    'Oncology': MedicalSpecialization.ONCOLOGY,
+    'Infectious Disease': MedicalSpecialization.INFECTIOUS_DISEASE,
+    'Geriatrics': MedicalSpecialization.GERIATRICS,
+    'Palliative Care': MedicalSpecialization.PALLIATIVE_CARE,
+    'Pediatrics': MedicalSpecialization.PEDIATRICS,
+    'Gynecology': MedicalSpecialization.GYNECOLOGY,
+    'Psychiatry': MedicalSpecialization.PSYCHIATRY,
+    'Dermatology': MedicalSpecialization.DERMATOLOGY,
+    'Ophthalmology': MedicalSpecialization.OPHTHALMOLOGY,
+    'Otolaryngology': MedicalSpecialization.OTOLARYNGOLOGY,
+    'Urology': MedicalSpecialization.UROLOGY,
+    'Allergy Immunology': MedicalSpecialization.ALLERGY_IMMUNOLOGY,
+    'Pain Management': MedicalSpecialization.PAIN_MANAGEMENT,
+    'Sleep Medicine': MedicalSpecialization.SLEEP_MEDICINE,
+    'Occupational Medicine': MedicalSpecialization.OCCUPATIONAL_MEDICINE,
+    'Preventive Medicine': MedicalSpecialization.PREVENTIVE_MEDICINE
+  };
 
   constructor(
     @InjectRepository(AIChiefComplaint)
@@ -33,49 +61,101 @@ export class CSVDataImporterService {
     private normalizedPrescriptionRepository: Repository<NormalizedPrescription>,
   ) {}
 
-  async importAllCSVData(specialty: string = this.defaultSpecialty): Promise<{
+  async importAllCSVData(
+    requestedSpecialty: string = 'all',
+    doctorId?: string
+  ): Promise<{
     chiefComplaints: number;
     medicinesDiagnoses: number;
     diagnosisNotes: number;
     normalizedPrescriptions: number;
+    specializations: string[];
   }> {
-    this.logger.log(`Starting CSV data import for specialty: ${specialty}`);
+    this.logger.log(`Starting CSV data import for: ${requestedSpecialty}`);
+    
+    const defaultDoctorId = doctorId || '0820ca6e-94bd-4210-8311-75906ae82e99';
     
     try {
+      // Clear existing data if importing all specializations
+      if (requestedSpecialty === 'all') {
+        await this.clearExistingData();
+      }
+
       // Import each dataset
-      const chiefComplaints = await this.importChiefComplaints(specialty);
+      const chiefComplaints = await this.importChiefComplaints(requestedSpecialty, defaultDoctorId);
       this.logger.log(`Imported ${chiefComplaints} chief complaints`);
 
-      const medicinesDiagnoses = await this.importMedicineDiagnoses(specialty);
+      const medicinesDiagnoses = await this.importMedicineDiagnoses(requestedSpecialty, defaultDoctorId);
       this.logger.log(`Imported ${medicinesDiagnoses} medicine-diagnosis mappings`);
 
-      const diagnosisNotes = await this.importDiagnosisNotes(specialty);
+      const diagnosisNotes = await this.importDiagnosisNotes(requestedSpecialty, defaultDoctorId);
       this.logger.log(`Imported ${diagnosisNotes} diagnosis notes`);
 
-      const normalizedPrescriptions = await this.generateNormalizedPrescriptions(specialty);
+      const normalizedPrescriptions = await this.generateNormalizedPrescriptions(requestedSpecialty, defaultDoctorId);
       this.logger.log(`Generated ${normalizedPrescriptions} normalized prescriptions`);
 
-      this.logger.log(`CSV import completed successfully for specialty: ${specialty}`);
+      const specializations = Object.values(this.specializationMapping);
+      this.logger.log(`CSV import completed successfully for: ${requestedSpecialty}`);
       
       return {
         chiefComplaints,
         medicinesDiagnoses,
         diagnosisNotes,
         normalizedPrescriptions,
+        specializations,
       };
     } catch (error) {
-      this.logger.error(`CSV import failed for specialty ${specialty}: ${error.message}`);
+      this.logger.error(`CSV import failed for ${requestedSpecialty}: ${error.message}`);
       throw error;
     }
   }
 
-  private async importChiefComplaints(specialty: string): Promise<number> {
-    const csvPath = path.join(process.cwd(), this.dataFolder, 'chief_complaints_diagnosis_mapped.csv');
+  private async clearExistingData(): Promise<void> {
+    this.logger.log('Clearing existing AI training data...');
+    
+    try {
+      await this.normalizedPrescriptionRepository.delete({ trainingEligible: true });
+      await this.aiDiagnosisNotesRepository.delete({ trainingEligible: true });
+      await this.aiMedicineDiagnosisRepository.delete({ trainingEligible: true });
+      await this.aiChiefComplaintRepository.delete({ trainingEligible: true });
+      
+      this.logger.log('✅ Existing AI training data cleared');
+    } catch (error) {
+      this.logger.error(`Error clearing existing data: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private mapSpecialization(csvSpecialization: string): string {
+    const mapped = this.specializationMapping[csvSpecialization];
+    if (!mapped) {
+      this.logger.warn(`Unknown specialization: ${csvSpecialization}, using as-is`);
+      return csvSpecialization.toLowerCase().replace(/\s+/g, '_');
+    }
+    return mapped;
+  }
+
+  private shouldProcessSpecialization(csvSpecialization: string, requestedSpecialty: string): boolean {
+    if (requestedSpecialty === 'all') return true;
+    
+    const normalizedRequested = requestedSpecialty.toLowerCase().replace(/\s+/g, '_');
+    const mappedSpecialization = this.mapSpecialization(csvSpecialization);
+    
+    return mappedSpecialization === normalizedRequested;
+  }
+
+  private async importChiefComplaints(requestedSpecialty: string, doctorId: string): Promise<number> {
+    const csvPath = path.join(process.cwd(), this.dataFolder, 'complaints_diagnosis_mapped.csv');
+    
+    if (!fs.existsSync(csvPath)) {
+      throw new Error(`CSV file not found: ${csvPath}`);
+    }
+
     const data: any[] = [];
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(csvPath)
-        .pipe(csv())
+        .pipe(csv({ headers: false }))
         .on('data', (row) => {
           data.push(row);
         })
@@ -83,51 +163,37 @@ export class CSVDataImporterService {
           try {
             let imported = 0;
             
-            for (const row of data) {
-              const chiefComplaint = row['Chief_Complaints']?.trim();
+            for (let i = 1; i < data.length; i++) {
+              const row = data[i];
+              const csvSpecialization = row['0']?.trim();
+              const chiefComplaint = row['1']?.trim();
               
-              if (!chiefComplaint) continue;
+              if (!csvSpecialization || !chiefComplaint) continue;
+              if (!this.shouldProcessSpecialization(csvSpecialization, requestedSpecialty)) continue;
 
-              // Collect all diagnosis columns (Diagnosis, _2, _3, _4, etc.)
+              const mappedSpecialization = this.mapSpecialization(csvSpecialization);
+
               const rawDiagnoses: string[] = [];
               
-              // Add the main Diagnosis column
-              if (row['Diagnosis']?.trim()) {
-                rawDiagnoses.push(row['Diagnosis'].trim());
-              }
-              
-              // Add all the additional diagnosis columns (_2, _3, _4, etc.)
-              for (const key of Object.keys(row)) {
-                if (key.startsWith('_') && row[key]?.trim()) {
-                  rawDiagnoses.push(row[key].trim());
+              for (let colIndex = 2; colIndex < 50; colIndex++) {
+                const diagnosis = row[colIndex.toString()]?.trim();
+                if (diagnosis && diagnosis.length > 0) {
+                  rawDiagnoses.push(diagnosis);
                 }
               }
               
-              // Split diagnoses that contain "and" into separate diagnoses
-              const expandedDiagnoses: string[] = [];
-              for (const diagnosis of rawDiagnoses) {
-                if (diagnosis.toLowerCase().includes(' and ')) {
-                  // Split by " and " and clean up each part
-                  const parts = diagnosis.split(/\s+and\s+/i).map(part => part.trim());
-                  expandedDiagnoses.push(...parts);
-                } else {
-                  expandedDiagnoses.push(diagnosis);
-                }
-              }
-              
-              // Filter out empty diagnoses and remove duplicates
-              const validDiagnoses = [...new Set(expandedDiagnoses.filter(d => d.length > 0))];
+              const validDiagnoses = this.parseAndExpandDiagnoses(rawDiagnoses);
               
               if (validDiagnoses.length === 0) continue;
 
-              this.logger.log(`Importing chief complaint: "${chiefComplaint}" with ${validDiagnoses.length} diagnoses (expanded from ${rawDiagnoses.length})`);
-              this.logger.log(`Diagnoses: ${validDiagnoses.slice(0, 5).join(', ')}${validDiagnoses.length > 5 ? '...' : ''}`);
+              this.logger.log(`[${csvSpecialization}] Importing chief complaint: "${chiefComplaint}" with ${validDiagnoses.length} diagnoses`);
+              this.logger.log(`  Diagnoses: ${validDiagnoses.slice(0, 5).join(', ')}${validDiagnoses.length > 5 ? '...' : ''}`);
 
               const aiChiefComplaint = this.aiChiefComplaintRepository.create({
                 chiefComplaint,
                 mappedDiagnoses: validDiagnoses,
-                specialty: specialty,
-                doctorId: this.drGambhirId,
+                specialty: mappedSpecialization,
+                doctorId: doctorId,
                 confidenceScore: 100.0,
                 trainingEligible: true,
               });
@@ -136,7 +202,7 @@ export class CSVDataImporterService {
               imported++;
             }
 
-            this.logger.log(`Imported ${imported} chief complaints`);
+            this.logger.log(`✅ Imported ${imported} chief complaints`);
             resolve(imported);
           } catch (error) {
             reject(error);
@@ -146,13 +212,18 @@ export class CSVDataImporterService {
     });
   }
 
-  private async importMedicineDiagnoses(specialty: string): Promise<number> {
-    const csvPath = path.join(process.cwd(), this.dataFolder, 'medicines_diagnosis_mapped.csv');
+  private async importMedicineDiagnoses(requestedSpecialty: string, doctorId: string): Promise<number> {
+    const csvPath = path.join(process.cwd(), this.dataFolder, 'medicine_diagnosis_mapped.csv');
+    
+    if (!fs.existsSync(csvPath)) {
+      throw new Error(`CSV file not found: ${csvPath}`);
+    }
+
     const data: any[] = [];
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(csvPath)
-        .pipe(csv())
+        .pipe(csv({ headers: false }))
         .on('data', (row) => {
           data.push(row);
         })
@@ -160,20 +231,37 @@ export class CSVDataImporterService {
           try {
             let imported = 0;
             
-            for (const row of data) {
-              const medicineName = row['Full_Medicine_Brand_Name']?.trim();
-              const diagnosesString = row['Diagnoses']?.trim();
+            for (let i = 1; i < data.length; i++) {
+              const row = data[i];
+              const csvSpecialization = row['0']?.trim();
+              const medicineName = row['1']?.trim();
               
-              if (!medicineName || !diagnosesString) continue;
+              if (!csvSpecialization || !medicineName) continue;
+              if (!this.shouldProcessSpecialization(csvSpecialization, requestedSpecialty)) continue;
 
-              // Parse diagnoses (comma-separated, may include " and " connections)
-              const diagnoses = this.parseDiagnosesString(diagnosesString);
+              const mappedSpecialization = this.mapSpecialization(csvSpecialization);
+
+              const rawDiagnoses: string[] = [];
+              
+              for (let colIndex = 2; colIndex < 50; colIndex++) {
+                const diagnosis = row[colIndex.toString()]?.trim();
+                if (diagnosis && diagnosis.length > 0) {
+                  rawDiagnoses.push(diagnosis);
+                }
+              }
+              
+              const validDiagnoses = this.parseAndExpandDiagnoses(rawDiagnoses);
+              
+              if (validDiagnoses.length === 0) continue;
+
+              this.logger.log(`[${csvSpecialization}] Importing medicine: "${medicineName}" with ${validDiagnoses.length} diagnoses`);
+              this.logger.log(`  Diagnoses: ${validDiagnoses.slice(0, 5).join(', ')}${validDiagnoses.length > 5 ? '...' : ''}`);
 
               const aiMedicineDiagnosis = this.aiMedicineDiagnosisRepository.create({
                 medicineName,
-                diagnoses,
-                specialty: specialty,
-                doctorId: this.drGambhirId,
+                diagnoses: validDiagnoses,
+                specialty: mappedSpecialization,
+                doctorId: doctorId,
                 confidenceScore: 100.0,
                 trainingEligible: true,
                 prescriptionFrequency: 1,
@@ -183,7 +271,7 @@ export class CSVDataImporterService {
               imported++;
             }
 
-            this.logger.log(`Imported ${imported} medicine-diagnosis mappings`);
+            this.logger.log(`✅ Imported ${imported} medicine-diagnosis mappings`);
             resolve(imported);
           } catch (error) {
             reject(error);
@@ -193,13 +281,18 @@ export class CSVDataImporterService {
     });
   }
 
-  private async importDiagnosisNotes(specialty: string): Promise<number> {
+  private async importDiagnosisNotes(requestedSpecialty: string, doctorId: string): Promise<number> {
     const csvPath = path.join(process.cwd(), this.dataFolder, 'diagnosis_notes_mapped.csv');
+    
+    if (!fs.existsSync(csvPath)) {
+      throw new Error(`CSV file not found: ${csvPath}`);
+    }
+
     const data: any[] = [];
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(csvPath)
-        .pipe(csv())
+        .pipe(csv({ headers: false }))
         .on('data', (row) => {
           data.push(row);
         })
@@ -207,42 +300,38 @@ export class CSVDataImporterService {
           try {
             let imported = 0;
             
-            for (const row of data) {
-              const diagnosis = row['Diagnosis']?.trim();
+            for (let i = 1; i < data.length; i++) {
+              const row = data[i];
+              const csvSpecialization = row['0']?.trim();
+              const diagnosis = row['1']?.trim();
               
-              if (!diagnosis) continue;
+              if (!csvSpecialization || !diagnosis) continue;
+              if (!this.shouldProcessSpecialization(csvSpecialization, requestedSpecialty)) continue;
 
-              // Collect all medical note columns (Medical_Notes, _2, _3, etc.)
+              const mappedSpecialization = this.mapSpecialization(csvSpecialization);
+
               const rawNotes: string[] = [];
               
-              // Add the main Medical_Notes column
-              if (row['Medical_Notes']?.trim()) {
-                rawNotes.push(row['Medical_Notes'].trim());
-              }
-              
-              // Add all the additional note columns (_2, _3, _4, etc.)
-              for (const key of Object.keys(row)) {
-                if (key.startsWith('_') && row[key]?.trim()) {
-                  rawNotes.push(row[key].trim());
+              for (let colIndex = 2; colIndex < 50; colIndex++) {
+                const note = row[colIndex.toString()]?.trim();
+                if (note && note.length > 0) {
+                  rawNotes.push(note);
                 }
               }
               
-              // Filter out empty notes and remove duplicates
               const validNotes = [...new Set(rawNotes.filter(n => n.length > 0))];
               
               if (validNotes.length === 0) continue;
 
-              // Combine all notes into a single string separated by semicolons
               const combinedNotes = validNotes.join('; ');
 
-              this.logger.log(`Importing diagnosis: "${diagnosis}" with ${validNotes.length} medical notes`);
-              this.logger.log(`Notes: ${validNotes.slice(0, 3).join(', ')}${validNotes.length > 3 ? '...' : ''}`);
+              this.logger.log(`[${csvSpecialization}] Importing diagnosis: "${diagnosis}" with ${validNotes.length} medical notes`);
 
               const aiDiagnosisNotes = this.aiDiagnosisNotesRepository.create({
                 diagnosis,
                 medicalNotes: combinedNotes,
-                specialty: specialty,
-                doctorId: this.drGambhirId,
+                specialty: mappedSpecialization,
+                doctorId: doctorId,
                 confidenceScore: 100.0,
                 trainingEligible: true,
               });
@@ -251,7 +340,7 @@ export class CSVDataImporterService {
               imported++;
             }
 
-            this.logger.log(`Imported ${imported} diagnosis-notes mappings`);
+            this.logger.log(`✅ Imported ${imported} diagnosis-notes mappings`);
             resolve(imported);
           } catch (error) {
             reject(error);
@@ -261,22 +350,24 @@ export class CSVDataImporterService {
     });
   }
 
-  private async generateNormalizedPrescriptions(specialty: string): Promise<number> {
-    this.logger.log(`Generating normalized prescriptions from imported data for specialty: ${specialty}...`);
+  private async generateNormalizedPrescriptions(requestedSpecialty: string, doctorId: string): Promise<number> {
+    this.logger.log(`Generating normalized prescriptions from imported data...`);
     
-    // Get all medicine-diagnosis mappings for this specialty
+    const whereCondition = requestedSpecialty === 'all' 
+      ? { trainingEligible: true }
+      : { trainingEligible: true, specialty: this.mapSpecialization(requestedSpecialty) };
+
     const medicineDiagnoses = await this.aiMedicineDiagnosisRepository.find({
-      where: { trainingEligible: true, specialty: specialty },
+      where: whereCondition,
     });
 
-    // Get diagnosis notes for context for this specialty
     const diagnosisNotes = await this.aiDiagnosisNotesRepository.find({
-      where: { trainingEligible: true, specialty: specialty },
+      where: whereCondition,
     });
 
     const notesMap = new Map<string, string>();
     diagnosisNotes.forEach(note => {
-      notesMap.set(note.diagnosis, note.medicalNotes);
+      notesMap.set(`${note.specialty}:${note.diagnosis}`, note.medicalNotes);
     });
 
     let created = 0;
@@ -287,16 +378,16 @@ export class CSVDataImporterService {
           originalEntry: `${medDiag.medicineName} for ${diagnosis}`,
           medicineName: medDiag.medicineName,
           diagnosisName: diagnosis,
-          specialty: specialty,
-          doctorId: this.drGambhirId,
-          doctorSpecialization: specialty,
+          specialty: medDiag.specialty,
+          doctorId: doctorId,
+          doctorSpecialization: medDiag.specialty,
           confidenceScore: 100.0,
           normalizationMethod: NormalizationMethod.BULK_IMPORT,
           qualityScore: 95.0,
           validationStatus: ValidationStatus.APPROVED,
           trainingEligible: true,
-          medicalNotes: notesMap.get(diagnosis) || null,
-          createdBy: this.drGambhirId,
+          medicalNotes: notesMap.get(`${medDiag.specialty}:${diagnosis}`) || null,
+          createdBy: doctorId,
         });
 
         await this.normalizedPrescriptionRepository.save(normalizedPrescription);
@@ -304,34 +395,28 @@ export class CSVDataImporterService {
       }
     }
 
-    this.logger.log(`Generated ${created} normalized prescriptions`);
+    this.logger.log(`✅ Generated ${created} normalized prescriptions`);
     return created;
   }
 
-  private parseDiagnosesString(diagnosesString: string): string[] {
-    // Handle both comma-separated and " and " connected diagnoses
-    const rawDiagnoses: string[] = [];
-    
-    // First split by comma
-    const commaSplit = diagnosesString.split(',');
-    
-    for (const part of commaSplit) {
-      rawDiagnoses.push(part.trim());
-    }
-    
-    // Split diagnoses that contain "and" into separate diagnoses
+  private parseAndExpandDiagnoses(rawDiagnoses: string[]): string[] {
     const expandedDiagnoses: string[] = [];
-    for (const diagnosis of rawDiagnoses) {
-      if (diagnosis.toLowerCase().includes(' and ')) {
-        // Split by " and " and clean up each part
-        const parts = diagnosis.split(/\s+and\s+/i).map(part => part.trim());
-        expandedDiagnoses.push(...parts);
-      } else {
-        expandedDiagnoses.push(diagnosis);
+    
+    for (const diagnosisString of rawDiagnoses) {
+      if (!diagnosisString || diagnosisString.trim().length === 0) continue;
+      
+      const commaSeparated = diagnosisString.split(',').map(d => d.trim()).filter(d => d.length > 0);
+      
+      for (const part of commaSeparated) {
+        if (part.toLowerCase().includes(' and ')) {
+          const andSeparated = part.split(/\s+and\s+/i).map(p => p.trim()).filter(p => p.length > 0);
+          expandedDiagnoses.push(...andSeparated);
+        } else {
+          expandedDiagnoses.push(part);
+        }
       }
     }
     
-    // Filter out empty diagnoses and remove duplicates
-    return [...new Set(expandedDiagnoses.filter(d => d.length > 0))];
+    return [...new Set(expandedDiagnoses.filter(d => d && d.length > 0))];
   }
 } 
