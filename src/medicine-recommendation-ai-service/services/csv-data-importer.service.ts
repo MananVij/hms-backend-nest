@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as csv from 'csv-parser';
+const csv = require('csv-parser');
 import { AIChiefComplaint } from '../entity/ai-chief-complaint.entity';
 import { AIMedicineDiagnosis } from '../entity/ai-medicine-diagnosis.entity';
 import { AIDiagnosisNotes } from '../entity/ai-diagnosis-notes.entity';
