@@ -14,6 +14,7 @@ import {
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { ReportType } from './report-template.enum';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
+import { MedicalSpecialization } from 'src/doctor/entity/specialization.enum';
 
 @Injectable()
 export class ReportTemplateService {
@@ -76,7 +77,7 @@ export class ReportTemplateService {
         where: { user: { uid: userId } },
       });
 
-      if (doctor && doctor.specialization.toLowerCase() === 'cardiologist') {
+      if (doctor && doctor.specialization.toLowerCase() === MedicalSpecialization.CARDIOLOGY) {
         return await queryRunner.manager.find(ReportTemplate, {
           where: { type: ReportType.HEART },
         });
