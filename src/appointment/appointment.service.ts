@@ -528,39 +528,38 @@ export class AppointmentService {
             ...selectCondition,
           },
         });
-        return result.map((appointment) => {
-          const userClinics = appointment.doctor.userClinics;
+
+        // Extract padding from the first appointment's doctor (assuming same clinic)
+        const defaultPadding = {
+          paddingTop: 0,
+          paddingLeft: 40,
+          paddingBottom: 0,
+          paddingRight: 40,
+        };
+
+        let clinicPadding = defaultPadding;
+        if (result.length > 0) {
+          const firstAppointment = result[0];
+          const userClinics = firstAppointment.doctor.userClinics;
           const matchingUserClinic = userClinics?.find(
             (userClinic) => userClinic.clinic.id == clinicId,
           );
-
-          if (matchingUserClinic) {
-            // Extract padding and other properties for this specific clinic
-            let letterPadStyle = {
-              padding: matchingUserClinic.padding || {
-                paddingTop: 0,
-                paddingLeft: 40,
-                paddingBottom: 0,
-                paddingRight: 40,
-              },
-            };
-            (appointment.doctor as any).letterPadStyle = letterPadStyle;
-          } else {
-            // Default padding if no matching userClinic found
-            (appointment.doctor as any).letterPadStyle = {
-              padding: {
-                paddingTop: 0,
-                paddingLeft: 40,
-                paddingBottom: 0,
-                paddingRight: 40,
-              },
-            };
+          
+          if (matchingUserClinic && matchingUserClinic.padding) {
+            clinicPadding = matchingUserClinic.padding;
           }
+        }
 
+        const appointments = result.map((appointment) => {
           // Remove the userClinics array from the response
           delete appointment.doctor.userClinics;
           return appointment;
         });
+
+        return {
+          appointments,
+          padding: clinicPadding,
+        };
       } else if (userRoles.includes(UserRole.DOCTOR)) {
         const result = await this.appointmentRepository.find({
           where: {
@@ -586,39 +585,36 @@ export class AppointmentService {
           },
         });
 
-        return result.map((appointment) => {
-          const userClinics = appointment.doctor.userClinics;
+        // Extract padding from the first appointment's doctor (assuming same clinic)
+        const defaultPadding = {
+          paddingTop: 0,
+          paddingLeft: 40,
+          paddingBottom: 0,
+          paddingRight: 40,
+        };
 
-          // Find the userClinic that matches the clinicId
+        let clinicPadding = defaultPadding;
+        if (result.length > 0) {
+          const firstAppointment = result[0];
+          const userClinics = firstAppointment.doctor.userClinics;
           const matchingUserClinic = userClinics?.find(
             (userClinic) => userClinic.clinic.id == clinicId,
           );
-
-          if (matchingUserClinic) {
-            // Extract padding and other properties for this specific clinic
-            let letterPadStyle = {
-              padding: matchingUserClinic.padding || {
-                paddingTop: 0,
-                paddingLeft: 40,
-                paddingBottom: 0,
-                paddingRight: 40,
-              },
-            };
-            (appointment.doctor as any).letterPadStyle = letterPadStyle;
-          } else {
-            // Default padding if no matching userClinic found
-            (appointment.doctor as any).letterPadStyle = {
-              padding: {
-                paddingTop: 0,
-                paddingLeft: 40,
-                paddingBottom: 0,
-                paddingRight: 40,
-              },
-            };
+          
+          if (matchingUserClinic && matchingUserClinic.padding) {
+            clinicPadding = matchingUserClinic.padding;
           }
+        }
+
+        const appointments = result.map((appointment) => {
           delete appointment.doctor.userClinics;
           return appointment;
         });
+
+        return {
+          appointments,
+          padding: clinicPadding,
+        };
       }
     } catch (error) {
       await this.errorLogService.logError(
