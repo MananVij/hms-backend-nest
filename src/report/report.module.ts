@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { ReportController } from './report.controller';
 import { ReportService } from './report.service';
 import { AuthModule } from '../auth/auth.module';
@@ -14,6 +15,7 @@ import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { ErrorLogModule } from 'src/errorlog/error-log.module';
 import { ErrorLog } from 'src/errorlog/error-log.entity';
 import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
+import { LambdaPdfService } from './lambda-pdf.service';
 
 @Module({
   imports: [
@@ -27,10 +29,11 @@ import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
       ErrorLog,
       UserClinic
     ]),
+    ConfigModule,
     AuthModule,
     ErrorLogModule
   ],
   controllers: [ReportController],
-  providers: [ReportService, FirebaseService, ErrorLogService],
+  providers: [ReportService, FirebaseService, ErrorLogService, LambdaPdfService],
 })
 export class ReportModule {}

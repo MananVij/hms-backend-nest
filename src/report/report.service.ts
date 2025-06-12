@@ -10,13 +10,12 @@ import { VariableDto } from 'src/report_template/variable.dto';
 import { Clinic } from 'src/clininc/entity/clininc.entity';
 import { Doctor } from 'src/doctor/entity/doctor.entity';
 import { User } from 'src/user/entity/user.enitiy';
-import * as puppeteer from 'puppeteer-core';
-const chromium = require('@sparticuz/chromium');
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { Report } from './report.entity';
 import { renderHandlebarsTemplate } from '../utils/handlebars-util';
-import { FooterType, UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
+import { UserClinic } from 'src/user_clinic/entity/user_clinic.entity';
+import { LambdaPdfService } from './lambda-pdf.service';
 
 function getAgeFromDOB(dob: Date | string): string {
   const birthDate = new Date(dob);
@@ -49,6 +48,7 @@ export class ReportService {
     @InjectRepository(UserClinic) private userClinicRepo: Repository<UserClinic>,
     private readonly firebaseService: FirebaseService,
     private readonly errorLogService: ErrorLogService,
+    private readonly lambdaPdfService: LambdaPdfService,
   ) {}
 
   async createReport(dto: CreateReportDto, queryRunner: QueryRunner) {
@@ -67,8 +67,6 @@ export class ReportService {
       // 2. Prepare values for the template
       const filteredValues = this.filterIgnoredVariables(template.variables, dto.values);
       const templateValues = this.prepareTemplateValues(patient, filteredValues);
-
-      // 3. Render HTML
       const padding = userClinic?.reportPadding;
       const renderedContent = renderHandlebarsTemplate(template.content, templateValues);
       const html = `
@@ -106,9 +104,20 @@ export class ReportService {
         </body>
         </html>
       `;
-
-      // 4. Generate PDF (pass header/footer images)
-      const pdfBuffer = await this.generatePdf(html, headerImage, footerType, footerContent);
+      // 4. Generate PDF via Lambda
+      let pdfBuffer: Buffer;
+      try {
+        pdfBuffer = await this.lambdaPdfService.generatePdf(html, headerImage, footerType, footerContent);
+      } catch (lambdaError) {
+        await this.errorLogService.logError(
+          `Lambda PDF generation failed: ${lambdaError.message}`,
+          lambdaError.stack || '',
+          undefined,
+          dto.doctorId,
+          dto.patientId,
+        );
+        throw new ReportServiceError(`PDF generation failed: ${lambdaError.message}`);
+      }
 
       // 5. Upload PDF
       const pdfUrl = await this.uploadPdfToFirebase(pdfBuffer, template, dto);
@@ -177,120 +186,6 @@ export class ReportService {
         year: 'numeric',
       }),
     };
-  }
-
-  private async generatePdf(html: string, headerImage?: string | null, footerType?: FooterType | null, footerContent?: string | null): Promise<Buffer> {
-    try {
-      const browser = await puppeteer.launch({
-        executablePath: await chromium.executablePath(),
-        args: [
-          ...chromium.args,
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--font-render-hinting=none',
-          '--disable-font-subpixel-positioning',
-        ],
-        headless: chromium.headless,
-        defaultViewport: chromium.defaultViewport,
-      });
-      const page = await browser.newPage();
-
-      // Set proper encoding and fonts
-      await page.setExtraHTTPHeaders({
-        'Accept-Charset': 'utf-8',
-      });
-
-      const headerHtml = headerImage
-        ? `<div style="margin:0;padding:0;width:100%;">
-            <img src="${headerImage}" alt="Header Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
-          </div>`
-        : '';
-      let footerHtml = '';
-      if (footerType === FooterType.IMAGE && footerContent) {
-        footerHtml = `<div style="margin:0;padding:0;width:100%;">
-            <img src="${footerContent}" alt="Footer Image" style="width:100%;max-width:100%;height:auto;display:block;object-fit:contain;margin:0;padding:0;" />
-          </div>`;
-      } else if (footerType === FooterType.TEXT && footerContent) {
-        footerHtml = `<div style="width:100%;border-top:1px solid #888;padding-top:6px;text-align:center;font-size:12px;margin:0;margin-bottom:0;padding-bottom:0;font-family: 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif;">${footerContent}</div>`;
-      }
-      
-      const fullHtml = `
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-          <style>
-            @page {
-              margin-top: ${headerImage ? '60px' : '0px'};
-              margin-bottom: ${(footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0px'};
-            }
-            * {
-              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
-              -webkit-font-smoothing: antialiased;
-              -moz-osx-font-smoothing: grayscale;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
-              font-size: 14px;
-              line-height: 1.4;
-              color: #000;
-            }
-            table {
-              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
-            }
-            td, th, p, div, span {
-              font-family: 'Inter', 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif !important;
-            }
-          </style>
-        </head>
-        <body>
-          ${html}
-        </body>
-        </html>
-      `;
-      
-      await page.setContent(fullHtml, { 
-        waitUntil: 'networkidle0',
-        timeout: 30000 
-      });
-      
-      // Wait for fonts to load
-      await page.evaluateHandle('document.fonts.ready');
-      
-      // Generate PDF with the same configuration as frontend
-      const pdfUint8Array = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        displayHeaderFooter: true,
-        headerTemplate: headerHtml,
-        footerTemplate: footerHtml,
-        margin: { 
-          top: headerImage ? '60px' : '0', 
-          bottom: (footerType === FooterType.IMAGE || footerType === FooterType.TEXT) ? '60px' : '0',
-          left: '0',
-          right: '0'
-        },
-        preferCSSPageSize: true,
-      });
-      
-      await browser.close();
-      return Buffer.isBuffer(pdfUint8Array) ? pdfUint8Array : Buffer.from(pdfUint8Array);
-    } catch (error) {
-      await this.errorLogService.logError(
-        `Error generating PDF: ${error.message}`,
-        error.stack || '',
-        undefined,
-        undefined,
-        undefined,
-      );
-      throw new ReportServiceError(error.message || 'Error generating PDF');
-    }
   }
 
   private async uploadPdfToFirebase(
