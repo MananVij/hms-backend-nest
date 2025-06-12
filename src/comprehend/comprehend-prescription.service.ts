@@ -4,7 +4,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { PrescriptionService } from 'src/prescription/prescription.service';
 import { ErrorLogService } from 'src/errorlog/error-log.service';
 import { PrescriptionValidator } from 'src/validation/validation-util';
-import { QueryRunner } from 'typeorm';
+import { DataSource, QueryRunner } from 'typeorm';
 import { DjangoService } from 'src/django/django.service';
 
 @Injectable()
@@ -17,6 +17,7 @@ export class ComprehendPrescriptionService {
     private readonly prescriptionService: PrescriptionService,
     private readonly errorLogService: ErrorLogService,
     private readonly djangoService: DjangoService,
+    private readonly dataSource: DataSource,
   ) {
     const apiKey = process.env.GEMINI_GEN_AI_API_KEY;
     this.genAI = new GoogleGenerativeAI(apiKey);
@@ -31,7 +32,6 @@ export class ComprehendPrescriptionService {
     appointmentId: string,
     queryRunner: QueryRunner,
   ): Promise<any> {
-    let file_url: string | null = null;
     try {
       // Convert file buffer to base64
       const base64File = file.buffer.toString('base64');
@@ -71,11 +71,6 @@ export class ComprehendPrescriptionService {
       } else {
         throw new Error('Unsupported file type');
       }
-      if (filePath !== '') {
-        file_url = await this.firebaseService.uploadSingleFile(file, filePath);
-      }
-
-      // Send file data directly to Gemini
       const result = await model.generateContent([
         fileData,
         { text: this.prompt },
@@ -91,47 +86,108 @@ export class ComprehendPrescriptionService {
 
       let updatedDjangoMedicationData = validatedData;
 
-      if (is_voice_rx) {
-        updatedDjangoMedicationData =
-          await this.djangoService.validateMedicines(
-            validatedData?.medication,
-            clinic,
-          );
-        if (
-          updatedDjangoMedicationData &&
-          updatedDjangoMedicationData !== null
-        ) {
-          validatedData['medication'] = updatedDjangoMedicationData;
-        }
-      }
+      // if (is_voice_rx) {
+      //   updatedDjangoMedicationData =
+      //     await this.djangoService.validateMedicines(
+      //       validatedData?.medication,
+      //       clinic,
+      //     );
+      //   if (
+      //     updatedDjangoMedicationData &&
+      //     updatedDjangoMedicationData !== null
+      //   ) {
+      //     validatedData['medication'] = updatedDjangoMedicationData;
+      //   }
+      // }
 
-      const presDbData = {
-        ...updatedDjangoMedicationData,
-        audio_url: file_url,
+      this.handleAllBackgroundOperations(
+        file,
+        filePath,
+        updatedDjangoMedicationData,
         appointmentId,
-        patientId: patient,
-        is_gemini_data: true,
-        is_handwritten_rx,
-        is_voice_rx,
-      };
-      await this.prescriptionService.create(
-        presDbData,
-        queryRunner,
+        patient,
         doctor,
         clinic,
+        is_handwritten_rx,
+        is_voice_rx
       );
 
       return validatedData;
     } catch (error) {
-      await this.errorLogService.logError(
-        `Error while comprehending audio prescription: ${error.message}`,
+      this.errorLogService.logError(
+        `Error while comprehending prescription: ${error.message}`,
         error.stack || '',
-        file_url,
+        null,
         doctor,
         patient,
       );
       throw new InternalServerErrorException(
         'Failed to comprehend prescription',
+      );
+    }
+  }
+
+    private async handleAllBackgroundOperations(
+    file: Express.Multer.File,
+    filePath: string,
+    medicationData: any,
+    appointmentId: string,
+    patient: string,
+    doctor: string,
+    clinic: number,
+    is_handwritten_rx: boolean,
+    is_voice_rx: boolean
+  ): Promise<void> {
+    try {
+      let file_url: string | null = null;
+      if (filePath !== '') {
+        try {
+          file_url = await this.firebaseService.uploadSingleFile(file, filePath);
+        } catch (uploadError) {
+          this.errorLogService.logError(
+            `File upload failed: ${uploadError.message}`,
+            uploadError.stack || '',
+            null,
+            doctor,
+            patient,
+          );
+        }
+      }      
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      
+      try {
+        const presDbData = {
+          ...medicationData,
+          audio_url: file_url,
+          appointmentId,
+          patientId: patient,
+          is_gemini_data: true,
+          is_handwritten_rx,
+          is_voice_rx,
+        };
+        await this.prescriptionService.create(
+          presDbData,
+          queryRunner,
+          doctor,
+          clinic,
+        );
+        
+        await queryRunner.commitTransaction();
+      } catch (dbError) {
+        await queryRunner.rollbackTransaction();
+        throw dbError;
+      } finally {
+        await queryRunner.release();
+      }
+    } catch (error) {
+      this.errorLogService.logError(
+        `Background operation error: ${error.message}`,
+        error.stack || '',
+        null,
+        doctor,
+        patient,
       );
     }
   }
