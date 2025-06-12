@@ -15,7 +15,7 @@ export class PublicIdentifierService {
     maxRetries: number = 5,
   ): Promise<string> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      const identifier = PublicIdentifierService.generateStrongIdentifier();
+      const identifier = PublicIdentifierService.generateCustomNanoId();
       const existingUser = await this.userRepository.findOne({
         where: { publicIdentifier: identifier },
       });
@@ -29,8 +29,9 @@ export class PublicIdentifierService {
     );
   }
 
-  private static generateStrongIdentifier(): string {
-    const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', 10);
-    return nanoid();
+  private static generateCustomNanoId(): string {
+    const letters = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 2);
+    const digits = customAlphabet('0123456789', 5);
+    return `${letters()}${digits()}`;
   }
 }
