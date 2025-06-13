@@ -57,6 +57,7 @@ export class AppointmentService {
         await Promise.all([
           queryRunner.manager.findOne(User, {
             where: { uid: patient, isPatient: true },
+            relations: ['metaData'],
           }),
 
           queryRunner.manager.findOne(Clinic, {
@@ -154,6 +155,10 @@ export class AppointmentService {
             line1: savedAppointment.patient.address?.line1,
             line2: savedAppointment.patient.address?.line2,
             pincode: savedAppointment.patient.address?.pincode,
+          },
+          metaData: {
+            dob: savedAppointment?.patient?.metaData?.dob,
+            sex: savedAppointment?.patient?.metaData?.sex,
           },
         },
         clinic: {
